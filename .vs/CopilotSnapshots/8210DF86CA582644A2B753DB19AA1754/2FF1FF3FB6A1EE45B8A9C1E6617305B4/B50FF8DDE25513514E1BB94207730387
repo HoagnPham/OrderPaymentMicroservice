@@ -1,0 +1,51 @@
+﻿using Microsoft.EntityFrameworkCore;
+using OrderPaymentMicroservice.Data;
+using OrderPaymentMicroservice.Security;
+using OrderPaymentMicroservice.Services;
+using OrderPaymentMicroservice.Services.Interfaces;
+
+var builder = WebApplication.CreateBuilder(args);
+
+// Add services to the container.
+
+// Configure DbContext with PostgreSQL
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<AppDbContext>(options =>
+    options.UseNpgsql(connectionString));
+
+// Register services (Dependency Injection)
+builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<IPaymentService, PaymentService>();
+builder.Services.AddScoped<InputValidator>();
+builder.Services.AddScoped<PaymentValidator>();
+
+builder.Services.AddControllers();
+// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+builder.Services.AddOpenApi();
+
+// Add logging
+builder.Logging.ClearProviders();
+builder.Logging.AddConsole();
+
+var app = builder.Build();
+
+// Configure the HTTP request pipeline.
+if (app.Environment.IsDevelopment())
+{
+    app.MapOpenApi();
+    app.UseDeveloperExceptionPage();
+}
+
+app.UseHttpsRedirection();
+
+// Enable static files (CSS, JS, images, etc. from wwwroot)
+app.UseStaticFiles();
+
+app.UseAuthorization();
+
+app.MapControllers();
+
+// Map default file (index.html)
+app.MapFallbackToFile("index.html");
+
+app.Run();

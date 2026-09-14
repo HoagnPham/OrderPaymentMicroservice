@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Order & Payment System</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Navigation -->
+        <div class="navbar">
+            <div class="navbar-brand">🍜 Food Order System</div>
+            <div class="navbar-menu">
+                <button class="nav-btn" id="homeBtn">🏠 Trang chủ</button>
+                <button class="nav-btn" id="cartBtn">🛒 Giỏ hàng</button>
+                <button class="nav-btn" id="ordersBtn">📦 Đơn hàng</button>
+                <div id="authSection" style="display: flex; gap: 10px;">
+                    <button class="nav-btn" onclick="showSection('auth')">Đăng nhập</button>
+                </div>
+                <div id="userInfo" class="user-info" style="display: none;"></div>
+                <button class="nav-btn" id="logoutBtn" style="display: none;">Đăng xuất</button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="content">
+            <!-- Auth Section -->
+            <div id="auth" class="section">
+                <div class="auth-form">
+                    <h2 style="text-align: center; margin-bottom: 25px; color: #333;">Đăng Nhập</h2>
+
+                    <!-- Login Form -->
+                    <form id="loginForm">
+                        <div class="form-group">
+                            <label>📧 Email</label>
+                            <input type="email" id="loginEmail" required placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label>🔐 Mật khẩu</label>
+                            <input type="password" id="loginPassword" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn">Đăng Nhập</button>
+                    </form>
+
+                    <!-- Register Form (Hidden) -->
+                    <form id="registerForm" style="display: none;">
+                        <h2 style="text-align: center; margin-bottom: 25px; color: #333;">Đăng Ký</h2>
+                        <div class="form-group">
+                            <label>👤 Họ tên</label>
+                            <input type="text" id="registerName" required placeholder="Tên của bạn">
+                        </div>
+                        <div class="form-group">
+                            <label>📧 Email</label>
+                            <input type="email" id="registerEmail" required placeholder="your@email.com">
+                        </div>
+                        <div class="form-group">
+                            <label>📱 Số điện thoại</label>
+                            <input type="tel" id="registerPhone" placeholder="0987654321">
+                        </div>
+                        <div class="form-group">
+                            <label>🔐 Mật khẩu</label>
+                            <input type="password" id="registerPassword" required placeholder="••••••••">
+                        </div>
+                        <button type="submit" class="btn">Đăng Ký</button>
+                    </form>
+
+                    <!-- Toggle Form -->
+                    <div class="form-toggle" id="loginToggle" style="display: block;">
+                        Chưa có tài khoản? <a onclick="toggleForm(); document.querySelector('#registerToggle').style.display='block'; this.parentElement.style.display='none';">Đăng ký ngay</a>
+                    </div>
+                    <div class="form-toggle" id="registerToggle" style="display: none;">
+                        Đã có tài khoản? <a onclick="toggleForm(); document.querySelector('#loginToggle').style.display='block'; this.parentElement.style.display='none';">Đăng nhập</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Home Section (Products) -->
+            <div id="home" class="section" style="display: none;">
+                <h1 style="margin-bottom: 25px; color: #333;">🍽️ Menu Sản Phẩm</h1>
+                <div id="productsGrid" class="products-grid"></div>
+            </div>
+
+            <!-- Cart Section -->
+            <div id="cart" class="section" style="display: none;">
+                <div style="max-width: 600px;">
+                    <h1 style="margin-bottom: 25px; color: #333;">🛒 Giỏ Hàng</h1>
+                    <div class="checkout-form">
+                        <div id="cartItemsContainer" style="min-height: 300px;">
+                            <div class="cart-title">Chi tiết giỏ hàng</div>
+                            <div id="cartItemsDetail"></div>
+                        </div>
+                        <hr style="margin: 20px 0;">
+                        <div id="cartTotalDetail" style="font-size: 18px; font-weight: bold; margin-bottom: 20px;"></div>
+                        <button class="btn" onclick="showSection('checkout')" style="width: 100%;">Tiến hành thanh toán</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Checkout Section -->
+            <div id="checkout" class="section" style="display: none;">
+                <div style="max-width: 600px;">
+                    <h1 style="margin-bottom: 25px; color: #333;">✏️ Thông tin đơn hàng</h1>
+                    <form id="checkoutForm" class="checkout-form">
+                        <div class="form-group">
+                            <label>📬 Địa chỉ giao</label>
+                            <input type="text" id="address" required placeholder="123 Đường ABC, Quận 1">
+                        </div>
+                        <div class="form-group">
+                            <label>🏙️ Thành phố</label>
+                            <input type="text" id="city" required placeholder="TP. Hồ Chí Minh">
+                        </div>
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold;">
+                                <span>Tổng tiền:</span>
+                                <span id="checkoutTotal">0 VNĐ</span>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">Xác nhận & Tiến tới thanh toán</button>
+                        <button type="button" class="btn btn-secondary" onclick="showSection('cart')" style="margin-top: 10px;">Quay lại giỏ hàng</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Payment Section -->
+            <div id="payment" class="section" style="display: none;">
+                <div style="max-width: 600px;">
+                    <h1 style="margin-bottom: 25px; color: #333;">💳 Thanh Toán</h1>
+                    <form id="paymentForm" class="payment-form">
+                        <input type="hidden" id="paymentOrderId">
+
+                        <div class="payment-info">
+                            <div style="color: #666; margin-bottom: 10px;">Tổng tiền thanh toán:</div>
+                            <div class="payment-amount" id="paymentAmount">0 VNĐ</div>
+                        </div>
+
+                        <div class="form-group">
+                            <label>💳 Số thẻ</label>
+                            <input type="text" id="cardNumber" required placeholder="1234 5678 9012 3456" maxlength="19">
+                        </div>
+
+                        <div class="form-group">
+                            <label>👤 Tên chủ thẻ</label>
+                            <input type="text" id="cardName" required placeholder="NGUYEN VAN A">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>📅 Ngày hết hạn (MM/YY)</label>
+                                <input type="text" id="cardExpiry" required placeholder="12/25" maxlength="5">
+                            </div>
+                            <div class="form-group">
+                                <label>🔐 CVV</label>
+                                <input type="text" id="cardCvv" required placeholder="123" maxlength="4">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn">💰 Thanh toán</button>
+                        <button type="button" class="btn btn-secondary" onclick="showSection('checkout')" style="margin-top: 10px;">Quay lại</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Orders Section -->
+            <div id="orders" class="section" style="display: none;">
+                <h1 style="margin-bottom: 25px; color: #333;">📦 Lịch sử đơn hàng</h1>
+                <div id="ordersContainer" class="orders-container"></div>
+            </div>
+
+            <!-- Sidebar Cart -->
+            <div class="sidebar">
+                <div class="cart-title">📋 Giỏ hàng</div>
+                <div id="cartEmpty" class="cart-empty">Giỏ hàng trống</div>
+                <div id="cartItems" class="cart-items"></div>
+                <div class="cart-summary">
+                    <div id="cartTotal" class="cart-total">
+                        <span>Tổng:</span>
+                        <span>0 VNĐ</span>
+                    </div>
+                    <button class="checkout-btn" onclick="if(currentUser) showSection('checkout'); else { showMessage('Vui lòng đăng nhập', 'info'); showSection('auth'); }">🎁 Thanh toán</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>

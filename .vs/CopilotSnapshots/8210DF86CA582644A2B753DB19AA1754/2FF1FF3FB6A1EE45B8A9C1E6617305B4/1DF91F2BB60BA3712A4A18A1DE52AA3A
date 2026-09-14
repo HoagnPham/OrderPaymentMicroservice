@@ -1,0 +1,174 @@
+﻿using Microsoft.EntityFrameworkCore;
+using OrderPaymentMicroservice.Data;
+using OrderPaymentMicroservice.DTOs.Cart;
+using OrderPaymentMicroservice.Models;
+using OrderPaymentMicroservice.Services.Interfaces;
+
+namespace OrderPaymentMicroservice.Services;
+
+public class CartService : ICartService
+{
+    private readonly AppDbContext _context;
+    private readonly ILogger<CartService> _logger;
+
+    public CartService(AppDbContext context, ILogger<CartService> logger)
+    {
+        _context = context;
+        _logger = logger;
+    }
+
+    public async Task<CartResponse> GetOrCreateCartAsync(int userId)
+    {
+        var cart = await _context.ShoppingCarts
+            .Include(c => c.Items)
+            .ThenInclude(ci => ci.Product)
+            .FirstOrDefaultAsync(c => c.UserId == userId);
+
+        if (cart == null)
+        {
+            cart = new ShoppingCart
+            {
+                UserId = userId,
+                TotalPrice = 0,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            _context.ShoppingCarts.Add(cart);
+            await _context.SaveChangesAsync();
+            _logger.LogInformation("Cart created for user: {UserId}", userId);
+        }
+
+        return MapToResponse(cart);
+    }
+
+    public async Task<CartResponse?> GetCartByIdAsync(int cartId)
+    {
+        var cart = await _context.ShoppingCarts
+            .Include(c => c.Items)
+            .ThenInclude(ci => ci.Product)
+            .FirstOrDefaultAsync(c => c.Id == cartId);
+
+        return cart != null ? MapToResponse(cart) : null;
+    }
+
+    public async Task<CartResponse> AddItemToCartAsync(int userId, int productId, int quantity)
+    {
+        var cart = await GetOrCreateCartAsync(userId);
+        var product = await _context.Products.FindAsync(productId);
+
+        if (product == null)
+            throw new InvalidOperationException($"Product {productId} not found");
+
+        if (product.Stock < quantity)
+            throw new InvalidOperationException($"Not enough stock for product {productId}");
+
+        var existingItem = await _context.CartItems
+            .FirstOrDefaultAsync(ci => ci.CartId == cart.Id && ci.ProductId == productId);
+
+        if (existingItem != null)
+        {
+            existingItem.Quantity += quantity;
+            existingItem.SubTotal = existingItem.Quantity * existingItem.PriceAtAdd;
+        }
+        else
+        {
+            var cartItem = new CartItem
+            {
+                CartId = cart.Id,
+                ProductId = productId,
+                Quantity = quantity,
+                PriceAtAdd = product.Price,
+                SubTotal = quantity * product.Price
+            };
+
+            _context.CartItems.Add(cartItem);
+        }
+
+        await UpdateCartTotalAsync(cart.Id);
+        _logger.LogInformation("Item added to cart: User={UserId}, Product={ProductId}, Qty={Quantity}", userId, productId, quantity);
+
+        var updatedCart = await GetCartByIdAsync(cart.Id);
+        return updatedCart ?? throw new InvalidOperationException("Cart not found after adding item");
+    }
+
+    public async Task<CartResponse> UpdateCartItemAsync(int cartId, int cartItemId, int quantity)
+    {
+        var cartItem = await _context.CartItems.FindAsync(cartItemId);
+        if (cartItem == null || cartItem.CartId != cartId)
+            throw new InvalidOperationException("Cart item not found");
+
+        if (quantity <= 0)
+            return await RemoveItemFromCartAsync(cartId, cartItemId);
+
+        cartItem.Quantity = quantity;
+        cartItem.SubTotal = quantity * cartItem.PriceAtAdd;
+        await _context.SaveChangesAsync();
+
+        await UpdateCartTotalAsync(cartId);
+        return await GetCartByIdAsync(cartId) ?? throw new InvalidOperationException("Cart not found");
+    }
+
+    public async Task<CartResponse> RemoveItemFromCartAsync(int cartId, int cartItemId)
+    {
+        var cartItem = await _context.CartItems.FindAsync(cartItemId);
+        if (cartItem == null || cartItem.CartId != cartId)
+            throw new InvalidOperationException("Cart item not found");
+
+        _context.CartItems.Remove(cartItem);
+        await _context.SaveChangesAsync();
+
+        await UpdateCartTotalAsync(cartId);
+        return await GetCartByIdAsync(cartId) ?? throw new InvalidOperationException("Cart not found");
+    }
+
+    public async Task<bool> ClearCartAsync(int cartId)
+    {
+        var cartItems = await _context.CartItems.Where(ci => ci.CartId == cartId).ToListAsync();
+        _context.CartItems.RemoveRange(cartItems);
+
+        var cart = await _context.ShoppingCarts.FindAsync(cartId);
+        if (cart != null)
+        {
+            cart.TotalPrice = 0;
+            cart.UpdatedAt = DateTime.UtcNow;
+        }
+
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    private async Task UpdateCartTotalAsync(int cartId)
+    {
+        var cart = await _context.ShoppingCarts.FindAsync(cartId);
+        if (cart == null) return;
+
+        var total = await _context.CartItems
+            .Where(ci => ci.CartId == cartId)
+            .SumAsync(ci => ci.SubTotal);
+
+        cart.TotalPrice = total;
+        cart.UpdatedAt = DateTime.UtcNow;
+        await _context.SaveChangesAsync();
+    }
+
+    private CartResponse MapToResponse(ShoppingCart cart)
+    {
+        return new CartResponse
+        {
+            Id = cart.Id,
+            UserId = cart.UserId,
+            TotalPrice = cart.TotalPrice,
+            Items = cart.Items.Select(ci => new CartItemResponse
+            {
+                Id = ci.Id,
+                ProductId = ci.ProductId,
+                ProductName = ci.Product?.Name ?? "Unknown",
+                Quantity = ci.Quantity,
+                PriceAtAdd = ci.PriceAtAdd,
+                SubTotal = ci.SubTotal
+            }).ToList(),
+            UpdatedAt = cart.UpdatedAt
+        };
+    }
+}

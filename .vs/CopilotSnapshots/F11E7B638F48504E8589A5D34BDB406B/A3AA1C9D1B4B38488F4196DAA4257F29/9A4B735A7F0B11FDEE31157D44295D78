@@ -1,0 +1,63 @@
+﻿/*
+Template Name: Food Point
+File: Layout CSS
+Author: TemplatesOnWeb
+Author URI: https://www.templateonweb.com/
+Licence: <a href="https://www.templateonweb.com/license">Website Template Licence</a>
+*/
+/*********************contact****************/
+#contact {
+padding-top:40px;
+padding-bottom:40px;
+ }
+#contact .top_1i1{
+margin-top:0; 
+ }
+.contact_2{
+margin-top:30px; 
+ }
+.contact_2i .form-control{
+box-shadow:none;
+border: 1px solid #ddd;
+margin-top:20px;
+height:45px; 
+font-size:16px;
+ }
+.contact_2i .form_1{
+height:145px; 
+ }
+.top_1i1l span i{
+font-size:40px; 
+ }
+.blog_1 h3 {
+border-left: 5px solid #b8391a;
+padding-left: 10px;
+}
+/*********************contact_end****************/
+
+@media screen and (max-width : 767px){
+#contact{
+text-align:center; 
+ }
+#contact .top_1i1l {
+margin-top:15px; 
+ }
+.contact_2i {
+margin-top:10px;  
+ }
+}
+
+@media (min-width:768px) and (max-width:991px) {
+.top_1i1l span i{
+font-size:30px; 
+ }
+.top_1i1r h5{
+font-size:16px; 
+ }
+ }
+@media (min-width:992px) and (max-width:1200px) {
+
+  }
+@media (min-width:1201px) and (max-width:1350px) {
+
+ }

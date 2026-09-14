@@ -1,0 +1,54 @@
+namespace OrderPaymentMicroservice.Models;
+
+/// <summary>
+/// Order entity
+/// TODO: SMT verification - TotalAmount >= sum of OrderItems subtotal
+/// TODO: Fuzzing target - Handle negative amounts, overflow
+/// </summary>
+public class Order
+{
+    public int Id { get; set; }
+
+    /// <summary>
+    /// User ID (khách hàng)
+    /// </summary>
+    public int UserId { get; set; }
+
+    /// <summary>
+    /// Customer ID (from shop/frontend system)
+    /// TODO: Security test - validate customer exists
+    /// </summary>
+    public int CustomerId { get; set; }
+
+    /// <summary>
+    /// Total order amount (in cents or base currency unit)
+    /// TODO: SMT verification - TotalAmount > 0
+    /// </summary>
+    public decimal TotalAmount { get; set; }
+
+    /// <summary>
+    /// Current order status
+    /// TODO: Kripke/BMC property - State transitions must follow the defined flowchart
+    /// </summary>
+    public OrderStatus Status { get; set; } = OrderStatus.CREATED;
+
+    /// <summary>
+    /// Order creation timestamp
+    /// </summary>
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Order items (1-to-many relationship)
+    /// </summary>
+    public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();
+
+    /// <summary>
+    /// Order payments (1-to-many relationship)
+    /// </summary>
+    public virtual ICollection<Payment> Payments { get; set; } = new List<Payment>();
+
+    /// <summary>
+    /// Navigation property to User
+    /// </summary>
+    public virtual User? User { get; set; }
+}

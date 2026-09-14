@@ -1,0 +1,60 @@
+﻿@host = https://localhost:7072
+@contentType = application/json
+
+### Test GET /api/orders
+GET {{host}}/api/orders
+Accept: {{contentType}}
+
+###
+
+### Test POST /api/orders - Create a new order
+POST {{host}}/api/orders
+Content-Type: {{contentType}}
+
+{
+  "customerId": 1,
+  "totalAmount": 100.50,
+  "items": [
+    {
+      "productId": 101,
+      "quantity": 2,
+      "unitPrice": 50.25
+    },
+    {
+      "productId": 102,
+      "quantity": 1,
+      "unitPrice": 0.00
+    }
+  ]
+}
+
+###
+
+### Test GET /api/orders/{id}
+GET {{host}}/api/orders/1
+Accept: {{contentType}}
+
+###
+
+### Test POST /api/orders/{id}/cancel
+POST {{host}}/api/orders/1/cancel
+Accept: {{contentType}}
+
+###
+
+### Test POST /api/payments - Create a payment
+POST {{host}}/api/payments
+Content-Type: {{contentType}}
+
+{
+  "orderId": 1,
+  "amount": 100.50
+}
+
+###
+
+### Test GET /api/payments/{id}
+GET {{host}}/api/payments/1
+Accept: {{contentType}}
+
+###
