@@ -1,0 +1,42 @@
+{
+  "description": "Cac dac ta chuong trinh don gian (mo phong truy cap mang trong module Inventory) dung cho dong co Bounded Model Checking (BMC) tu viet o python/bmc_engine.py. Moi chuong trinh mo ta mot vong lap truy cap mang catalog[base_index + i] voi i la bien vong lap duoc 'unwind' (mo cuon) toi da 'unwind_bound' buoc. Neu 'symbolic_base' = true, base_index la mot BIEN TUONG TRUNG (symbolic) bi rang buoc trong [0, array_size), va BMC se dung Z3 de tim xem CO TON TAI gia tri base_index nao lam truy cap vuot bien hay khong (bai toan EXISTS, phu hop voi SAT solving). Neu 'symbolic_base' = false, base_index la hang so co dinh 'fixed_base'.",
+  "programs": [
+    {
+      "id": "BMC-01-SAFE-FULL-SCAN",
+      "description": "Duyet toan bo catalog tu dau: for (i = 0; i < array_size; i++) access catalog[i]. Vong lap dung chinh xac bang kich thuoc mang.",
+      "array_size": 10,
+      "unwind_bound": 10,
+      "symbolic_base": false,
+      "fixed_base": 0,
+      "expected_label": "SAFE"
+    },
+    {
+      "id": "BMC-02-UNSAFE-OFFBYONE",
+      "description": "Loi off-by-one kinh dien: for (i = 0; i <= array_size; i++) access catalog[i] - dieu kien dung dung '<=' thay vi '<', truy cap catalog[array_size] la vuot bien.",
+      "array_size": 10,
+      "unwind_bound": 11,
+      "symbolic_base": false,
+      "fixed_base": 0,
+      "expected_label": "UNSAFE"
+    },
+    {
+      "id": "BMC-03-UNSAFE-SYMBOLIC-OFFSET",
+      "description": "Truy cap catalog[base_index + i] voi base_index la tham so dau vao nguoi dung (vi du: vi tri bat dau tim kiem phan trang - pagination offset), KHONG duoc kiem tra rang buoc truoc vong lap noi bo quet them 5 phan tu.",
+      "array_size": 10,
+      "unwind_bound": 5,
+      "symbolic_base": true,
+      "fixed_base": null,
+      "expected_label": "UNSAFE"
+    },
+    {
+      "id": "BMC-04-SAFE-SYMBOLIC-OFFSET-BOUNDED",
+      "description": "Giong BMC-03 nhung da them dieu kien tien xu ly gioi han base_index <= array_size - unwind_bound (kiem tra truoc vong lap) -> an toan trong pham vi unwind da cho.",
+      "array_size": 10,
+      "unwind_bound": 5,
+      "symbolic_base": true,
+      "fixed_base": null,
+      "precondition_max_base": 5,
+      "expected_label": "SAFE"
+    }
+  ]
+}

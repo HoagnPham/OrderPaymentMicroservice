@@ -1,0 +1,11 @@
+{
+  "blackbox_1000_iters": {
+    "crashes_found": 0,
+    "corpus_final_size": 49
+  },
+  "whitebox_500_iters": {
+    "crashes_found": 3,
+    "lines_covered": 17,
+    "first_crash_iteration": 402
+  }
+}

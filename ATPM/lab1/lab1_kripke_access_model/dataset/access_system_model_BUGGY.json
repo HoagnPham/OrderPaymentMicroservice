@@ -1,0 +1,45 @@
+{
+  "system_name": "AccessControl-Door-v2-BUGGY",
+  "description": "Bien the LOI: co mot canh chuyen tiep sai khien he thong vao trang thai unlocked ma KHONG can authenticated (mo phong loi logic thuc te - vi du: bo qua buoc kiem tra do 'race condition').",
+  "atomic_propositions": ["locked", "unlocked", "alarm", "authenticated", "tamper"],
+  "states": [
+    {"id": "S0", "name": "Locked_Idle",        "labels": ["locked"]},
+    {"id": "S1", "name": "Authenticating",      "labels": ["locked"]},
+    {"id": "S2", "name": "Authenticated_Unlock","labels": ["unlocked", "authenticated"]},
+    {"id": "S3", "name": "Locked_Alarm",        "labels": ["locked", "alarm"]},
+    {"id": "S4", "name": "TamperDetected_Alarm","labels": ["locked", "alarm", "tamper"]},
+    {"id": "S5", "name": "BUG_Unlock_NoAuth",   "labels": ["unlocked"]}
+  ],
+  "initial_states": ["S0"],
+  "transitions": [
+    {"from": "S0", "event": "insert_card",        "to": "S1"},
+    {"from": "S1", "event": "auth_success",        "to": "S2"},
+    {"from": "S1", "event": "auth_fail",           "to": "S0"},
+    {"from": "S1", "event": "auth_fail_3rd_time",  "to": "S3"},
+    {"from": "S2", "event": "door_closed_timeout", "to": "S0"},
+    {"from": "S3", "event": "operator_reset",      "to": "S0"},
+    {"from": "S0", "event": "tamper_sensor",       "to": "S0"},
+    {"from": "S1", "event": "timeout_glitch",      "to": "S5"},
+    {"from": "S5", "event": "door_closed_timeout", "to": "S0"}
+  ],
+  "properties_to_check": [
+    {
+      "id": "P1_SAFETY_NO_UNLOCK_WITHOUT_AUTH",
+      "type": "AG_NOT",
+      "formula": "unlocked AND NOT authenticated",
+      "description": "Khong bao gio ton tai trang thai unlocked ma khong authenticated (khong the mo khoa neu chua xac thuc)."
+    },
+    {
+      "id": "P2_SAFETY_ALARM_ON_TAMPER",
+      "type": "AG_IMPLIES",
+      "formula": "tamper -> alarm",
+      "description": "Moi khi phat hien tamper, he thong phai o trang thai bao dong (alarm)."
+    },
+    {
+      "id": "P3_REACHABILITY_UNLOCK",
+      "type": "EF",
+      "formula": "unlocked",
+      "description": "Ton tai it nhat mot duong di tu trang thai khoi tao den trang thai unlocked (tinh kha thi)."
+    }
+  ]
+}

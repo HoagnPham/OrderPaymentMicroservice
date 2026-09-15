@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (currentUser) {
         showSection('home');
         loadProducts();
+        loadCartFromServer();   // <-- khôi phục cart từ server sau khi reload
     } else {
         showSection('auth');
     }
@@ -24,8 +25,8 @@ function setupEventListeners() {
     document.getElementById('checkoutForm').addEventListener('submit', handleCheckout);
     document.getElementById('paymentForm').addEventListener('submit', handlePayment);
 
-    document.getElementById('loginToggle').addEventListener('click', toggleForm);
-    document.getElementById('registerToggle').addEventListener('click', toggleForm);
+    document.getElementById('toRegisterLink').addEventListener('click', toggleForm);
+    document.getElementById('toLoginLink').addEventListener('click', toggleForm);
 
     document.getElementById('homeBtn').addEventListener('click', () => {
         if (!currentUser) {
@@ -81,6 +82,8 @@ async function handleLogin(e) {
 
         showAuthMessage('Đăng nhập thành công!', 'success');
         document.getElementById('loginForm').reset();
+        updateNavBar();
+        await loadCartFromServer();   // load cart ngay sau khi đăng nhập
         setTimeout(() => {
             showSection('home');
             loadProducts();
@@ -156,6 +159,20 @@ function updateNavBar() {
 }
 
 // Products
+async function loadCartFromServer() {
+    if (!currentUser) return;
+    try {
+        const response = await fetch(`${API_BASE_URL}/cart/user/${currentUser.id}`);
+        if (response.ok) {
+            const cartData = await response.json();
+            cart = cartData;
+            updateCartUI();
+        }
+    } catch (error) {
+        console.warn('Could not load cart from server:', error);
+    }
+}
+
 async function loadProducts() {
     try {
         const response = await fetch(`${API_BASE_URL}/products`);
@@ -306,8 +323,18 @@ async function handleCheckout(e) {
     const orderItems = cart.items.map(item => ({
         productId: item.productId,
         quantity: item.quantity,
-        priceAtOrderTime: item.priceAtAdd
+        unitPrice: item.priceAtAdd
     }));
+
+    // Tính tổng từ items nếu cart.totalPrice là 0 hoặc undefined
+    const totalAmount = (cart.totalPrice && cart.totalPrice > 0)
+        ? cart.totalPrice
+        : orderItems.reduce((sum, item) => sum + (item.unitPrice * item.quantity), 0);
+
+    if (totalAmount <= 0) {
+        showMessage('Không thể tính tổng tiền. Vui lòng thêm sản phẩm vào giỏ lại.', 'error');
+        return;
+    }
 
     try {
         showMessage('Đang tạo đơn hàng...', 'info');
@@ -316,14 +343,23 @@ async function handleCheckout(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 customerId: currentUser.id,
-                totalAmount: cart.totalPrice,
+                totalAmount,
                 address,
                 city,
                 items: orderItems
             })
         });
 
-        if (!response.ok) throw new Error('Không thể tạo đơn hàng');
+        if (!response.ok) {
+            let errMsg = 'Không thể tạo đơn hàng';
+            try {
+                const errData = await response.json();
+                errMsg = errData.title || errData.message || errData || errMsg;
+            } catch (_) { 
+                errMsg = await response.text() || errMsg;
+            }
+            throw new Error(errMsg);
+        }
 
         const order = await response.json();
         showMessage('Tạo đơn hàng thành công!', 'success');
@@ -342,7 +378,8 @@ async function handleCheckout(e) {
 
 function goToPayment(orderId, amount) {
     document.getElementById('paymentOrderId').value = orderId;
-    document.getElementById('paymentAmount').textContent = amount.toLocaleString();
+    document.getElementById('paymentAmountValue').value = amount;  // raw number
+    document.getElementById('paymentAmount').textContent = amount.toLocaleString('vi-VN') + ' VNĐ';
     showSection('payment');
 }
 
@@ -350,6 +387,7 @@ async function handlePayment(e) {
     e.preventDefault();
 
     const orderId = parseInt(document.getElementById('paymentOrderId').value);
+    const paymentAmount = parseFloat(document.getElementById('paymentAmountValue').value) || cart.totalPrice;
     const cardNumber = document.getElementById('cardNumber').value;
     const cardName = document.getElementById('cardName').value;
     const cardExpiry = document.getElementById('cardExpiry').value;
@@ -362,7 +400,7 @@ async function handlePayment(e) {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 orderId,
-                amount: cart.totalPrice,
+                amount: paymentAmount,
                 paymentMethod: 'credit_card',
                 cardDetails: {
                     cardNumber: cardNumber.slice(-4),
@@ -382,8 +420,23 @@ async function handlePayment(e) {
         showMessage('Thanh toán thành công!', 'success');
 
         document.getElementById('paymentForm').reset();
+
+        // Lưu cart.id trước khi reset, rồi gọi clear API
+        const cartIdToClear = cart.id;
+        console.log('[Payment] cartIdToClear =', cartIdToClear);
         cart = { items: [], totalPrice: 0 };
         updateCartUI();
+
+        if (cartIdToClear) {
+            try {
+                const clearRes = await fetch(`${API_BASE_URL}/cart/${cartIdToClear}/clear`, { method: 'DELETE' });
+                console.log('[Payment] Cart cleared, status =', clearRes.status);
+            } catch (e) {
+                console.warn('[Payment] Could not clear cart on server:', e);
+            }
+        } else {
+            console.warn('[Payment] cartIdToClear is falsy - cart was not cleared on server!');
+        }
 
         setTimeout(() => {
             showSection('orders');
@@ -446,7 +499,7 @@ function displayOrders(orders) {
                     order.items.map(item => `
                         <div class="order-item">
                             <span>${item.productName} x${item.quantity}</span>
-                            <span>${(item.priceAtOrderTime * item.quantity).toLocaleString()} VNĐ</span>
+                            <span>${(item.unitPrice * item.quantity).toLocaleString()} VNĐ</span>
                         </div>
                     `).join('') 
                     : '<div>Không có sản phẩm</div>'
@@ -469,14 +522,14 @@ function showSection(sectionId) {
 function toggleForm() {
     const loginForm = document.getElementById('loginForm');
     const registerForm = document.getElementById('registerForm');
+    const loginToggle = document.getElementById('loginToggle');
+    const registerToggle = document.getElementById('registerToggle');
 
-    if (loginForm.style.display !== 'none') {
-        loginForm.style.display = 'none';
-        registerForm.style.display = 'block';
-    } else {
-        loginForm.style.display = 'block';
-        registerForm.style.display = 'none';
-    }
+    const showingLogin = loginForm.style.display !== 'none';
+    loginForm.style.display = showingLogin ? 'none' : 'block';
+    registerForm.style.display = showingLogin ? 'block' : 'none';
+    loginToggle.style.display = showingLogin ? 'none' : 'block';
+    registerToggle.style.display = showingLogin ? 'block' : 'none';
 }
 
 function showMessage(message, type = 'info') {

@@ -38,6 +38,16 @@ public class Order
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     /// <summary>
+    /// Delivery address
+    /// </summary>
+    public string? Address { get; set; }
+
+    /// <summary>
+    /// Delivery city
+    /// </summary>
+    public string? City { get; set; }
+
+    /// <summary>
     /// Order items (1-to-many relationship)
     /// </summary>
     public virtual ICollection<OrderItem> OrderItems { get; set; } = new List<OrderItem>();

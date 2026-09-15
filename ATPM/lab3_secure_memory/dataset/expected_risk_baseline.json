@@ -1,0 +1,42 @@
+[
+  {
+    "id": "VULN-001",
+    "cwe": "CWE-121",
+    "name": "Stack/Heap-based Buffer Overflow",
+    "exploitability_subscore": 3.89,
+    "impact_subscore": 5.87,
+    "base_score": 9.8,
+    "severity": "CRITICAL",
+    "detected_by": "AddressSanitizer (heap-buffer-overflow)"
+  },
+  {
+    "id": "VULN-002",
+    "cwe": "CWE-416",
+    "name": "Use After Free",
+    "exploitability_subscore": 1.05,
+    "impact_subscore": 5.87,
+    "base_score": 6.9,
+    "severity": "MEDIUM",
+    "detected_by": "AddressSanitizer (heap-use-after-free)"
+  },
+  {
+    "id": "VULN-003",
+    "cwe": "CWE-401",
+    "name": "Memory Leak (Missing Release of Memory)",
+    "exploitability_subscore": 1.83,
+    "impact_subscore": 3.6,
+    "base_score": 5.4,
+    "severity": "MEDIUM",
+    "detected_by": "AddressSanitizer LeakSanitizer"
+  },
+  {
+    "id": "VULN-004",
+    "cwe": "CWE-476",
+    "name": "NULL Pointer Dereference (rui ro tiem an)",
+    "exploitability_subscore": 1.05,
+    "impact_subscore": 1.41,
+    "base_score": 2.5,
+    "severity": "LOW",
+    "detected_by": "Code review / static analysis (Lab 4)"
+  }
+]

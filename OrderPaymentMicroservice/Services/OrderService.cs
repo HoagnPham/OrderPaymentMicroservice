@@ -36,7 +36,10 @@ public class OrderService : IOrderService
         var order = new Order
         {
             CustomerId = request.CustomerId,
+            UserId = request.CustomerId,   // dùng CustomerId làm UserId (chưa có JWT)
             TotalAmount = request.TotalAmount,
+            Address = request.Address,
+            City = request.City,
             Status = OrderStatus.CREATED,
             CreatedAt = DateTime.UtcNow
         };
@@ -67,7 +70,10 @@ public class OrderService : IOrderService
     /// </summary>
     public async Task<List<OrderResponse>> GetAllOrdersAsync()
     {
-        var orders = await _context.Orders.ToListAsync();
+        var orders = await _context.Orders
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+            .ToListAsync();
         return orders.Select(MapToResponse).ToList();
     }
 
@@ -77,7 +83,10 @@ public class OrderService : IOrderService
     /// </summary>
     public async Task<OrderResponse?> GetOrderByIdAsync(int orderId)
     {
-        var order = await _context.Orders.FindAsync(orderId);
+        var order = await _context.Orders
+            .Include(o => o.OrderItems)
+                .ThenInclude(oi => oi.Product)
+            .FirstOrDefaultAsync(o => o.Id == orderId);
         return order != null ? MapToResponse(order) : null;
     }
 
@@ -109,10 +118,13 @@ public class OrderService : IOrderService
             TotalAmount = order.TotalAmount,
             Status = order.Status.ToString(),
             CreatedAt = order.CreatedAt,
+            Address = order.Address,
+            City = order.City,
             Items = order.OrderItems.Select(oi => new OrderItemResponse
             {
                 Id = oi.Id,
                 ProductId = oi.ProductId,
+                ProductName = oi.Product?.Name ?? $"Product #{oi.ProductId}",
                 Quantity = oi.Quantity,
                 UnitPrice = oi.UnitPrice,
                 SubTotal = oi.SubTotal

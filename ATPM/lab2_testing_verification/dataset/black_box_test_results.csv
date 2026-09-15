@@ -1,0 +1,19 @@
+pin,failed_attempts,expected,technique,rationale,actual,pass
+482913,0,OK,EP-valid,"PIN 6 so, khong tuan tu -> hop le",OK,True
+739284,1,OK,EP-valid,"PIN hop le, con duoi nguong khoa (1 lan sai)",OK,True
+482,0,WRONG_LENGTH,EP-invalid-length,Qua ngan (< 6 ky tu),WRONG_LENGTH,True
+48291378,0,WRONG_LENGTH,EP-invalid-length,Qua dai (> 6 ky tu),WRONG_LENGTH,True
+,0,WRONG_LENGTH,EP-invalid-length,Chuoi rong,WRONG_LENGTH,True
+48291,0,WRONG_LENGTH,BVA-length-boundary,Bien duoi: 5 ky tu (thieu 1),WRONG_LENGTH,True
+482913,0,OK,BVA-length-boundary,Dung bien: 6 ky tu,OK,True
+4829137,0,WRONG_LENGTH,BVA-length-boundary,Bien tren: 7 ky tu (thua 1),WRONG_LENGTH,True
+48a913,0,NON_DIGIT,EP-invalid-charclass,Chua ky tu chu,NON_DIGIT,True
+48 913,0,NON_DIGIT,EP-invalid-charclass,Chua khoang trang,NON_DIGIT,True
+-89213,0,NON_DIGIT,EP-invalid-charclass,Chua dau '-',NON_DIGIT,True
+123456,0,SEQUENTIAL_WEAK,business-rule,Day tang lien tiep,SEQUENTIAL_WEAK,True
+654321,0,SEQUENTIAL_WEAK,business-rule,Day giam lien tiep,SEQUENTIAL_WEAK,True
+112233,0,OK,business-rule,Lap cap so nhung KHONG tuan tu -> hop le,OK,True
+482913,2,OK,BVA-lockout-boundary,Bien duoi: 2 lan sai truoc -> chua khoa,OK,True
+482913,3,ACCOUNT_LOCKED,BVA-lockout-boundary,Dung bien: lan sai thu 3 -> khoa,ACCOUNT_LOCKED,True
+482913,4,ACCOUNT_LOCKED,BVA-lockout-boundary,Tren bien: van khoa,ACCOUNT_LOCKED,True
+NULL,0,NULL_INPUT,special-value,Con tro NULL (kiem thu phong thu - defensive),NULL_INPUT,True

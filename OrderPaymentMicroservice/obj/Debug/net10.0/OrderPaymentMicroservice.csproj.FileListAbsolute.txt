@@ -116,7 +116,7 @@ C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\ob
 C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\compressed\nyqh5irzzu-{0}-eyetwfi9g6-eyetwfi9g6.gz
 C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\compressed\lle69yrh4c-{0}-b3hsygm8vp-b3hsygm8vp.gz
 C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\compressed\cx511kcac2-{0}-w2xdxa6mtx-w2xdxa6mtx.gz
-C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\compressed\rbw3mqjywg-{0}-i1smih4djr-i1smih4djr.gz
-C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\compressed\djlvuuep1n-{0}-6cmfgmkgza-6cmfgmkgza.gz
-C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\compressed\edjdtqqnqg-{0}-e4tjij0rzh-e4tjij0rzh.gz
-C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\staticwebassets.upToDateCheck.txt
+C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\OrderPaymentMicroservice.sourcelink.json
+C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\compressed\rbw3mqjywg-{0}-u2d79thayk-u2d79thayk.gz
+C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\compressed\djlvuuep1n-{0}-puhm81edyl-puhm81edyl.gz
+C:\Users\Admin\source\repos\OrderPaymentMicroservice\OrderPaymentMicroservice\obj\Debug\net10.0\compressed\edjdtqqnqg-{0}-cts9qscxn0-cts9qscxn0.gz

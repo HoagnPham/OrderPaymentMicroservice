@@ -43,4 +43,9 @@ public class OrderItem
     /// Navigation property
     /// </summary>
     public virtual Order? Order { get; set; }
+
+    /// <summary>
+    /// Navigation property to Product
+    /// </summary>
+    public virtual Product? Product { get; set; }
 }

@@ -1,0 +1,69 @@
+{
+  "module": "Inventory (Quan ly kho sach)",
+  "vulnerabilities": [
+    {
+      "id": "VULN-001",
+      "cwe": "CWE-121",
+      "name": "Stack/Heap-based Buffer Overflow",
+      "location": "add_book_title_UNSAFE_HEAP() - vulnerable_inventory.c",
+      "description": "Ham dung strcpy() sao chep chuoi dau vao khong tin cay vao bo dem co kich thuoc co dinh ma khong kiem tra do dai, co the ghi de du lieu ngoai vung cap phat.",
+      "attack_vector": "NETWORK",
+      "attack_complexity": "LOW",
+      "privileges_required": "NONE",
+      "user_interaction": "NONE",
+      "confidentiality_impact": "HIGH",
+      "integrity_impact": "HIGH",
+      "availability_impact": "HIGH",
+      "exploitability": "HIGH",
+      "detected_by": "AddressSanitizer (heap-buffer-overflow)"
+    },
+    {
+      "id": "VULN-002",
+      "cwe": "CWE-416",
+      "name": "Use After Free",
+      "location": "demo_use_after_free() - vulnerable_inventory.c",
+      "description": "Con tro toi vung nho da free() van tiep tuc duoc doc, co the dan den thuc thi ma tuy y neu vung nho bi cap phat lai boi ke tan cong (heap grooming).",
+      "attack_vector": "LOCAL",
+      "attack_complexity": "HIGH",
+      "privileges_required": "LOW",
+      "user_interaction": "NONE",
+      "confidentiality_impact": "HIGH",
+      "integrity_impact": "HIGH",
+      "availability_impact": "HIGH",
+      "exploitability": "MEDIUM",
+      "detected_by": "AddressSanitizer (heap-use-after-free)"
+    },
+    {
+      "id": "VULN-003",
+      "cwe": "CWE-401",
+      "name": "Memory Leak (Missing Release of Memory)",
+      "location": "demo_memory_leak() - vulnerable_inventory.c",
+      "description": "Bo nho cap phat lap lai khong duoc giai phong, co the dan den can kiet tai nguyen (Denial of Service) khi chay lien tuc trong he thong long-running.",
+      "attack_vector": "LOCAL",
+      "attack_complexity": "LOW",
+      "privileges_required": "LOW",
+      "user_interaction": "NONE",
+      "confidentiality_impact": "NONE",
+      "integrity_impact": "NONE",
+      "availability_impact": "HIGH",
+      "exploitability": "MEDIUM",
+      "detected_by": "AddressSanitizer LeakSanitizer"
+    },
+    {
+      "id": "VULN-004",
+      "cwe": "CWE-476",
+      "name": "NULL Pointer Dereference (rui ro tiem an)",
+      "location": "add_book_title_UNSAFE_HEAP() - khong kiem tra malloc() tra ve NULL truoc strcpy",
+      "description": "Neu malloc() that bai (het bo nho), con tro NULL se duoc truyen vao strcpy() gay crash ngay lap tuc (DoS).",
+      "attack_vector": "LOCAL",
+      "attack_complexity": "HIGH",
+      "privileges_required": "LOW",
+      "user_interaction": "NONE",
+      "confidentiality_impact": "NONE",
+      "integrity_impact": "NONE",
+      "availability_impact": "LOW",
+      "exploitability": "LOW",
+      "detected_by": "Code review / static analysis (Lab 4)"
+    }
+  ]
+}

@@ -85,6 +85,8 @@ public class CartService : ICartService
             _context.CartItems.Add(cartItem);
         }
 
+        // Lưu CartItem trước, sau đó mới tính lại tổng
+        await _context.SaveChangesAsync();
         await UpdateCartTotalAsync(cart.Id);
         _logger.LogInformation("Item added to cart: User={UserId}, Product={ProductId}, Qty={Quantity}", userId, productId, quantity);
 

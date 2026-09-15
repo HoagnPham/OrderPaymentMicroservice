@@ -1,0 +1,3 @@
+quantity,unit_price,is_member,expected_status
+5,100000,1,OK
+15,100000,1,OK

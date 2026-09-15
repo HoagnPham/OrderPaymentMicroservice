@@ -1,0 +1,49 @@
+[
+  {
+    "id": "BMC-01-SAFE-FULL-SCAN",
+    "label": "SAFE",
+    "violated_at_step": null,
+    "witness": null,
+    "explanation": "Khong tim thay vi pham trong 10 buoc unwind dau tien (SAFE-UP-TO-BOUND, khong phai chung minh an toan vo han).",
+    "expected_label": "SAFE",
+    "matches_expectation": true,
+    "description": "Duyet toan bo catalog tu dau: for (i = 0; i < array_size; i++) access catalog[i]. Vong lap dung chinh xac bang kich thuoc mang."
+  },
+  {
+    "id": "BMC-02-UNSAFE-OFFBYONE",
+    "label": "UNSAFE",
+    "violated_at_step": 10,
+    "witness": {
+      "unwind_step_i": 10,
+      "index_accessed": 10
+    },
+    "explanation": "Tai buoc unwind i=10, ton tai gia tri lam truy cap catalog[index] voi index nam ngoai [0, 10).",
+    "expected_label": "UNSAFE",
+    "matches_expectation": true,
+    "description": "Loi off-by-one kinh dien: for (i = 0; i <= array_size; i++) access catalog[i] - dieu kien dung dung '<=' thay vi '<', truy cap catalog[array_size] la vuot bien."
+  },
+  {
+    "id": "BMC-03-UNSAFE-SYMBOLIC-OFFSET",
+    "label": "UNSAFE",
+    "violated_at_step": 1,
+    "witness": {
+      "base_index": 9,
+      "unwind_step_i": 1,
+      "index_accessed": 10
+    },
+    "explanation": "Tai buoc unwind i=1, ton tai gia tri lam truy cap catalog[index] voi index nam ngoai [0, 10).",
+    "expected_label": "UNSAFE",
+    "matches_expectation": true,
+    "description": "Truy cap catalog[base_index + i] voi base_index la tham so dau vao nguoi dung (vi du: vi tri bat dau tim kiem phan trang - pagination offset), KHONG duoc kiem tra rang buoc truoc vong lap noi bo quet them 5 phan tu."
+  },
+  {
+    "id": "BMC-04-SAFE-SYMBOLIC-OFFSET-BOUNDED",
+    "label": "SAFE",
+    "violated_at_step": null,
+    "witness": null,
+    "explanation": "Khong tim thay vi pham trong 5 buoc unwind dau tien (SAFE-UP-TO-BOUND, khong phai chung minh an toan vo han).",
+    "expected_label": "SAFE",
+    "matches_expectation": true,
+    "description": "Giong BMC-03 nhung da them dieu kien tien xu ly gioi han base_index <= array_size - unwind_bound (kiem tra truoc vong lap) -> an toan trong pham vi unwind da cho."
+  }
+]

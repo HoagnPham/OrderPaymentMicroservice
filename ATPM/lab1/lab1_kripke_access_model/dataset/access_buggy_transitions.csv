@@ -1,0 +1,10 @@
+from,event,to
+S0,insert_card,S1
+S1,auth_success,S2
+S1,auth_fail,S0
+S1,auth_fail_3rd_time,S3
+S2,door_closed_timeout,S0
+S3,operator_reset,S0
+S0,tamper_sensor,S0
+S1,timeout_glitch,S5
+S5,door_closed_timeout,S0
