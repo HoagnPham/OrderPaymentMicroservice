@@ -1,0 +1,39 @@
+{
+  "system_name": "Order - expected workflow (not a proof of implementation)",
+  "properties": [
+    {
+      "id": "P1",
+      "formula": "invalid_transition",
+      "description": "No skipped/backward transitions; no terminal revival",
+      "holds": true
+    },
+    {
+      "id": "P2",
+      "formula": "AG AF terminal",
+      "holds": true,
+      "description": "Every reachable state inevitably terminates",
+      "states_satisfying_AF": [
+        "CANCELLED",
+        "COMPLETED",
+        "CONFIRMED",
+        "CREATED",
+        "FAILED",
+        "PAID",
+        "PAYMENT_PENDING",
+        "VALIDATED"
+      ]
+    },
+    {
+      "id": "P3",
+      "formula": "paid -> payment_success",
+      "description": "PAID requires a successful payment",
+      "holds": true
+    },
+    {
+      "id": "P4",
+      "formula": "payment_pending -> NOT payment_success",
+      "description": "PAYMENT_PENDING has no successful payment yet",
+      "holds": true
+    }
+  ]
+}

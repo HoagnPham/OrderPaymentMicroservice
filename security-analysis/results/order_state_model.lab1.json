@@ -1,0 +1,173 @@
+{
+  "system_name": "Order - expected workflow (not a proof of implementation)",
+  "kripke_mapping": {
+    "S": "states[].id",
+    "S0": "initial_states",
+    "R": "transitions",
+    "L": "states[].labels"
+  },
+  "assumptions": [
+    "Finite progress steps; no nonterminal waiting self-loops.",
+    "Payment success is a modeled proposition, not gateway verification.",
+    "Terminal states are absorbing; no fairness assumption required."
+  ],
+  "states": [
+    {
+      "id": "CREATED",
+      "name": "CREATED",
+      "labels": [
+        "created"
+      ]
+    },
+    {
+      "id": "VALIDATED",
+      "name": "VALIDATED",
+      "labels": [
+        "validated"
+      ]
+    },
+    {
+      "id": "PAYMENT_PENDING",
+      "name": "PAYMENT_PENDING",
+      "labels": [
+        "payment_pending"
+      ]
+    },
+    {
+      "id": "PAID",
+      "name": "PAID",
+      "labels": [
+        "paid",
+        "payment_success"
+      ]
+    },
+    {
+      "id": "CONFIRMED",
+      "name": "CONFIRMED",
+      "labels": [
+        "confirmed",
+        "payment_success"
+      ]
+    },
+    {
+      "id": "COMPLETED",
+      "name": "COMPLETED",
+      "labels": [
+        "completed",
+        "payment_success",
+        "terminal"
+      ]
+    },
+    {
+      "id": "CANCELLED",
+      "name": "CANCELLED",
+      "labels": [
+        "cancelled",
+        "terminal"
+      ]
+    },
+    {
+      "id": "FAILED",
+      "name": "FAILED",
+      "labels": [
+        "failed",
+        "terminal"
+      ]
+    }
+  ],
+  "initial_states": [
+    "CREATED"
+  ],
+  "transitions": [
+    {
+      "from": "CREATED",
+      "to": "VALIDATED",
+      "event": "created_to_validated"
+    },
+    {
+      "from": "VALIDATED",
+      "to": "PAYMENT_PENDING",
+      "event": "validated_to_payment_pending"
+    },
+    {
+      "from": "PAYMENT_PENDING",
+      "to": "PAID",
+      "event": "payment_pending_to_paid"
+    },
+    {
+      "from": "PAID",
+      "to": "CONFIRMED",
+      "event": "paid_to_confirmed"
+    },
+    {
+      "from": "CONFIRMED",
+      "to": "COMPLETED",
+      "event": "confirmed_to_completed"
+    },
+    {
+      "from": "CREATED",
+      "to": "CANCELLED",
+      "event": "cancel"
+    },
+    {
+      "from": "VALIDATED",
+      "to": "CANCELLED",
+      "event": "cancel"
+    },
+    {
+      "from": "PAYMENT_PENDING",
+      "to": "CANCELLED",
+      "event": "cancel"
+    },
+    {
+      "from": "CONFIRMED",
+      "to": "CANCELLED",
+      "event": "cancel"
+    },
+    {
+      "from": "PAYMENT_PENDING",
+      "to": "FAILED",
+      "event": "fail"
+    },
+    {
+      "from": "PAID",
+      "to": "FAILED",
+      "event": "fail"
+    },
+    {
+      "from": "COMPLETED",
+      "to": "COMPLETED",
+      "event": "terminal_stutter"
+    },
+    {
+      "from": "CANCELLED",
+      "to": "CANCELLED",
+      "event": "terminal_stutter"
+    },
+    {
+      "from": "FAILED",
+      "to": "FAILED",
+      "event": "terminal_stutter"
+    }
+  ],
+  "properties_to_check": [
+    {
+      "id": "P1",
+      "type": "AG_NOT",
+      "formula": "invalid_transition",
+      "description": "No skipped/backward transitions; no terminal revival"
+    },
+    {
+      "id": "P3",
+      "type": "AG_IMPLIES",
+      "formula": "paid -> payment_success",
+      "description": "PAID requires a successful payment"
+    },
+    {
+      "id": "P4",
+      "type": "AG_IMPLIES",
+      "formula": "payment_pending -> NOT payment_success",
+      "description": "PAYMENT_PENDING has no successful payment yet"
+    }
+  ]
+}

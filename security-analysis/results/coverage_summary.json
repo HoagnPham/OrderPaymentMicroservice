@@ -1,0 +1,28 @@
+{
+  "class": "OrderPaymentMicroservice.Security.InputValidator",
+  "branch_coverage_percent": 96.87,
+  "line_coverage_percent": 83.67,
+  "uncovered_branches": [
+    {
+      "line": 99,
+      "hits": 14,
+      "condition_coverage": "50% (1/2)"
+    }
+  ],
+  "threshold_percent": 90,
+  "passed": true,
+  "methods": [
+    {
+      "name": "ValidateCreateOrderRequest",
+      "branch_coverage_percent": 100.0
+    },
+    {
+      "name": "ValidateOrderItem",
+      "branch_coverage_percent": 92.85
+    },
+    {
+      "name": ".cctor",
+      "branch_coverage_percent": 100.0
+    }
+  ]
+}

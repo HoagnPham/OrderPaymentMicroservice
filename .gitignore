@@ -1,0 +1,5 @@
+# New build/test outputs; already tracked outputs remain untouched.
+**/bin/
+**/obj/
+**/__pycache__/
+**/TestResults/

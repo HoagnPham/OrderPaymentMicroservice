@@ -1,0 +1,49 @@
+{
+  "system_name": "Order BUGGY - cancelled order can be paid",
+  "properties": [
+    {
+      "id": "P1",
+      "formula": "invalid_transition",
+      "description": "No skipped/backward transitions; no terminal revival",
+      "holds": false,
+      "witness_states": [
+        "CREATED",
+        "CANCELLED",
+        "PAID_AFTER_CANCELLED"
+      ],
+      "witness_events": [
+        "cancel",
+        "CreatePaymentAsync: missing order status guard"
+      ]
+    },
+    {
+      "id": "P2",
+      "formula": "AG AF terminal",
+      "holds": true,
+      "description": "Every reachable state inevitably terminates",
+      "states_satisfying_AF": [
+        "CANCELLED",
+        "COMPLETED",
+        "CONFIRMED",
+        "CREATED",
+        "FAILED",
+        "PAID",
+        "PAID_AFTER_CANCELLED",
+        "PAYMENT_PENDING",
+        "VALIDATED"
+      ]
+    },
+    {
+      "id": "P3",
+      "formula": "paid -> payment_success",
+      "description": "PAID requires a successful payment",
+      "holds": true
+    },
+    {
+      "id": "P4",
+      "formula": "payment_pending -> NOT payment_success",
+      "description": "PAYMENT_PENDING has no successful payment yet",
+      "holds": true
+    }
+  ]
+}

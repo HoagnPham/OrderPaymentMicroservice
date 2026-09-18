@@ -1,0 +1,52 @@
+[
+  {
+    "id": "VULN-001",
+    "cwe": "CWE-306",
+    "name": "Unauthenticated order access",
+    "exploitability_subscore": 3.89,
+    "impact_subscore": 5.18,
+    "base_score": 9.1,
+    "severity": "CRITICAL",
+    "detected_by": "Static code review"
+  },
+  {
+    "id": "VULN-005",
+    "cwe": "CWE-639",
+    "name": "Cross-user cart modification (new finding)",
+    "exploitability_subscore": 3.89,
+    "impact_subscore": 4.22,
+    "base_score": 8.1,
+    "severity": "HIGH",
+    "detected_by": "Static code review"
+  },
+  {
+    "id": "VULN-002",
+    "cwe": "CWE-602",
+    "name": "Client-controlled order prices and totals",
+    "exploitability_subscore": 3.89,
+    "impact_subscore": 3.6,
+    "base_score": 7.5,
+    "severity": "HIGH",
+    "detected_by": "Static code review"
+  },
+  {
+    "id": "VULN-003",
+    "cwe": "CWE-841",
+    "name": "Cancelled order revival through payment",
+    "exploitability_subscore": 3.89,
+    "impact_subscore": 3.6,
+    "base_score": 7.5,
+    "severity": "HIGH",
+    "detected_by": "Static code review"
+  },
+  {
+    "id": "VULN-004",
+    "cwe": "CWE-20",
+    "name": "Total mismatch silently accepted",
+    "exploitability_subscore": 3.89,
+    "impact_subscore": 3.6,
+    "base_score": 7.5,
+    "severity": "HIGH",
+    "detected_by": "Static code review and xUnit characterization"
+  }
+]
