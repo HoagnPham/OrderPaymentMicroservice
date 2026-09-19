@@ -33,6 +33,7 @@ def verify(path, checker):
     temp = OUT / (path.stem + '.lab1.json')
     save(temp, supported)
     result = checker.run_verification(str(temp))
+    temp.unlink(missing_ok=True)
     model = checker.KripkeStructure.from_json(str(path))
     # Least fixed point for AF terminal: include p-states, then states whose ALL successors
     # belong to the set. Models are total (terminal self-loops); no fairness assumptions.

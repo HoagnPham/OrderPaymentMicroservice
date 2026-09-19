@@ -1,0 +1,230 @@
+# OrderPaymentMicroservice — Bài tập lớn An toàn phần mềm
+
+## 1. Mục tiêu dự án
+
+Đề tài xây dựng và kiểm chứng an toàn hệ thống xử lý đơn hàng và thanh toán trực tuyến dưới dạng REST API. Trọng tâm không phải phát triển một website thương mại điện tử lớn mà là dùng Order và Payment làm đối tượng để thực hành quy trình:
+
+```text
+Phát hiện → Phân tích nguyên nhân → Kiểm chứng/counterexample
+→ Kiểm thử thực tế → Sửa lỗi → Kiểm chứng và kiểm thử lại
+```
+
+Các mục tiêu gốc được mô tả tại [README của source](OrderPaymentMicroservice/readme.md). File này là tài liệu tổng hợp ở cấp repository: giải thích cấu trúc, cách chạy, kết quả hiện có và phần việc còn thiếu.
+
+## 2. Cấu trúc repository
+
+```text
+OrderPaymentMicroservice/
+├── ATPM/                         Tài liệu, mã mẫu và các lab tham chiếu
+├── OrderPaymentMicroservice/     Source ASP.NET Core, REST API và giao diện demo
+├── OrderPaymentMicroservice.Tests/ Unit test xUnit và cấu hình Coverlet
+├── security-analysis/            Model, dataset, script và kết quả áp dụng ATPM
+├── OrderPaymentMicroservice.slnx Solution .NET
+└── test-api.ps1                  Script thử API thủ công (cần cập nhật)
+```
+
+### `ATPM/`
+
+Chứa nội dung tham chiếu của học phần và công cụ các lab. Phần triển khai của đề tài đang dùng trực tiếp:
+
+- `lab1/.../python/kripke_model.py` để kiểm tra model Kripke.
+- `lab3_secure_memory/python/risk_assessor.py` để tính CVSS-lite.
+
+Đây là nguồn tham chiếu nên không trộn kết quả riêng của dự án vào dataset gốc.
+
+### `OrderPaymentMicroservice/`
+
+Source code ASP.NET Core trên .NET 10, Entity Framework Core và PostgreSQL. Các module hiện có: User, Product, Cart, Order và Payment. Thư mục gồm Controller, Service, DTO, Model, Data/Migration, lớp validation và giao diện tĩnh trong `wwwroot`.
+
+### `OrderPaymentMicroservice.Tests/`
+
+Project xUnit hiện có 34 trường hợp cho InputValidator. Coverlet được dùng để đo branch coverage. Test này không khởi động API và không cần database.
+
+### `security-analysis/`
+
+Chứa phần áp dụng kiến thức lab vào đề tài:
+
+- Model Order đúng và model BUGGY.
+- Script tích hợp Lab 1/Lab 3.
+- Dataset năm lỗ hổng và kết quả xếp hạng.
+- Báo cáo coverage, báo cáo tiến độ và tài liệu giải thích test.
+
+## 3. Chức năng hệ thống đã có
+
+| Hạng mục | Hiện trạng | Nhận xét |
+|---|---|---|
+| REST API | Đã có Controller cho User, Product, Cart, Order, Payment | Chưa có bảo vệ truy cập đầy đủ |
+| Dữ liệu | Có DbContext, PostgreSQL, migration và seed | Chưa xác nhận lại bằng integration test trong đợt đánh giá này |
+| Order | Có tạo, đọc danh sách/chi tiết và hủy | State machine kỳ vọng chưa được thực thi đầy đủ |
+| Payment | Có tạo và đọc thanh toán | SUCCESS đang mô phỏng; thiếu gateway/idempotency/đối soát |
+| Cart/Product/User | Có các chức năng hỗ trợ demo | Vượt trọng tâm Order–Payment ở mức hỗ trợ; Cart còn lỗi ownership |
+| Giao diện demo | Có nội dung tĩnh trong `wwwroot` | Chưa đánh giá E2E trong đợt này |
+| API script | Có `test-api.ps1` | Payload/endpoint đã lệch DTO/API hiện tại nên chưa phải bằng chứng demo hợp lệ |
+
+`test-api.ps1` hiện gửi `customerId` dạng chuỗi `CUST...` trong khi DTO yêu cầu số nguyên, đồng thời gọi endpoint payment theo order không khớp Controller hiện tại. Cần cập nhật rồi chạy trên database sạch trước khi dùng làm minh chứng.
+
+## 4. Phần an toàn phần mềm đã hoàn thành
+
+### 4.1. Phân tích và mô hình hóa Order
+
+Đã phân tích luồng trạng thái Order, các bất biến số tiền và quan hệ với Payment. [Model kỳ vọng](security-analysis/order_state_model.json) định nghĩa Kripke M = (S, S0, R, L) với tám trạng thái Order.
+
+Bốn thuộc tính được kiểm tra:
+
+| ID | Thuộc tính | Kết quả model kỳ vọng |
+|---|---|---|
+| P1 | Không bỏ bước, quay ngược hoặc hồi sinh trạng thái terminal | PASS |
+| P2 | Từ mọi trạng thái reachable, mọi đường đi cuối cùng đến terminal | PASS |
+| P3 | PAID phải có payment SUCCESS | PASS |
+| P4 | PAYMENT_PENDING chưa có payment SUCCESS | PASS |
+
+Lab 1 không hỗ trợ trực tiếp AF. [Script tích hợp](security-analysis/run_analysis.py) dùng checker gốc cho AG_NOT/AG_IMPLIES và bổ sung phép tính điểm cố định cho `AG AF terminal`. Model này mô tả **thiết kế kỳ vọng**, không phải bằng chứng rằng implementation hiện tại thực thi đúng mọi cạnh.
+
+### 4.2. Counterexample trên model BUGGY
+
+[Model BUGGY](security-analysis/order_state_model_buggy.json) cố ý cho phép đơn CANCELLED chuyển sang PAID. History monitor `PAID_AFTER_CANCELLED` giúp checker trạng thái nhận diện lịch sử chuyển sai.
+
+P1 FAIL với counterexample:
+
+```text
+CREATED → CANCELLED → PAID_AFTER_CANCELLED
+```
+
+Kết quả chứng minh công cụ phát hiện được lỗi đã mô hình hóa. Nó cũng tương ứng với vấn đề trong PaymentService: đơn tồn tại có thể bị đặt PAID mà chưa kiểm tra trạng thái nguồn.
+
+### 4.3. Unit test và coverage
+
+Đã xây dựng 34 test xUnit, gồm null/rỗng, ID không dương, biên TotalAmount/Quantity/UnitPrice, nhiều item, tolerance, decimal.MaxValue và các characterization test cho lỗi hiện tại.
+
+Kết quả chạy ngày **19/09/2026**:
+
+```text
+Passed: 34, Failed: 0, Skipped: 0
+```
+
+Coverage đã lưu:
+
+| Phạm vi | Branch coverage |
+|---|---:|
+| InputValidator | 31/32 = 96,875% |
+| ValidateCreateOrderRequest() | 100% |
+| ValidateOrderItem() | 92,85% |
+
+Nhánh chưa phủ là `subtotal < 0` theo hướng true. Sau các guard, Quantity ≥ 1 và UnitPrice ≥ 0 nên đường này bất khả thi với input hợp lệ đi tới vị trí đó. Coverage cao không chứng minh logic đúng: nhánh tolerance được phủ cả hai hướng nhưng block xử lý hiện rỗng.
+
+Chi tiết xem [Giải thích kiểm thử InputValidator](security-analysis/GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md).
+
+### 4.4. Đánh giá lỗ hổng
+
+Đã tạo [dataset lỗ hổng](security-analysis/vulnerabilities.json) theo cấu trúc Lab 3 và chạy `risk_assessor.py`:
+
+| Ưu tiên | ID | Phát hiện | CVSS-lite | Mức độ |
+|---:|---|---|---:|---|
+| 1 | VULN-001 | Order API thiếu authentication/authorization | 9,1 | CRITICAL |
+| 2 | VULN-005 | Truy cập/sửa giỏ hàng chéo người dùng | 8,1 | HIGH |
+| 3 | VULN-002 | Giá và tổng tiền do client kiểm soát | 7,5 | HIGH |
+| 4 | VULN-003 | Đơn CANCELLED có thể chuyển sang PAID | 7,5 | HIGH |
+| 5 | VULN-004 | Validator chấp nhận tổng tiền sai | 7,5 | HIGH |
+
+Đây là CVSS-lite giáo dục của Lab 3, không phải điểm CVSS chính thức. Các phát hiện dựa trên static review và characterization test; chưa phải kết quả pentest trên môi trường triển khai.
+
+## 5. Đánh giá mức hoàn thiện
+
+Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric và tiêu chí nghiệm thu định lượng. Theo từng đầu ra trong README mục tiêu:
+
+| Đầu ra yêu cầu | Trạng thái | Bằng chứng/khoảng trống |
+|---|---|---|
+| Hệ thống Order & Payment chạy được | **Một phần** | Có source/build/test; chưa xác nhận lại luồng E2E và Payment còn mô phỏng |
+| REST API tích hợp shop | **Một phần** | Có API; script demo hiện lệch contract và thiếu kiểm soát truy cập |
+| Database hoạt động | **Một phần** | Có EF/PostgreSQL/migration/seed; chưa có integration test tái lập trong đợt này |
+| Demo hệ thống | **Một phần** | Có frontend và script; chưa có kết quả demo E2E hiện hành |
+| Model và thuộc tính | **Đạt trong phạm vi model** | Kripke đúng + BUGGY + bốn kết quả kiểm chứng |
+| Bằng chứng kiểm thử | **Đạt cho InputValidator** | 34 test, Cobertura, branch coverage > 90% |
+| Phát hiện và phân tích lỗi | **Đạt giai đoạn phát hiện** | Năm vulnerability, counterexample, xếp hạng CVSS-lite |
+| SMT/Z3 | **Chưa có bằng chứng hoàn thành** | Có `PaymentVerification.z3`, chưa có kết quả chạy được quản lý |
+| TLA+/BMC | **Chưa có bằng chứng hoàn thành** | Có `OrderPayment.tla`, chưa có config/kết quả TLC; Kripke checker là explicit-state checker giới hạn, không nên gọi thay cho toàn bộ BMC |
+| Fuzzing/dynamic testing | **Chưa hoàn thành** | Chưa có harness, corpus, log crash/coverage hoặc kết quả thực nghiệm |
+| Phân tích an toàn bộ nhớ/phương án phù hợp | **Chưa hoàn thành rõ ràng** | C# managed memory cần chọn kỹ thuật phù hợp và cung cấp bằng chứng |
+| Sửa lỗi và kiểm chứng lại | **Chưa hoàn thành** | Các vulnerability vẫn tồn tại trong source |
+| Báo cáo kỹ thuật | **Đang hoàn thiện** | Đã có báo cáo tiến độ và tài liệu chi tiết; cần cập nhật sau sửa lỗi |
+
+**Kết luận:** phần phân tích ATPM đã có nền tảng tốt ở Kripke, unit test/coverage và risk assessment. Toàn bộ BTL chưa hoàn tất vì mục tiêu cuối yêu cầu sửa lỗi, kiểm chứng lại, SMT, dynamic/fuzz testing và demo tái lập.
+
+## 6. Các lỗi còn tồn tại và thứ tự xử lý
+
+1. Thêm authentication thật (JWT hoặc cơ chế phù hợp) và `[Authorize]`; lấy user ID từ principal thay vì tin ID trong route/body.
+2. Kiểm tra ownership đối với Order, Payment và Cart ở lớp Service.
+3. Lấy UnitPrice từ Product phía server, tính lại TotalAmount và từ chối mismatch; áp dụng MIN_PRICE nhất quán.
+4. Tạo bảng/guard chuyển trạng thái và chặn Payment cho CANCELLED/COMPLETED/FAILED; không nhảy trực tiếp CREATED → PAID.
+5. Xác minh gateway, amount, idempotency và xử lý giao dịch đồng thời trước khi cập nhật PAID.
+6. Thay SHA-256 đơn giản bằng password hashing có salt/work factor phù hợp (Argon2/bcrypt/PBKDF2).
+7. Giới hạn CORS, bảo vệ secret/connection string và bổ sung rate limiting theo môi trường triển khai.
+8. Sau mỗi sửa đổi, đổi characterization test thành test yêu cầu hành vi an toàn và chạy lại toàn bộ bằng chứng.
+
+## 7. Cách chạy
+
+### Yêu cầu
+
+- .NET 10 SDK.
+- Python 3.10 trở lên.
+- PostgreSQL và connection string phù hợp nếu chạy API.
+- Kết nối NuGet trong lần restore đầu.
+
+### Build và test
+
+```powershell
+dotnet restore OrderPaymentMicroservice.slnx
+dotnet build OrderPaymentMicroservice.slnx
+dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
+```
+
+Hiện restore có warning NU1603: project yêu cầu `Npgsql.EntityFrameworkCore.PostgreSQL` 8.0.7 nhưng NuGet resolve 8.0.8. Cần đồng bộ version trước khi chốt môi trường tái lập.
+
+### Đo coverage
+
+```powershell
+dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj /p:CollectCoverage=true /p:CoverletOutput=../security-analysis/results/input-validator /p:CoverletOutputFormat=cobertura '/p:Include=[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.InputValidator' /p:Threshold=90 /p:ThresholdType=branch
+```
+
+### Chạy phân tích ATPM
+
+```powershell
+python security-analysis/run_analysis.py
+```
+
+Script chạy model đúng, model BUGGY, risk assessment và đọc báo cáo coverage hiện có. Muốn chủ động tạo lại dataset/model từ mã sinh:
+
+```powershell
+python security-analysis/create_datasets.py
+```
+
+Không chạy `create_datasets.py` nếu đã chỉnh JSON thủ công mà chưa đồng bộ các thay đổi đó vào script.
+
+### Chạy API
+
+Cập nhật connection string theo môi trường, sau đó:
+
+```powershell
+dotnet run --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
+```
+
+Không dùng tài khoản/secret mẫu cho môi trường thật. `test-api.ps1` cần được sửa contract trước khi dùng để đánh giá demo.
+
+## 8. Tài liệu và bằng chứng
+
+- [Báo cáo tiến độ ATPM](security-analysis/BAO_CAO_TIEN_DO_ATPM.md)
+- [Giải thích bộ test](security-analysis/GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md)
+- [Hướng dẫn security-analysis](security-analysis/README.md)
+- [Coverage tóm tắt](security-analysis/results/coverage_summary.json)
+- [Cobertura XML](security-analysis/results/input-validator.cobertura.xml)
+- [Kết quả model đúng](security-analysis/results/order_state_model.results.json)
+- [Kết quả model BUGGY](security-analysis/results/order_state_model_buggy.results.json)
+- [Kết quả risk assessment](security-analysis/results/risk_assessment_results.json)
+
+## 9. Quy ước repository và dọn dẹp
+
+Các thư mục `bin/`, `obj/`, `TestResults/`, `.vs/`, `__pycache__/` và file `*.pyc` là sản phẩm sinh tự động, không phải source. Chúng đã được thêm vào `.gitignore`; các bản đã từng được commit nên được xóa khỏi Git và có thể tái tạo bằng build/test.
+
+Các file kết quả JSON/Cobertura trong `security-analysis/results/` được giữ lại vì là bằng chứng thực nghiệm của BTL. Hai file trung gian `*.lab1.json` không được giữ; script tích hợp tự xóa sau khi checker chạy.
+
+Trong lần dọn ngày 19/09/2026, một số binary dưới `OrderPaymentMicroservice/bin/x64` đang bị tiến trình khác khóa nên chưa xóa được. Không dừng tiến trình đang chạy để tránh làm gián đoạn công việc; có thể xóa phần còn lại sau khi đóng API/Visual Studio.

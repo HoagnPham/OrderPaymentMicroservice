@@ -3,3 +3,7 @@
 **/obj/
 **/__pycache__/
 **/TestResults/
+.vs/
+.vscode/
+*.user
+*.suo
