@@ -21,6 +21,8 @@ public interface IOrderService
     /// </summary>
     Task<List<OrderResponse>> GetAllOrdersAsync();
 
+    Task<List<OrderResponse>> GetOrdersByCustomerIdAsync(int customerId);
+
     /// <summary>
     /// Get order by ID
     /// TODO: Security test - check order exists

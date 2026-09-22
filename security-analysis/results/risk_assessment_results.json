@@ -7,7 +7,10 @@
     "impact_subscore": 5.18,
     "base_score": 9.1,
     "severity": "CRITICAL",
-    "detected_by": "Static code review"
+    "detected_by": "Static code review",
+    "remediation_status": "FIXED",
+    "fixed_by": "JWT authentication, Authorize policies, claims-based ownership checks",
+    "verified_by": "Build plus authorization code review; API integration tests remain recommended"
   },
   {
     "id": "VULN-005",
@@ -17,7 +20,10 @@
     "impact_subscore": 4.22,
     "base_score": 8.1,
     "severity": "HIGH",
-    "detected_by": "Static code review"
+    "detected_by": "Static code review",
+    "remediation_status": "FIXED",
+    "fixed_by": "JWT identity and cart ownership checks on every controller operation",
+    "verified_by": "Build plus authorization code review; API integration tests remain recommended"
   },
   {
     "id": "VULN-002",
@@ -27,7 +33,10 @@
     "impact_subscore": 3.6,
     "base_score": 7.5,
     "severity": "HIGH",
-    "detected_by": "Static code review"
+    "detected_by": "Static code review",
+    "remediation_status": "FIXED",
+    "fixed_by": "Server-side Product price lookup, total recalculation and serializable stock transaction",
+    "verified_by": "OrderServiceTests.ClientCannotCreateOrderUsingTamperedPrice"
   },
   {
     "id": "VULN-003",
@@ -37,7 +46,10 @@
     "impact_subscore": 3.6,
     "base_score": 7.5,
     "severity": "HIGH",
-    "detected_by": "Static code review"
+    "detected_by": "Static code review",
+    "remediation_status": "FIXED_FOR_SIMULATED_GATEWAY",
+    "fixed_by": "Central OrderStateMachine, source-state guard, exact amount check and idempotency key",
+    "verified_by": "OrderStateMachineTests and PaymentServiceTests; real gateway verification remains out of scope"
   },
   {
     "id": "VULN-004",
@@ -47,6 +59,9 @@
     "impact_subscore": 3.6,
     "base_score": 7.5,
     "severity": "HIGH",
-    "detected_by": "Static code review and xUnit characterization"
+    "detected_by": "Static code review and xUnit characterization",
+    "remediation_status": "FIXED",
+    "fixed_by": "Validator rejects mismatched totals and prices below the minimum",
+    "verified_by": "InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected"
   }
 ]

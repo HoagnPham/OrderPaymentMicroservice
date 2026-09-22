@@ -66,7 +66,9 @@ public class AppDbContext : DbContext
             entity.Property(p => p.Amount).HasPrecision(19, 2).IsRequired();
             entity.Property(p => p.Status).HasConversion<int>().IsRequired();
             entity.Property(p => p.TransactionCode).HasMaxLength(255);
+            entity.Property(p => p.IdempotencyKey).HasMaxLength(128);
             entity.Property(p => p.CreatedAt).IsRequired();
+            entity.HasIndex(p => new { p.OrderId, p.IdempotencyKey }).IsUnique();
         });
 
         // Configure Product entity

@@ -88,6 +88,13 @@ def main():
     assert not p1['holds']
     assert p1['witness_states'] == ['CREATED', 'CANCELLED', 'PAID_AFTER_CANCELLED']
     results = risk.assess_all(str(BASE / 'vulnerabilities.json'))
+    dataset = json.loads((BASE / 'vulnerabilities.json').read_text(encoding='utf-8'))
+    remediation = {item['id']: item for item in dataset['vulnerabilities']}
+    for result in results:
+        source = remediation[result['id']]
+        result['remediation_status'] = source.get('remediation_status', 'OPEN')
+        result['fixed_by'] = source.get('fixed_by')
+        result['verified_by'] = source.get('verified_by')
     risk.print_report(results)
     save(OUT / 'risk_assessment_results.json', results)
     coverage()

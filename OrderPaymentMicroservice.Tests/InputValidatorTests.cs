@@ -87,17 +87,16 @@ public class InputValidatorTests
         validator.ValidateCreateOrderRequest(r);
     }
 
-    // Characterization tests: acceptance documents defects, NOT desired security policy.
     [Theory]
     [InlineData("10.011", "10")]
     [InlineData("9.989", "10")]
     [InlineData("0.01", "999999.99")]
     [InlineData("10", "0")]
     [InlineData("10", "0.001")]
-    public void KnownDefect_MismatchOrBelowMinimumPriceIsAccepted(string total, string price)
+    public void MismatchOrBelowMinimumPriceIsRejected(string total, string price)
     {
         var r = Valid(); r.TotalAmount = Parse(total); r.Items[0].UnitPrice = Parse(price);
-        validator.ValidateCreateOrderRequest(r);
+        Assert.Throws<ArgumentException>(() => validator.ValidateCreateOrderRequest(r));
     }
 
     [Fact]
@@ -108,10 +107,11 @@ public class InputValidatorTests
     }
 
     [Fact]
-    public void MaximumValidatedMultiplicationDoesNotOverflow()
+    public void ItemSubtotalAboveMaximumOrderTotalIsRejected()
     {
         var r = Valid(); r.Items[0].Quantity = 10000; r.Items[0].UnitPrice = 999999.99m;
-        validator.ValidateCreateOrderRequest(r);
+        var exception = Assert.Throws<ArgumentException>(() => validator.ValidateCreateOrderRequest(r));
+        Assert.Equal("TotalAmount", exception.ParamName);
     }
 
     private static decimal Parse(string value) => decimal.Parse(value, System.Globalization.CultureInfo.InvariantCulture);

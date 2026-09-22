@@ -17,6 +17,9 @@
       "availability_impact": "NONE",
       "exploitability": "HIGH",
       "detected_by": "Static code review",
+      "remediation_status": "FIXED",
+      "fixed_by": "JWT authentication, Authorize policies, claims-based ownership checks",
+      "verified_by": "Build plus authorization code review; API integration tests remain recommended",
       "deployment_assumption": "API network-reachable; no external reverse-proxy authentication assumed"
     },
     {
@@ -34,6 +37,9 @@
       "availability_impact": "NONE",
       "exploitability": "HIGH",
       "detected_by": "Static code review",
+      "remediation_status": "FIXED",
+      "fixed_by": "Server-side Product price lookup, total recalculation and serializable stock transaction",
+      "verified_by": "OrderServiceTests.ClientCannotCreateOrderUsingTamperedPrice",
       "deployment_assumption": "API network-reachable; no external reverse-proxy authentication assumed"
     },
     {
@@ -51,6 +57,9 @@
       "availability_impact": "NONE",
       "exploitability": "HIGH",
       "detected_by": "Static code review",
+      "remediation_status": "FIXED_FOR_SIMULATED_GATEWAY",
+      "fixed_by": "Central OrderStateMachine, source-state guard, exact amount check and idempotency key",
+      "verified_by": "OrderStateMachineTests and PaymentServiceTests; real gateway verification remains out of scope",
       "deployment_assumption": "API network-reachable; no external reverse-proxy authentication assumed"
     },
     {
@@ -68,6 +77,9 @@
       "availability_impact": "NONE",
       "exploitability": "HIGH",
       "detected_by": "Static code review and xUnit characterization",
+      "remediation_status": "FIXED",
+      "fixed_by": "Validator rejects mismatched totals and prices below the minimum",
+      "verified_by": "InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected",
       "deployment_assumption": "API network-reachable; no external reverse-proxy authentication assumed"
     },
     {
@@ -85,6 +97,9 @@
       "availability_impact": "NONE",
       "exploitability": "HIGH",
       "detected_by": "Static code review",
+      "remediation_status": "FIXED",
+      "fixed_by": "JWT identity and cart ownership checks on every controller operation",
+      "verified_by": "Build plus authorization code review; API integration tests remain recommended",
       "deployment_assumption": "API network-reachable; no external reverse-proxy authentication assumed"
     }
   ]

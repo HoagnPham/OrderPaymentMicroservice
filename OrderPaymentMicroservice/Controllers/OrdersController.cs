@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderPaymentMicroservice.DTOs.Orders;
+using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Services.Interfaces;
 
 namespace OrderPaymentMicroservice.Controllers;
@@ -11,6 +13,7 @@ namespace OrderPaymentMicroservice.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class OrdersController : ControllerBase
 {
     private readonly IOrderService _orderService;
@@ -36,6 +39,7 @@ public class OrdersController : ControllerBase
     {
         try
         {
+            request.CustomerId = User.GetRequiredUserId();
             if (request == null)
                 return BadRequest("Order request cannot be null");
 
@@ -63,6 +67,7 @@ public class OrdersController : ControllerBase
     /// TODO: Add pagination in future
     /// </remarks>
     [HttpGet]
+    [Authorize(Roles = "Admin")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAllOrders()
     {
@@ -77,6 +82,14 @@ public class OrdersController : ControllerBase
             _logger.LogError(ex, "Error fetching orders");
             return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
         }
+    }
+
+    [HttpGet("mine")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMyOrders()
+    {
+        var orders = await _orderService.GetOrdersByCustomerIdAsync(User.GetRequiredUserId());
+        return Ok(orders);
     }
 
     /// <summary>
@@ -97,6 +110,8 @@ public class OrdersController : ControllerBase
             var order = await _orderService.GetOrderByIdAsync(id);
             if (order == null)
                 return NotFound($"Order {id} not found");
+            if (!User.CanAccessUser(order.CustomerId))
+                return Forbid();
 
             return Ok(order);
         }
@@ -123,6 +138,11 @@ public class OrdersController : ControllerBase
         try
         {
             _logger.LogInformation("Cancelling order {OrderId}", id);
+            var order = await _orderService.GetOrderByIdAsync(id);
+            if (order == null)
+                return NotFound($"Order {id} not found");
+            if (!User.CanAccessUser(order.CustomerId))
+                return Forbid();
             var result = await _orderService.CancelOrderAsync(id);
             if (!result)
                 return BadRequest($"Cannot cancel order {id}. Order may not exist or cannot be cancelled in its current state.");

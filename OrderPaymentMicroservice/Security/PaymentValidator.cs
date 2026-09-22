@@ -38,6 +38,12 @@ public class PaymentValidator
         if (request.Amount > MAX_PAYMENT_AMOUNT)
             throw new ArgumentException($"Amount cannot exceed {MAX_PAYMENT_AMOUNT}", nameof(request.Amount));
 
+        if (string.IsNullOrWhiteSpace(request.IdempotencyKey))
+            throw new ArgumentException("IdempotencyKey is required", nameof(request.IdempotencyKey));
+
+        if (request.IdempotencyKey.Length > 128)
+            throw new ArgumentException("IdempotencyKey cannot exceed 128 characters", nameof(request.IdempotencyKey));
+
         // TODO: SMT verification - verify amount matches order total or is within acceptable range
         // This would require knowing the order amount, which should be checked in the service layer
     }

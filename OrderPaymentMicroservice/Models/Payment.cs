@@ -31,6 +31,8 @@ public class Payment
     /// </summary>
     public string? TransactionCode { get; set; }
 
+    public string? IdempotencyKey { get; set; }
+
     /// <summary>
     /// Payment creation timestamp
     /// </summary>

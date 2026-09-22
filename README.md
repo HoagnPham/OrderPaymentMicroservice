@@ -202,7 +202,14 @@ Không chạy `create_datasets.py` nếu đã chỉnh JSON thủ công mà chưa
 
 ### Chạy API
 
-Cập nhật connection string theo môi trường, sau đó:
+Không lưu connection string hoặc JWT signing key trong repository. Cấu hình bằng User Secrets ở môi trường phát triển:
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=orderpaymentdb;Username=postgres;Password=<your-password>" --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
+dotnet user-secrets set "Jwt:Key" "<random-secret-at-least-32-characters>" --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
+```
+
+Sau đó:
 
 ```powershell
 dotnet run --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj

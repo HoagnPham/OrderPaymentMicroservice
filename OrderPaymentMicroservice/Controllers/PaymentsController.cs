@@ -1,5 +1,7 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderPaymentMicroservice.DTOs.Payments;
+using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Services.Interfaces;
 
 namespace OrderPaymentMicroservice.Controllers;
@@ -11,14 +13,20 @@ namespace OrderPaymentMicroservice.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class PaymentsController : ControllerBase
 {
     private readonly IPaymentService _paymentService;
+    private readonly IOrderService _orderService;
     private readonly ILogger<PaymentsController> _logger;
 
-    public PaymentsController(IPaymentService paymentService, ILogger<PaymentsController> logger)
+    public PaymentsController(
+        IPaymentService paymentService,
+        IOrderService orderService,
+        ILogger<PaymentsController> logger)
     {
         _paymentService = paymentService;
+        _orderService = orderService;
         _logger = logger;
     }
 
@@ -34,12 +42,21 @@ public class PaymentsController : ControllerBase
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CreatePayment([FromBody] CreatePaymentRequest request)
+    public async Task<IActionResult> CreatePayment(
+        [FromBody] CreatePaymentRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey)
     {
         try
         {
             if (request == null)
                 return BadRequest("Payment request cannot be null");
+            request.IdempotencyKey = idempotencyKey?.Trim() ?? string.Empty;
+
+            var order = await _orderService.GetOrderByIdAsync(request.OrderId);
+            if (order == null)
+                return NotFound($"Order {request.OrderId} not found");
+            if (!User.CanAccessUser(order.CustomerId))
+                return Forbid();
 
             _logger.LogInformation("Creating payment for order {OrderId} with amount {Amount}", request.OrderId, request.Amount);
             var response = await _paymentService.CreatePaymentAsync(request);
@@ -53,7 +70,7 @@ public class PaymentsController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning("Operation error: {Message}", ex.Message);
-            return NotFound(ex.Message);
+            return Conflict(ex.Message);
         }
         catch (Exception ex)
         {
@@ -80,6 +97,12 @@ public class PaymentsController : ControllerBase
             var payment = await _paymentService.GetPaymentByIdAsync(id);
             if (payment == null)
                 return NotFound($"Payment {id} not found");
+
+            var order = await _orderService.GetOrderByIdAsync(payment.OrderId);
+            if (order == null)
+                return NotFound($"Order {payment.OrderId} not found");
+            if (!User.CanAccessUser(order.CustomerId))
+                return Forbid();
 
             return Ok(payment);
         }

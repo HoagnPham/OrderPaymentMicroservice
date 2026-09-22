@@ -30,13 +30,36 @@ public class PaymentService : IPaymentService
     /// </summary>
     public async Task<PaymentResponse> CreatePaymentAsync(CreatePaymentRequest request)
     {
-        // Validate input
         _validator.ValidateCreatePaymentRequest(request);
 
-        // Check if order exists
-        var order = await _context.Orders.FindAsync(request.OrderId);
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            : null;
+
+        var order = await _context.Orders
+            .Include(candidate => candidate.Payments)
+            .FirstOrDefaultAsync(candidate => candidate.Id == request.OrderId);
         if (order == null)
             throw new InvalidOperationException($"Order {request.OrderId} not found");
+
+        var previousAttempt = order.Payments.FirstOrDefault(payment =>
+            payment.IdempotencyKey == request.IdempotencyKey);
+        if (previousAttempt != null)
+        {
+            if (previousAttempt.Amount != request.Amount)
+                throw new InvalidOperationException("Idempotency key was already used with a different amount");
+
+            return MapToResponse(previousAttempt);
+        }
+
+        if (!OrderStateMachine.CanTransition(order.Status, OrderStatus.PAID))
+            throw new InvalidOperationException($"Order in state {order.Status} cannot be paid");
+
+        if (order.Payments.Any(payment => payment.Status == PaymentStatus.SUCCESS))
+            throw new InvalidOperationException("Order already has a successful payment");
+
+        if (request.Amount != order.TotalAmount)
+            throw new InvalidOperationException("Payment amount must equal the order total");
 
         // TODO: Call payment gateway to process payment
         // For skeleton, we simulate success
@@ -46,17 +69,20 @@ public class PaymentService : IPaymentService
             Amount = request.Amount,
             Status = PaymentStatus.SUCCESS, // Skeleton - simulated
             TransactionCode = $"TXN-{Guid.NewGuid().ToString().Substring(0, 8)}",
+            IdempotencyKey = request.IdempotencyKey,
             CreatedAt = DateTime.UtcNow
         };
 
         // Update order status when payment succeeds
         if (payment.Status == PaymentStatus.SUCCESS)
         {
-            order.Status = OrderStatus.PAID;
+            OrderStateMachine.Transition(order, OrderStatus.PAID);
         }
 
         _context.Payments.Add(payment);
         await _context.SaveChangesAsync();
+        if (transaction != null)
+            await transaction.CommitAsync();
 
         return MapToResponse(payment);
     }

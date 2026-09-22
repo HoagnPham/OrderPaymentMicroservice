@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderPaymentMicroservice.DTOs.Cart;
+using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Services.Interfaces;
 
 namespace OrderPaymentMicroservice.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class CartController : ControllerBase
 {
     private readonly ICartService _cartService;
@@ -22,6 +25,7 @@ public class CartController : ControllerBase
     {
         try
         {
+            if (!User.CanAccessUser(userId)) return Forbid();
             var cart = await _cartService.GetOrCreateCartAsync(userId);
             return Ok(cart);
         }
@@ -37,6 +41,7 @@ public class CartController : ControllerBase
     {
         try
         {
+            if (!User.CanAccessUser(userId)) return Forbid();
             var cart = await _cartService.AddItemToCartAsync(userId, request.ProductId, request.Quantity);
             return Ok(cart);
         }
@@ -57,8 +62,11 @@ public class CartController : ControllerBase
     {
         try
         {
-            var cart = await _cartService.UpdateCartItemAsync(cartId, itemId, request.Quantity);
-            return Ok(cart);
+            var cart = await _cartService.GetCartByIdAsync(cartId);
+            if (cart == null) return NotFound($"Cart {cartId} not found");
+            if (!User.CanAccessUser(cart.UserId)) return Forbid();
+            var updatedCart = await _cartService.UpdateCartItemAsync(cartId, itemId, request.Quantity);
+            return Ok(updatedCart);
         }
         catch (InvalidOperationException ex)
         {
@@ -77,6 +85,9 @@ public class CartController : ControllerBase
     {
         try
         {
+            var existingCart = await _cartService.GetCartByIdAsync(cartId);
+            if (existingCart == null) return NotFound($"Cart {cartId} not found");
+            if (!User.CanAccessUser(existingCart.UserId)) return Forbid();
             var cart = await _cartService.RemoveItemFromCartAsync(cartId, itemId);
             return Ok(cart);
         }
@@ -97,6 +108,9 @@ public class CartController : ControllerBase
     {
         try
         {
+            var cart = await _cartService.GetCartByIdAsync(cartId);
+            if (cart == null) return NotFound($"Cart {cartId} not found");
+            if (!User.CanAccessUser(cart.UserId)) return Forbid();
             await _cartService.ClearCartAsync(cartId);
             return Ok(new { message = "Cart cleared successfully" });
         }

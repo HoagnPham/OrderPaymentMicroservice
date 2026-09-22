@@ -122,6 +122,8 @@ namespace OrderPaymentMicroservice.Migrations
 
                     b.HasIndex("OrderId");
 
+                    b.HasIndex("ProductId");
+
                     b.ToTable("OrderItems");
                 });
 
@@ -140,6 +142,10 @@ namespace OrderPaymentMicroservice.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("IdempotencyKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
                     b.Property<int>("OrderId")
                         .HasColumnType("integer");
 
@@ -152,7 +158,8 @@ namespace OrderPaymentMicroservice.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId");
+                    b.HasIndex("OrderId", "IdempotencyKey")
+                        .IsUnique();
 
                     b.ToTable("Payments");
                 });
@@ -334,7 +341,15 @@ namespace OrderPaymentMicroservice.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("OrderPaymentMicroservice.Models.Product", "Product")
+                        .WithMany()
+                        .HasForeignKey("ProductId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Order");
+
+                    b.Navigation("Product");
                 });
 
             modelBuilder.Entity("OrderPaymentMicroservice.Models.Payment", b =>

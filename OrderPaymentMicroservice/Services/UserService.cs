@@ -1,9 +1,13 @@
+using System.IdentityModel.Tokens.Jwt;
+using System.Security.Claims;
+using System.Security.Cryptography;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using OrderPaymentMicroservice.Data;
 using OrderPaymentMicroservice.DTOs.Users;
 using OrderPaymentMicroservice.Models;
 using OrderPaymentMicroservice.Services.Interfaces;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace OrderPaymentMicroservice.Services;
@@ -12,11 +16,19 @@ public class UserService : IUserService
 {
     private readonly AppDbContext _context;
     private readonly ILogger<UserService> _logger;
+    private readonly IPasswordHasher<User> _passwordHasher;
+    private readonly IConfiguration _configuration;
 
-    public UserService(AppDbContext context, ILogger<UserService> logger)
+    public UserService(
+        AppDbContext context,
+        ILogger<UserService> logger,
+        IPasswordHasher<User> passwordHasher,
+        IConfiguration configuration)
     {
         _context = context;
         _logger = logger;
+        _passwordHasher = passwordHasher;
+        _configuration = configuration;
     }
 
     public async Task<UserResponse> RegisterAsync(RegisterRequest request)
@@ -27,13 +39,13 @@ public class UserService : IUserService
         var user = new User
         {
             Email = request.Email,
-            PasswordHash = HashPassword(request.Password),
             FullName = request.FullName,
             PhoneNumber = request.PhoneNumber,
             IsActive = true,
             CreatedAt = DateTime.UtcNow,
             UpdatedAt = DateTime.UtcNow
         };
+        user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
 
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
@@ -45,14 +57,31 @@ public class UserService : IUserService
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
-        if (user == null || !VerifyPassword(request.Password, user.PasswordHash))
+        if (user == null)
             throw new InvalidOperationException("Invalid email or password");
+
+        var verification = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, request.Password);
+        if (verification == PasswordVerificationResult.Failed)
+        {
+            if (!VerifyLegacySha256(request.Password, user.PasswordHash))
+                throw new InvalidOperationException("Invalid email or password");
+
+            // One-time migration for accounts created before PasswordHasher was adopted.
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+            await _context.SaveChangesAsync();
+        }
+        else if (verification == PasswordVerificationResult.SuccessRehashNeeded)
+        {
+            user.PasswordHash = _passwordHasher.HashPassword(user, request.Password);
+            await _context.SaveChangesAsync();
+        }
 
         if (!user.IsActive)
             throw new InvalidOperationException("User account is not active");
 
         // TODO: Implement JWT token generation
-        var token = GenerateSimpleToken(user.Id, user.Email);
+        var expiresAt = DateTime.UtcNow.AddHours(1);
+        var token = GenerateJwtToken(user, expiresAt);
 
         _logger.LogInformation("User logged in: {Email}", request.Email);
         return new LoginResponse
@@ -61,7 +90,7 @@ public class UserService : IUserService
             Email = user.Email,
             FullName = user.FullName,
             Token = token,
-            ExpiresAt = DateTime.UtcNow.AddHours(24)
+            ExpiresAt = expiresAt
         };
     }
 
@@ -100,25 +129,47 @@ public class UserService : IUserService
         return await _context.Users.AnyAsync(u => u.Email == email);
     }
 
-    private string HashPassword(string password)
+    private string GenerateJwtToken(User user, DateTime expiresAt)
     {
-        using (var sha256 = SHA256.Create())
+        var key = _configuration["Jwt:Key"]
+            ?? throw new InvalidOperationException("Jwt:Key is not configured");
+        var claims = new[]
         {
-            var hashedBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(password));
-            return Convert.ToBase64String(hashedBytes);
+            new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
+            new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+            new Claim(JwtRegisteredClaimNames.Email, user.Email),
+            new Claim(ClaimTypes.Role, user.Role),
+            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString())
+        };
+        var credentials = new SigningCredentials(
+            new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key)),
+            SecurityAlgorithms.HmacSha256);
+        var token = new JwtSecurityToken(
+            issuer: _configuration["Jwt:Issuer"],
+            audience: _configuration["Jwt:Audience"],
+            claims: claims,
+            expires: expiresAt,
+            signingCredentials: credentials);
+        return new JwtSecurityTokenHandler().WriteToken(token);
+    }
+
+    private static bool VerifyLegacySha256(string password, string storedHash)
+    {
+        byte[] expected;
+        try
+        {
+            expected = Convert.FromBase64String(storedHash);
         }
-    }
+        catch (FormatException)
+        {
+            return false;
+        }
 
-    private bool VerifyPassword(string password, string hash)
-    {
-        var hashOfInput = HashPassword(password);
-        return hashOfInput == hash;
-    }
+        if (expected.Length != 32)
+            return false;
 
-    private string GenerateSimpleToken(int userId, string email)
-    {
-        // TODO: Replace with proper JWT token
-        return Convert.ToBase64String(Encoding.UTF8.GetBytes($"{userId}:{email}:{DateTime.UtcNow.Ticks}"));
+        var actual = SHA256.HashData(Encoding.UTF8.GetBytes(password));
+        return CryptographicOperations.FixedTimeEquals(actual, expected);
     }
 
     private UserResponse MapToResponse(User user)

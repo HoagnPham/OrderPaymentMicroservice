@@ -3,6 +3,13 @@ const API_BASE_URL = 'http://localhost:5246/api';
 let currentUser = null;
 let cart = { items: [], totalPrice: 0 };
 
+function authHeaders(includeJson = false) {
+    const headers = {};
+    if (includeJson) headers['Content-Type'] = 'application/json';
+    if (currentUser?.token) headers.Authorization = `Bearer ${currentUser.token}`;
+    return headers;
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     loadUser();
@@ -162,7 +169,9 @@ function updateNavBar() {
 async function loadCartFromServer() {
     if (!currentUser) return;
     try {
-        const response = await fetch(`${API_BASE_URL}/cart/user/${currentUser.id}`);
+        const response = await fetch(`${API_BASE_URL}/cart/user/${currentUser.id}`, {
+            headers: authHeaders()
+        });
         if (response.ok) {
             const cartData = await response.json();
             cart = cartData;
@@ -224,7 +233,7 @@ async function addToCart(productId, button) {
             `${API_BASE_URL}/cart/user/${currentUser.id}/add`,
             {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: authHeaders(true),
                 body: JSON.stringify({ productId, quantity })
             }
         );
@@ -295,7 +304,7 @@ async function removeFromCart(itemId) {
     try {
         const response = await fetch(
             `${API_BASE_URL}/cart/${cart.id}/item/${itemId}`,
-            { method: 'DELETE' }
+            { method: 'DELETE', headers: authHeaders() }
         );
 
         if (!response.ok) throw new Error('Không thể xóa');
@@ -340,7 +349,7 @@ async function handleCheckout(e) {
         showMessage('Đang tạo đơn hàng...', 'info');
         const response = await fetch(`${API_BASE_URL}/orders`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: authHeaders(true),
             body: JSON.stringify({
                 customerId: currentUser.id,
                 totalAmount,
@@ -397,7 +406,10 @@ async function handlePayment(e) {
         showMessage('Đang xử lý thanh toán...', 'info');
         const response = await fetch(`${API_BASE_URL}/payments`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                ...authHeaders(true),
+                'Idempotency-Key': crypto.randomUUID()
+            },
             body: JSON.stringify({
                 orderId,
                 amount: paymentAmount,
@@ -429,7 +441,10 @@ async function handlePayment(e) {
 
         if (cartIdToClear) {
             try {
-                const clearRes = await fetch(`${API_BASE_URL}/cart/${cartIdToClear}/clear`, { method: 'DELETE' });
+                const clearRes = await fetch(`${API_BASE_URL}/cart/${cartIdToClear}/clear`, {
+                    method: 'DELETE',
+                    headers: authHeaders()
+                });
                 console.log('[Payment] Cart cleared, status =', clearRes.status);
             } catch (e) {
                 console.warn('[Payment] Could not clear cart on server:', e);
@@ -451,11 +466,11 @@ async function loadOrders() {
     if (!currentUser) return;
 
     try {
-        const response = await fetch(`${API_BASE_URL}/orders`);
+        const response = await fetch(`${API_BASE_URL}/orders/mine`, { headers: authHeaders() });
         if (!response.ok) throw new Error('Không thể tải đơn hàng');
 
         const orders = await response.json();
-        displayOrders(orders.filter(o => o.customerId === currentUser.id));
+        displayOrders(orders);
     } catch (error) {
         console.error(error);
         showMessage('Lỗi khi tải đơn hàng', 'error');

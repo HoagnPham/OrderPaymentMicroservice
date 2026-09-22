@@ -1,11 +1,14 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderPaymentMicroservice.DTOs.Users;
+using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Services.Interfaces;
 
 namespace OrderPaymentMicroservice.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UsersController : ControllerBase
 {
     private readonly IUserService _userService;
@@ -18,6 +21,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("register")]
+    [AllowAnonymous]
     public async Task<IActionResult> Register([FromBody] RegisterRequest request)
     {
         try
@@ -38,6 +42,7 @@ public class UsersController : ControllerBase
     }
 
     [HttpPost("login")]
+    [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] LoginRequest request)
     {
         try
@@ -48,7 +53,7 @@ public class UsersController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Login error: {Message}", ex.Message);
-            return BadRequest(ex.Message);
+            return Unauthorized(ex.Message);
         }
         catch (Exception ex)
         {
@@ -62,6 +67,7 @@ public class UsersController : ControllerBase
     {
         try
         {
+            if (!User.CanAccessUser(id)) return Forbid();
             var user = await _userService.GetUserByIdAsync(id);
             if (user == null)
                 return NotFound($"User {id} not found");
@@ -80,6 +86,7 @@ public class UsersController : ControllerBase
     {
         try
         {
+            if (!User.CanAccessUser(id)) return Forbid();
             var user = await _userService.UpdateUserAsync(id, request);
             return Ok(user);
         }

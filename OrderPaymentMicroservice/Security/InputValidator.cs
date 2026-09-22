@@ -56,12 +56,14 @@ public class InputValidator
         }
 
         // TODO: SMT verification - TotalAmount must match sum of items
-        // For now, we allow some tolerance due to rounding
+        // Monetary values are stored with two decimal places, so a difference of
+        // one cent is the largest rounding difference accepted at this boundary.
         const decimal tolerance = 0.01m;
         if (Math.Abs(request.TotalAmount - calculatedTotal) > tolerance)
         {
-            // Log warning for fuzzing/analysis
-            // This is a key invariant to check during SMT verification
+            throw new ArgumentException(
+                "TotalAmount must match the sum of order items",
+                nameof(request.TotalAmount));
         }
     }
 
@@ -86,8 +88,8 @@ public class InputValidator
             throw new ArgumentException($"Quantity cannot exceed {MAX_QUANTITY}", nameof(item.Quantity));
 
         // Unit price validation
-        if (item.UnitPrice < 0)
-            throw new ArgumentException("UnitPrice cannot be negative", nameof(item.UnitPrice));
+        if (item.UnitPrice < MIN_PRICE)
+            throw new ArgumentException($"UnitPrice must be at least {MIN_PRICE}", nameof(item.UnitPrice));
 
         if (item.UnitPrice > MAX_PRICE)
             throw new ArgumentException($"UnitPrice cannot exceed {MAX_PRICE}", nameof(item.UnitPrice));

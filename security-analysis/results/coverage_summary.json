@@ -1,11 +1,11 @@
 {
   "class": "OrderPaymentMicroservice.Security.InputValidator",
   "branch_coverage_percent": 96.87,
-  "line_coverage_percent": 83.67,
+  "line_coverage_percent": 84.31,
   "uncovered_branches": [
     {
-      "line": 99,
-      "hits": 14,
+      "line": 101,
+      "hits": 12,
       "condition_coverage": "50% (1/2)"
     }
   ],

@@ -29,15 +29,48 @@ public class OrderService : IOrderService
     /// </summary>
     public async Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request)
     {
-        // Validate input
         _validator.ValidateCreateOrderRequest(request);
+
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            : null;
+
+        var productIds = request.Items.Select(item => item.ProductId).Distinct().ToList();
+        var products = await _context.Products
+            .Where(product => productIds.Contains(product.Id))
+            .ToDictionaryAsync(product => product.Id);
+
+        if (products.Count != productIds.Count)
+            throw new InvalidOperationException("One or more products do not exist");
+
+        decimal serverTotal = 0;
+        foreach (var item in request.Items)
+        {
+            var product = products[item.ProductId];
+            if (!product.IsActive)
+                throw new InvalidOperationException($"Product {product.Id} is not active");
+            if (product.Stock < item.Quantity)
+                throw new InvalidOperationException($"Not enough stock for product {product.Id}");
+
+            serverTotal = checked(serverTotal + item.Quantity * product.Price);
+        }
+
+        if (Math.Abs(request.TotalAmount - serverTotal) > 0.01m)
+            throw new ArgumentException("TotalAmount does not match current product prices", nameof(request.TotalAmount));
+
+        foreach (var item in request.Items)
+        {
+            var product = products[item.ProductId];
+            product.Stock -= item.Quantity;
+            product.UpdatedAt = DateTime.UtcNow;
+        }
 
         // Create order
         var order = new Order
         {
             CustomerId = request.CustomerId,
             UserId = request.CustomerId,   // dùng CustomerId làm UserId (chưa có JWT)
-            TotalAmount = request.TotalAmount,
+            TotalAmount = serverTotal,
             Address = request.Address,
             City = request.City,
             Status = OrderStatus.CREATED,
@@ -47,19 +80,25 @@ public class OrderService : IOrderService
         // Create order items
         foreach (var itemRequest in request.Items)
         {
-            var subtotal = itemRequest.Quantity * itemRequest.UnitPrice;
+            var unitPrice = products[itemRequest.ProductId].Price;
+            var subtotal = checked(itemRequest.Quantity * unitPrice);
             order.OrderItems.Add(new OrderItem
             {
                 ProductId = itemRequest.ProductId,
                 Quantity = itemRequest.Quantity,
-                UnitPrice = itemRequest.UnitPrice,
+                UnitPrice = unitPrice,
                 SubTotal = subtotal
             });
         }
 
+        OrderStateMachine.Transition(order, OrderStatus.VALIDATED);
+        OrderStateMachine.Transition(order, OrderStatus.PAYMENT_PENDING);
+
         // Save to database (skeleton - may not be persisted in earliest version)
         _context.Orders.Add(order);
         await _context.SaveChangesAsync();
+        if (transaction != null)
+            await transaction.CommitAsync();
 
         return MapToResponse(order);
     }
@@ -73,6 +112,16 @@ public class OrderService : IOrderService
         var orders = await _context.Orders
             .Include(o => o.OrderItems)
                 .ThenInclude(oi => oi.Product)
+            .ToListAsync();
+        return orders.Select(MapToResponse).ToList();
+    }
+
+    public async Task<List<OrderResponse>> GetOrdersByCustomerIdAsync(int customerId)
+    {
+        var orders = await _context.Orders
+            .Where(order => order.CustomerId == customerId)
+            .Include(order => order.OrderItems)
+                .ThenInclude(item => item.Product)
             .ToListAsync();
         return orders.Select(MapToResponse).ToList();
     }
@@ -100,11 +149,10 @@ public class OrderService : IOrderService
         if (order == null)
             return false;
 
-        // Simple validation - can only cancel if not already completed/paid
-        if (order.Status == OrderStatus.COMPLETED || order.Status == OrderStatus.PAID)
+        if (!OrderStateMachine.CanTransition(order.Status, OrderStatus.CANCELLED))
             return false;
 
-        order.Status = OrderStatus.CANCELLED;
+        OrderStateMachine.Transition(order, OrderStatus.CANCELLED);
         await _context.SaveChangesAsync();
         return true;
     }
