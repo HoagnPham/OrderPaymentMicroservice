@@ -173,12 +173,12 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 ### Build và test
 
 ```powershell
-dotnet restore OrderPaymentMicroservice.slnx
-dotnet build OrderPaymentMicroservice.slnx
+dotnet restore OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
+dotnet build OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
 dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
 ```
 
-Hiện restore có warning NU1603: project yêu cầu `Npgsql.EntityFrameworkCore.PostgreSQL` 8.0.7 nhưng NuGet resolve 8.0.8. Cần đồng bộ version trước khi chốt môi trường tái lập.
+OpenAPI ở môi trường Development được cung cấp tại `/openapi/v1.json`.
 
 ### Đo coverage
 
@@ -200,12 +200,51 @@ python security-analysis/create_datasets.py
 
 Không chạy `create_datasets.py` nếu đã chỉnh JSON thủ công mà chưa đồng bộ các thay đổi đó vào script.
 
+### Thiết lập PostgreSQL lần đầu trên Ubuntu
+
+Nếu PostgreSQL đã cài nhưng chưa chạy:
+
+```bash
+sudo systemctl start postgresql
+pg_isready -h localhost -p 5432
+sudo -u postgres psql
+```
+
+Trong `psql`, tạo tài khoản riêng cho ứng dụng, đặt mật khẩu theo lời nhắc và tạo database do tài khoản đó sở hữu (chỉ chạy một lần):
+
+```sql
+CREATE ROLE orderpayment LOGIN;
+\password orderpayment
+CREATE DATABASE orderpaymentdb OWNER orderpayment;
+\q
+```
+
+Không cần đặt mật khẩu cho tài khoản quản trị `postgres`: lệnh `sudo -u postgres psql` dùng xác thực local của Ubuntu. Kiểm tra tài khoản ứng dụng qua TCP:
+
+```bash
+psql -h localhost -U orderpayment -d orderpaymentdb -W -c 'SELECT current_user;'
+```
+
+Từ thư mục gốc repository, lưu cấu hình phát triển bằng Bash. Nhập cùng mật khẩu đã đặt ở trên; dấu nháy đơn trong connection string được escape để hỗ trợ ký tự đặc biệt:
+
+```bash
+read -rsp 'Mật khẩu PostgreSQL của orderpayment: ' db_password
+printf '\n'
+db_password_escaped=${db_password//\'/\'\'}
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=orderpaymentdb;Username=orderpayment;Password='$db_password_escaped'" --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
+unset db_password db_password_escaped
+dotnet user-secrets set "Jwt:Key" "$(openssl rand -hex 32)" --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
+dotnet run --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj --launch-profile http
+```
+
+Mở `http://localhost:5246`. Ứng dụng hiện dùng `EnsureCreated()` để tạo bảng và seed sản phẩm trên database mới/rỗng; không cần chạy `dotnet ef database update` cho quy trình này. `EnsureCreated()` không nâng cấp schema của database đã có bảng.
+
 ### Chạy API
 
 Không lưu connection string hoặc JWT signing key trong repository. Cấu hình bằng User Secrets ở môi trường phát triển:
 
 ```powershell
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=orderpaymentdb;Username=postgres;Password=<your-password>" --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Port=5432;Database=orderpaymentdb;Username=orderpayment;Password=<your-password>" --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
 dotnet user-secrets set "Jwt:Key" "<random-secret-at-least-32-characters>" --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
 ```
 
@@ -219,6 +258,7 @@ Không dùng tài khoản/secret mẫu cho môi trường thật. `test-api.ps1`
 
 ## 8. Tài liệu và bằng chứng
 
+- [Mô phỏng lỗi bộ nhớ bằng C: Order, Payment, Cart, Product, User](security-analysis/c-memory/README.md)
 - [Báo cáo tiến độ ATPM](security-analysis/BAO_CAO_TIEN_DO_ATPM.md)
 - [Giải thích bộ test](security-analysis/GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md)
 - [Hướng dẫn security-analysis](security-analysis/README.md)
