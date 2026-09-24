@@ -3,194 +3,96 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Food Order &amp; Payment System</title>
-    <link rel="stylesheet" href="css/style.css">
+    <meta name="theme-color" content="#0a0a0a">
+    <title>FlowBite — Đặt món &amp; thanh toán</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Manrope:wght@600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=4">
 </head>
 <body>
-    <div class="container">
-        <!-- Navigation -->
-        <div class="navbar">
-            <div class="navbar-brand">🍜 Food Order System</div>
-            <div class="navbar-menu">
-                <button class="nav-btn" id="homeBtn">🏠 Trang chủ</button>
-                <button class="nav-btn" id="cartBtn">🛒 Giỏ hàng</button>
-                <button class="nav-btn" id="ordersBtn">📦 Đơn hàng</button>
-                <div id="authSection" style="display: flex; gap: 10px;">
-                    <button class="nav-btn" onclick="showSection('auth')">Đăng nhập</button>
-                </div>
-                <div id="userInfo" class="user-info" style="display: none;"></div>
-                <button class="nav-btn" id="logoutBtn" style="display: none;">Đăng xuất</button>
+    <div class="app-shell">
+        <header class="navbar">
+            <a class="navbar-brand" href="#" id="brandBtn" aria-label="FlowBite - Trang chủ">
+                <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 3.5h11l3 5-8.5 12-8.5-12 3-5Z"/><path d="m3.5 8.5 8.5 4 8.5-4M12 12.5v8"/></svg></span>
+                <span>FlowBite</span><span class="brand-badge">FOOD</span>
+            </a>
+            <nav class="navbar-menu" aria-label="Điều hướng chính">
+                <button class="nav-btn" id="homeBtn" data-section="home"><svg viewBox="0 0 24 24"><path d="M4 10.5 12 4l8 6.5V20H4v-9.5Z"/><path d="M9 20v-6h6v6"/></svg><span>Khám phá</span></button>
+                <button class="nav-btn" id="cartBtn" data-section="cart"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg><span>Giỏ hàng</span><span class="nav-count" id="navCartCount">0</span></button>
+                <button class="nav-btn" id="ordersBtn" data-section="orders"><svg viewBox="0 0 24 24"><path d="M5 7h14v13H5zM8 7V4h8v3M8 11h8"/></svg><span>Đơn hàng</span></button>
+            </nav>
+            <div class="navbar-actions">
+                <div id="authSection"><button class="btn btn-dark btn-compact" onclick="showSection('auth')">Đăng nhập</button></div>
+                <div id="userInfo" class="user-info" style="display:none;"></div>
+                <button class="icon-btn" id="logoutBtn" style="display:none;" title="Đăng xuất" aria-label="Đăng xuất"><svg viewBox="0 0 24 24"><path d="M10 5H5v14h5M14 8l4 4-4 4M18 12H9"/></svg></button>
             </div>
-        </div>
+        </header>
 
-        <!-- Main Content: grid cột 1 = sections, cột 2 = sidebar -->
-        <div class="content">
-
-            <!-- Cột 1: tất cả sections -->
+        <main class="content">
             <div id="mainContent">
-
-                <!-- Auth Section -->
-                <div id="auth" class="section active">
+                <section id="auth" class="section auth-section">
+                    <div class="auth-aside">
+                        <div class="eyebrow light">NHANH · AN TOÀN · TIỆN LỢI</div>
+                        <h1>Bữa ngon,<br>đến đúng lúc.</h1>
+                        <p>Đặt món yêu thích, theo dõi đơn hàng và thanh toán an toàn trong một trải nghiệm liền mạch.</p>
+                        <div class="auth-proof"><div class="proof-avatars"><span>H</span><span>L</span><span>M</span></div><div><strong>4.9/5</strong><small>Từ hơn 2.000 khách hàng</small></div></div>
+                        <div class="orb orb-one"></div><div class="orb orb-two"></div>
+                    </div>
                     <div class="auth-form">
-                        <h2 style="text-align: center; margin-bottom: 25px; color: #333;">Đăng Nhập</h2>
-
-                        <!-- Login Form -->
+                        <div class="auth-heading"><span class="auth-icon"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 4.8 3.4 8 8 9 4.6-1 8-4.2 8-9V7l-8-4Z"/><path d="m9 12 2 2 4-4"/></svg></span><div><h2 id="authTitle">Chào mừng trở lại</h2><p>Nhập thông tin để tiếp tục đặt món.</p></div></div>
                         <form id="loginForm">
-                            <div class="form-group">
-                                <label>📧 Email</label>
-                                <input type="email" id="loginEmail" required placeholder="your@email.com">
-                            </div>
-                            <div class="form-group">
-                                <label>🔐 Mật khẩu</label>
-                                <input type="password" id="loginPassword" required placeholder="••••••••">
-                            </div>
-                            <button type="submit" class="btn">Đăng Nhập</button>
+                            <div class="form-group"><label for="loginEmail">Email</label><input type="email" id="loginEmail" required placeholder="ban@example.com" autocomplete="email"></div>
+                            <div class="form-group"><div class="label-row"><label for="loginPassword">Mật khẩu</label><span>Bảo mật AES-256</span></div><input type="password" id="loginPassword" required placeholder="Nhập mật khẩu" autocomplete="current-password"></div>
+                            <button type="submit" class="btn btn-dark">Đăng nhập <span>→</span></button>
                         </form>
-
-                        <!-- Register Form (Hidden) -->
-                        <form id="registerForm" style="display: none;">
-                            <h2 style="text-align: center; margin-bottom: 25px; color: #333;">Đăng Ký</h2>
-                            <div class="form-group">
-                                <label>👤 Họ tên</label>
-                                <input type="text" id="registerName" required placeholder="Tên của bạn">
-                            </div>
-                            <div class="form-group">
-                                <label>📧 Email</label>
-                                <input type="email" id="registerEmail" required placeholder="your@email.com">
-                            </div>
-                            <div class="form-group">
-                                <label>📱 Số điện thoại</label>
-                                <input type="tel" id="registerPhone" placeholder="0987654321">
-                            </div>
-                            <div class="form-group">
-                                <label>🔐 Mật khẩu</label>
-                                <input type="password" id="registerPassword" required placeholder="••••••••">
-                            </div>
-                            <button type="submit" class="btn">Đăng Ký</button>
+                        <form id="registerForm" style="display:none;">
+                            <div class="form-group"><label for="registerName">Họ và tên</label><input type="text" id="registerName" required placeholder="Nguyễn Văn A" autocomplete="name"></div>
+                            <div class="form-group"><label for="registerEmail">Email</label><input type="email" id="registerEmail" required placeholder="ban@example.com" autocomplete="email"></div>
+                            <div class="form-group"><label for="registerPhone">Số điện thoại</label><input type="tel" id="registerPhone" placeholder="0987 654 321" autocomplete="tel"></div>
+                            <div class="form-group"><label for="registerPassword">Mật khẩu</label><input type="password" id="registerPassword" required placeholder="Tối thiểu 8 ký tự" autocomplete="new-password"></div>
+                            <button type="submit" class="btn btn-dark">Tạo tài khoản <span>→</span></button>
                         </form>
-
-                        <!-- Toggle Form -->
-                        <div class="form-toggle" id="loginToggle" style="display: block;">
-                            Chưa có tài khoản? <a id="toRegisterLink" style="cursor:pointer;">Đăng ký ngay</a>
-                        </div>
-                        <div class="form-toggle" id="registerToggle" style="display: none;">
-                            Đã có tài khoản? <a id="toLoginLink" style="cursor:pointer;">Đăng nhập</a>
-                        </div>
+                        <div class="form-toggle" id="loginToggle">Chưa có tài khoản? <a id="toRegisterLink">Đăng ký miễn phí</a></div>
+                        <div class="form-toggle" id="registerToggle" style="display:none;">Đã có tài khoản? <a id="toLoginLink">Đăng nhập</a></div>
                     </div>
-                </div>
+                </section>
 
-                <!-- Home Section (Products) -->
-                <div id="home" class="section">
-                    <h1 style="margin-bottom: 25px; color: #333;">🍽️ Menu Sản Phẩm</h1>
-                    <div id="productsGrid" class="products-grid"></div>
-                </div>
+                <section id="home" class="section">
+                    <div class="hero-panel"><div><div class="eyebrow">MENU HÔM NAY</div><h1>Món ngon cho<br><span>mọi khoảnh khắc.</span></h1><p>Nguyên liệu tươi mỗi ngày, chế biến ngay sau khi bạn đặt.</p></div><div class="hero-stat"><strong>30'</strong><span>Giao hàng<br>trung bình</span></div></div>
+                    <div class="section-toolbar"><div><h2>Thực đơn nổi bật</h2><p>Chọn món bạn thích và thêm vào giỏ hàng.</p></div><div class="availability"><span></span> Đang nhận đơn</div></div>
+                    <div id="productsGrid" class="products-grid"><div class="skeleton-card"></div><div class="skeleton-card"></div><div class="skeleton-card"></div></div>
+                </section>
 
-                <!-- Cart Section -->
-                <div id="cart" class="section">
-                    <div style="max-width: 600px;">
-                        <h1 style="margin-bottom: 25px; color: #333;">🛒 Giỏ Hàng</h1>
-                        <div class="checkout-form">
-                            <div id="cartItemsContainer" style="min-height: 300px;">
-                                <div class="cart-title">Chi tiết giỏ hàng</div>
-                                <div id="cartItemsDetail"></div>
-                            </div>
-                            <hr style="margin: 20px 0;">
-                            <div id="cartTotalDetail" style="font-size: 18px; font-weight: bold; margin-bottom: 20px;"></div>
-                            <button class="btn" onclick="showSection('checkout')" style="width: 100%;">Tiến hành thanh toán</button>
-                        </div>
-                    </div>
-                </div>
+                <section id="cart" class="section">
+                    <div class="page-heading"><div><div class="eyebrow">ĐƠN CỦA BẠN</div><h1>Giỏ hàng</h1><p>Kiểm tra lại món ăn trước khi thanh toán.</p></div></div>
+                    <div class="surface cart-page-card"><div class="surface-header"><div><h3>Chi tiết giỏ hàng</h3><p>Các sản phẩm bạn đã lựa chọn</p></div><span class="badge" id="cartPageBadge">Đang cập nhật</span></div><div id="cartItemsDetail" class="detail-list"></div><div class="total-row" id="cartTotalDetail"></div><button class="btn btn-dark" onclick="showSection('checkout')">Tiến hành thanh toán <span>→</span></button></div>
+                </section>
 
-                <!-- Checkout Section -->
-                <div id="checkout" class="section">
-                    <div style="max-width: 600px;">
-                        <h1 style="margin-bottom: 25px; color: #333;">✏️ Thông tin đơn hàng</h1>
-                        <form id="checkoutForm" class="checkout-form">
-                            <div class="form-group">
-                                <label>📬 Địa chỉ giao</label>
-                                <input type="text" id="address" required placeholder="123 Đường ABC, Quận 1">
-                            </div>
-                            <div class="form-group">
-                                <label>🏙️ Thành phố</label>
-                                <input type="text" id="city" required placeholder="TP. Hồ Chí Minh">
-                            </div>
-                            <div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 20px;">
-                                <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: bold;">
-                                    <span>Tổng tiền:</span>
-                                    <span id="checkoutTotal">0 VNĐ</span>
-                                </div>
-                            </div>
-                            <button type="submit" class="btn">Xác nhận &amp; Tiến tới thanh toán</button>
-                            <button type="button" class="btn btn-secondary" onclick="showSection('cart')" style="margin-top: 10px;">Quay lại giỏ hàng</button>
-                        </form>
-                    </div>
-                </div>
+                <section id="checkout" class="section">
+                    <div class="page-heading"><button class="back-link" type="button" onclick="showSection('cart')">← Quay lại giỏ hàng</button><h1>Thông tin giao hàng</h1><p>Điền địa chỉ để chúng tôi giao món đến bạn.</p></div>
+                    <form id="checkoutForm" class="surface checkout-form"><div class="step-row"><span>01</span><div><h3>Địa chỉ nhận hàng</h3><p>Thông tin này chỉ dùng để giao đơn hiện tại.</p></div></div><div class="form-group"><label for="address">Địa chỉ cụ thể</label><input type="text" id="address" required placeholder="Số nhà, tên đường, phường/xã"></div><div class="form-group"><label for="city">Tỉnh / Thành phố</label><input type="text" id="city" required placeholder="Ví dụ: Hà Nội"></div><div class="checkout-total"><span>Tổng thanh toán</span><strong id="checkoutTotal">0 VNĐ</strong></div><button type="submit" class="btn btn-dark">Xác nhận đơn hàng <span>→</span></button></form>
+                </section>
 
-                <!-- Payment Section -->
-                <div id="payment" class="section">
-                    <div style="max-width: 600px;">
-                        <h1 style="margin-bottom: 25px; color: #333;">💳 Thanh Toán</h1>
-                        <form id="paymentForm" class="payment-form">
-                            <input type="hidden" id="paymentOrderId">
-                            <input type="hidden" id="paymentAmountValue">
+                <section id="payment" class="section">
+                    <div class="page-heading"><button class="back-link" type="button" onclick="showSection('checkout')">← Quay lại</button><h1>Thanh toán an toàn</h1><p>Thông tin thẻ được mã hóa và không lưu trên hệ thống.</p></div>
+                    <form id="paymentForm" class="surface payment-form"><input type="hidden" id="paymentOrderId"><input type="hidden" id="paymentAmountValue"><div class="payment-info"><span>Số tiền cần thanh toán</span><div class="payment-amount" id="paymentAmount">0 VNĐ</div><span class="secure-chip">● Kết nối bảo mật</span></div><div class="form-group"><label for="cardNumber">Số thẻ</label><input type="text" id="cardNumber" required placeholder="1234 5678 9012 3456" maxlength="19" inputmode="numeric"></div><div class="form-group"><label for="cardName">Tên chủ thẻ</label><input type="text" id="cardName" required placeholder="NGUYEN VAN A" autocomplete="cc-name"></div><div class="form-row"><div class="form-group"><label for="cardExpiry">Ngày hết hạn</label><input type="text" id="cardExpiry" required placeholder="MM/YY" maxlength="5" autocomplete="cc-exp"></div><div class="form-group"><label for="cardCvv">CVV</label><input type="password" id="cardCvv" required placeholder="•••" maxlength="4" inputmode="numeric"></div></div><button type="submit" class="btn btn-dark">Thanh toán ngay <span>→</span></button></form>
+                </section>
 
-                            <div class="payment-info">
-                                <div style="color: #666; margin-bottom: 10px;">Tổng tiền thanh toán:</div>
-                                <div class="payment-amount" id="paymentAmount">0 VNĐ</div>
-                            </div>
-
-                            <div class="form-group">
-                                <label>💳 Số thẻ</label>
-                                <input type="text" id="cardNumber" required placeholder="1234 5678 9012 3456" maxlength="19">
-                            </div>
-
-                            <div class="form-group">
-                                <label>👤 Tên chủ thẻ</label>
-                                <input type="text" id="cardName" required placeholder="NGUYEN VAN A">
-                            </div>
-
-                            <div class="form-row">
-                                <div class="form-group">
-                                    <label>📅 Ngày hết hạn (MM/YY)</label>
-                                    <input type="text" id="cardExpiry" required placeholder="12/25" maxlength="5">
-                                </div>
-                                <div class="form-group">
-                                    <label>🔐 CVV</label>
-                                    <input type="text" id="cardCvv" required placeholder="123" maxlength="4">
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn">💰 Thanh toán</button>
-                            <button type="button" class="btn btn-secondary" onclick="showSection('checkout')" style="margin-top: 10px;">Quay lại</button>
-                        </form>
-                    </div>
-                </div>
-
-                <!-- Orders Section -->
-                <div id="orders" class="section">
-                    <h1 style="margin-bottom: 25px; color: #333;">📦 Lịch sử đơn hàng</h1>
-                    <div id="ordersContainer" class="orders-container"></div>
-                </div>
-
-            </div><!-- end #mainContent -->
-
-            <!-- Cột 2: Sidebar giỏ hàng -->
-            <div class="sidebar">
-                <div class="cart-title">📋 Giỏ hàng</div>
-                <div id="cartEmpty" class="cart-empty">Giỏ hàng trống</div>
-                <div id="cartItems" class="cart-items"></div>
-                <div class="cart-summary">
-                    <div id="cartTotal" class="cart-total">
-                        <span>Tổng:</span>
-                        <span>0 VNĐ</span>
-                    </div>
-                    <button class="checkout-btn" onclick="if(currentUser) showSection('checkout'); else { showMessage('Vui lòng đăng nhập', 'info'); showSection('auth'); }">🎁 Thanh toán</button>
-                </div>
+                <section id="orders" class="section">
+                    <div class="page-heading"><div class="eyebrow">HOẠT ĐỘNG</div><h1>Lịch sử đơn hàng</h1><p>Theo dõi trạng thái và chi tiết các đơn đã đặt.</p></div><div id="ordersContainer" class="orders-container"></div>
+                </section>
             </div>
 
-        </div><!-- end .content -->
-    </div><!-- end .container -->
-
-    <script src="js/app.js?v=3"></script>
+            <aside class="sidebar">
+                <div class="sidebar-heading"><div><span class="sidebar-kicker">GIỎ HÀNG</span><h3>Đơn hiện tại</h3></div><span class="cart-pill" id="sideCartCount">0 món</span></div>
+                <div id="cartEmpty" class="cart-empty"><span class="empty-icon"><svg viewBox="0 0 24 24"><path d="M3 4h2l2.2 10.2a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 2-1.6L20 8H6"/><circle cx="10" cy="20" r="1"/><circle cx="17" cy="20" r="1"/></svg></span><strong>Giỏ hàng đang trống</strong><small>Thêm một món ngon để bắt đầu.</small></div>
+                <div id="cartItems" class="cart-items"></div>
+                <div class="cart-summary"><div class="cart-total" id="cartTotal"><span>Tạm tính</span><strong>0 VNĐ</strong></div><div class="delivery-note"><span>✓</span> Phí giao hàng được tính khi xác nhận địa chỉ</div><button class="checkout-btn" onclick="if(currentUser) showSection('checkout'); else { showMessage('Vui lòng đăng nhập', 'info'); showSection('auth'); }">Thanh toán <span>→</span></button></div>
+            </aside>
+        </main>
+        <footer><span>© 2026 FlowBite</span><span>Đặt món thông minh · Thanh toán an toàn</span></footer>
+    </div>
+    <script src="js/app.js?v=4"></script>
 </body>
 </html>

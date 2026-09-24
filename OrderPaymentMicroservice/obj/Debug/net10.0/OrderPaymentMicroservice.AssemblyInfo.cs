@@ -14,7 +14,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("OrderPaymentMicroservice")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+0fd34da85e79719c15bca34b5f17e7963b83dfc4")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+31a81176e39c8abd16fe94324543e87358fe922b")]
 [assembly: System.Reflection.AssemblyProductAttribute("OrderPaymentMicroservice")]
 [assembly: System.Reflection.AssemblyTitleAttribute("OrderPaymentMicroservice")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

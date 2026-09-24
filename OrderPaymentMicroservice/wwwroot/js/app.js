@@ -3,6 +3,29 @@ const API_BASE_URL = 'http://localhost:5246/api';
 let currentUser = null;
 let cart = { items: [], totalPrice: 0 };
 
+const foodStyles = [
+    { glyph: '🍜', a: '#f7d9a7', b: '#e9a85e' },
+    { glyph: '🍚', a: '#d9e7c5', b: '#91ba7c' },
+    { glyph: '🥖', a: '#f2d2b1', b: '#d98a58' },
+    { glyph: '🍊', a: '#ffd9a0', b: '#f3a13b' },
+    { glyph: '☕', a: '#d8c5b5', b: '#9b735d' },
+    { glyph: '🍨', a: '#e3d5ef', b: '#ac83ce' }
+];
+
+function formatCurrency(value) {
+    return `${Number(value || 0).toLocaleString('vi-VN')} VNĐ`;
+}
+
+function escapeHtml(value) {
+    return String(value ?? '').replace(/[&<>'"]/g, char => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;'
+    })[char]);
+}
+
+function getInitials(name) {
+    return String(name || 'U').trim().split(/\s+/).slice(-2).map(part => part[0]).join('').toUpperCase();
+}
+
 function authHeaders(includeJson = false) {
     const headers = {};
     if (includeJson) headers['Content-Type'] = 'application/json';
@@ -64,6 +87,10 @@ function setupEventListeners() {
     });
 
     document.getElementById('logoutBtn').addEventListener('click', logout);
+    document.getElementById('brandBtn').addEventListener('click', (event) => {
+        event.preventDefault();
+        showSection(currentUser ? 'home' : 'auth');
+    });
 }
 
 // Authentication
@@ -156,7 +183,10 @@ function updateNavBar() {
     if (currentUser) {
         authSection.style.display = 'none';
         userInfo.style.display = 'block';
-        userInfo.textContent = `${currentUser.fullName} (${currentUser.email})`;
+        userInfo.innerHTML = `
+            <span class="user-avatar">${escapeHtml(getInitials(currentUser.fullName))}</span>
+            <span class="user-copy"><span>${escapeHtml(currentUser.fullName || 'Khách hàng')}</span><small>${escapeHtml(currentUser.email || '')}</small></span>
+        `;
         logoutBtn.style.display = 'block';
     } else {
         authSection.style.display = 'flex';
@@ -199,19 +229,25 @@ function displayProducts(products) {
     const grid = document.getElementById('productsGrid');
     grid.innerHTML = '';
 
-    products.forEach(product => {
+    products.forEach((product, index) => {
+        const visual = foodStyles[index % foodStyles.length];
         const card = document.createElement('div');
         card.className = 'product-card';
         card.innerHTML = `
-            <div class="product-image">🍜</div>
+            <div class="product-visual" style="--food-a:${visual.a};--food-b:${visual.b}">
+                <span class="product-tag">${escapeHtml(product.category || 'Món ăn')}</span>
+                <span class="food-glyph" aria-hidden="true">${visual.glyph}</span>
+            </div>
             <div class="product-info">
-                <div class="product-name">${product.name}</div>
-                <div class="product-category">${product.category}</div>
-                <div class="product-price">${product.price.toLocaleString()} VNĐ</div>
-                <div class="product-stock">Còn: ${product.stock} cái</div>
+                <div class="product-topline">
+                    <div class="product-name">${escapeHtml(product.name)}</div>
+                    <div class="product-price">${formatCurrency(product.price)}</div>
+                </div>
+                <div class="product-description">${escapeHtml(product.description || 'Món ngon được chuẩn bị tươi mới mỗi ngày.')}</div>
+                <div class="product-meta"><span class="stock-dot">Còn ${product.stock} phần</span><span>15–30 phút</span></div>
                 <div class="product-actions">
                     <input type="number" class="qty-input" value="1" min="1" max="${product.stock}">
-                    <button class="btn-add-cart" onclick="addToCart(${product.id}, this)">Thêm giỏ</button>
+                    <button class="btn-add-cart" onclick="addToCart(${product.id}, this)">+ Thêm vào giỏ</button>
                 </div>
             </div>
         `;
@@ -256,45 +292,48 @@ function updateCartUI() {
     const cartTotal = document.getElementById('cartTotal');
     const cartItemsDetail = document.getElementById('cartItemsDetail');
     const cartTotalDetail = document.getElementById('cartTotalDetail');
+    const totalQuantity = (cart.items || []).reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+    document.getElementById('navCartCount').textContent = totalQuantity;
+    document.getElementById('sideCartCount').textContent = `${totalQuantity} món`;
+    document.getElementById('cartPageBadge').textContent = `${totalQuantity} món`;
 
     if (!cart.items || cart.items.length === 0) {
         if (cartItems) {
             cartItems.innerHTML = '';
             cartEmpty.style.display = 'block';
-            cartTotal.innerHTML = '<div class="cart-total"><span>Tổng:</span><span>0 VNĐ</span></div>';
+            cartTotal.innerHTML = '<span>Tạm tính</span><strong>0 VNĐ</strong>';
         }
         if (cartItemsDetail) {
-            cartItemsDetail.innerHTML = '<div class="cart-empty">Giỏ hàng trống</div>';
-            cartTotalDetail.innerHTML = '<div style="text-align: center; color: #999;">Không có sản phẩm</div>';
+            cartItemsDetail.innerHTML = '<div class="cart-empty"><strong>Chưa có sản phẩm</strong><small>Hãy quay lại menu để chọn món.</small></div>';
+            cartTotalDetail.innerHTML = '<span>Tổng cộng</span><strong>0 VNĐ</strong>';
         }
         return;
     }
 
     cartEmpty.style.display = 'none';
 
-    const itemsHtml = cart.items.map(item => `
+    const itemsHtml = cart.items.map((item, index) => `
         <div class="cart-item">
-            <div class="cart-item-name">${item.productName}</div>
-            <div class="cart-item-price">${item.priceAtAdd.toLocaleString()} VNĐ</div>
-            <div class="cart-item-qty">Số lượng: ${item.quantity}</div>
-            <button class="cart-item-remove" onclick="removeFromCart(${item.id})">Xóa</button>
+            <div class="cart-item-thumb">${foodStyles[index % foodStyles.length].glyph}</div>
+            <div><div class="cart-item-name">${escapeHtml(item.productName)}</div><div class="cart-item-meta">Số lượng: ${item.quantity}</div></div>
+            <div><div class="cart-item-price">${formatCurrency(item.priceAtAdd * item.quantity)}</div><button class="cart-item-remove" onclick="removeFromCart(${item.id})">Xóa</button></div>
         </div>
     `).join('');
 
     if (cartItems) {
         cartItems.innerHTML = itemsHtml;
-        cartTotal.innerHTML = `<div class="cart-total"><span>Tổng:</span><span>${cart.totalPrice.toLocaleString()} VNĐ</span></div>`;
+        cartTotal.innerHTML = `<span>Tạm tính</span><strong>${formatCurrency(cart.totalPrice)}</strong>`;
     }
 
     if (cartItemsDetail) {
         cartItemsDetail.innerHTML = cart.items.map(item => `
-            <div class="order-item">
-                <span>${item.productName} x${item.quantity}</span>
-                <span>${(item.priceAtAdd * item.quantity).toLocaleString()} VNĐ</span>
+            <div class="detail-cart-item">
+                <div><strong>${escapeHtml(item.productName)}</strong><small>Số lượng: ${item.quantity} · ${formatCurrency(item.priceAtAdd)}/phần</small></div>
+                <span>${formatCurrency(item.priceAtAdd * item.quantity)}</span>
             </div>
         `).join('');
-        cartTotalDetail.innerHTML = `<div style="text-align: right; color: #667eea; font-size: 18px;">Tổng: ${cart.totalPrice.toLocaleString()} VNĐ</div>`;
-        document.getElementById('checkoutTotal').textContent = cart.totalPrice.toLocaleString() + ' VNĐ';
+        cartTotalDetail.innerHTML = `<span>Tổng cộng</span><strong>${formatCurrency(cart.totalPrice)}</strong>`;
+        document.getElementById('checkoutTotal').textContent = formatCurrency(cart.totalPrice);
     }
 }
 
@@ -481,7 +520,7 @@ function displayOrders(orders) {
     const container = document.getElementById('ordersContainer');
 
     if (orders.length === 0) {
-        container.innerHTML = '<div class="cart-empty">Chưa có đơn hàng nào</div>';
+        container.innerHTML = '<div class="surface cart-empty"><span class="empty-icon">↗</span><strong>Chưa có đơn hàng nào</strong><small>Đơn hàng sau khi đặt sẽ xuất hiện tại đây.</small></div>';
         return;
     }
 
@@ -489,7 +528,7 @@ function displayOrders(orders) {
         <div class="order-card">
             <div class="order-header">
                 <div class="order-id">Đơn #${order.id}</div>
-                <div class="order-status status-${order.status.toLowerCase() || 'pending'}">${order.status}</div>
+                <div class="order-status status-${escapeHtml(order.status.toLowerCase() || 'pending')}">${escapeHtml(order.status)}</div>
             </div>
             <div class="order-details">
                 <div class="detail-item">
@@ -498,23 +537,23 @@ function displayOrders(orders) {
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Địa chỉ</div>
-                    <div class="detail-value">${order.address || 'N/A'}</div>
+                    <div class="detail-value">${escapeHtml(order.address || 'N/A')}</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Thành phố</div>
-                    <div class="detail-value">${order.city || 'N/A'}</div>
+                    <div class="detail-value">${escapeHtml(order.city || 'N/A')}</div>
                 </div>
                 <div class="detail-item">
                     <div class="detail-label">Tổng tiền</div>
-                    <div class="detail-value">${order.totalAmount.toLocaleString()} VNĐ</div>
+                    <div class="detail-value">${formatCurrency(order.totalAmount)}</div>
                 </div>
             </div>
             <div class="order-items">
                 ${order.items && order.items.length > 0 ? 
                     order.items.map(item => `
                         <div class="order-item">
-                            <span>${item.productName} x${item.quantity}</span>
-                            <span>${(item.unitPrice * item.quantity).toLocaleString()} VNĐ</span>
+                            <span>${escapeHtml(item.productName)} × ${item.quantity}</span>
+                            <span>${formatCurrency(item.unitPrice * item.quantity)}</span>
                         </div>
                     `).join('') 
                     : '<div>Không có sản phẩm</div>'
@@ -528,6 +567,11 @@ function displayOrders(orders) {
 function showSection(sectionId) {
     document.querySelectorAll('.section').forEach(el => el.classList.remove('active'));
     document.getElementById(sectionId).classList.add('active');
+
+    document.querySelectorAll('.nav-btn').forEach(button => {
+        button.classList.toggle('active', button.dataset.section === sectionId);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
 
     if (sectionId === 'home' && currentUser) {
         loadProducts();
@@ -545,6 +589,8 @@ function toggleForm() {
     registerForm.style.display = showingLogin ? 'block' : 'none';
     loginToggle.style.display = showingLogin ? 'none' : 'block';
     registerToggle.style.display = showingLogin ? 'block' : 'none';
+    const authTitle = document.getElementById('authTitle');
+    authTitle.textContent = showingLogin ? 'Tạo tài khoản mới' : 'Chào mừng trở lại';
 }
 
 function showMessage(message, type = 'info') {
