@@ -12,9 +12,9 @@ static void cancel_order(void) {
         order->items[i] = (OrderItem){(int)i + 1, 2, 45000};
     printf("Cancel order %d: %zu items\n", order->id, order->count);
 #ifdef FIXED
-    free(order->items); /* Owner releases children before itself. */
+    free(order->items); 
 #endif
-    free(order); /* BUG: items become unreachable without the fix. */
+    free(order); 
 }
 int main(void) {
     for (int i = 0; i < 5; ++i) cancel_order();

@@ -11,10 +11,10 @@ int main(int argc, char **argv) {
     if (strlen(input) >= NAME_CAPACITY) {
         puts("REJECTED: product name too long");
         free(product.name);
-        return 0; /* Expected handled validation, not a process failure. */
+        return 0; 
     }
 #endif
-    strcpy(product.name, input); /* BUG without length check (including NUL). */
+    strcpy(product.name, input);
     printf("Product %d: %s\n", product.id, product.name);
     free(product.name);
     return 0;

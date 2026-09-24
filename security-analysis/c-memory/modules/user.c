@@ -10,7 +10,7 @@ static void register_user(const char *input) {
         return;
     }
 #endif
-    strcpy(email, input); /* BUG without length validation. */
+    strcpy(email, input); 
     printf("Registered email: %s\n", email);
 }
 int main(int argc, char **argv) {

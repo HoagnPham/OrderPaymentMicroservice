@@ -8,7 +8,7 @@ int main(void) {
     CartItem *removed = head;
     head = removed->next;
 #ifdef FIXED
-    int product_id = removed->product_id; /* Snapshot value while still alive. */
+    int product_id = removed->product_id; 
     free(removed);
     removed = NULL;
     printf("Removed product %d\n", product_id);

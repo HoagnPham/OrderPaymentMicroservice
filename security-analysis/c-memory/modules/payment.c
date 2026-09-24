@@ -8,7 +8,7 @@ int main(void) {
     puts("Gateway failure: release transaction code");
     free(payment.transaction_code);
 #ifdef FIXED
-    payment.transaction_code = NULL; /* Clear owning pointer; free(NULL) is valid. */
+    payment.transaction_code = NULL; 
 #endif
     free(payment.transaction_code); /* BUG: common cleanup frees it again. */
     return 0;
