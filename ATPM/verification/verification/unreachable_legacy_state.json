@@ -1,0 +1,49 @@
+{
+  "title": "unreachable_legacy_state",
+  "description": "Mo hinh mot ung dung CO 1 tinh nang CU (legacy) da bi GO BO khoi luong dieu khien chinh nhung ĐOẠN MÃ mo ta no VAN CON trong dac ta (vi du do quen xoa sau khi refactor): trang thai 'legacy_debug_mode' VAN co dich chuyen di ra (tu-lap, nen KHONG vi pham tinh tong quan he cua R) nhung KHONG CO dich chuyen nao TU cac trang thai reachable-tu-S0 DAN DEN no — tuc no LA MOT THANH PHAN 'CHET' (dead state). Day la vi du de phan biet ro: cong cu deadlock-check quet TREN TOAN BO S (se KHONG bao cao gi bat thuong o day vi 'legacy_debug_mode' co tu-dich-chuyen), nhung ham reachable_states() (dung trong CLI khi ban chon file nay) se cho thay ro trang thai nay KHONG nam trong tap co the den duoc tu trang thai khoi tao.",
+  "states": [
+    "idle",
+    "processing",
+    "done",
+    "legacy_debug_mode"
+  ],
+  "initial": [
+    "idle"
+  ],
+  "labeling": {
+    "idle": [
+      "safe"
+    ],
+    "processing": [
+      "busy"
+    ],
+    "done": [
+      "safe"
+    ],
+    "legacy_debug_mode": [
+      "unreachable_dead_code"
+    ]
+  },
+  "transitions": [
+    [
+      "idle",
+      "processing"
+    ],
+    [
+      "processing",
+      "done"
+    ],
+    [
+      "done",
+      "idle"
+    ],
+    [
+      "legacy_debug_mode",
+      "legacy_debug_mode"
+    ]
+  ],
+  "suggested_ctl_formulas": [
+    "AG(!violation)",
+    "EF(unreachable_dead_code)"
+  ]
+}

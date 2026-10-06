@@ -1,0 +1,78 @@
+{
+  "name": "resource_pool",
+  "description": "Bộ quản lý tài nguyên động (connection pool) đơn giản: cấp phát/giải phóng bộ nhớ, một bộ đếm tích lũy có thể tràn số, và logic xử lý giá trị đặc biệt (magic value) cần kiểm thử bằng fuzzing.",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Mỗi tài nguyên cấp phát động phải được giải phóng đúng một lần",
+      "category": "memory",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-2",
+      "text": "Bộ đếm tích lũy số kết nối không được tràn kiểu int 32-bit",
+      "category": "safety",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "REQ-3",
+      "text": "Hàm xử lý mã phiên (session code) không được gây lỗi không kiểm soát với bất kỳ đầu vào nào",
+      "category": "functional",
+      "priority": "MEDIUM"
+    }
+  ],
+  "state_machine": null,
+  "safety_properties": [],
+  "mutual_exclusion": null,
+  "functions": [
+    {
+      "name": "acquire_leak",
+      "language": "c",
+      "kind": "alloc_release",
+      "params": [],
+      "buffer_size": 8,
+      "bug": "memory-leak"
+    },
+    {
+      "name": "release_twice",
+      "language": "c",
+      "kind": "alloc_release",
+      "params": [],
+      "buffer_size": 4,
+      "bug": "double-free"
+    },
+    {
+      "name": "session_divide",
+      "language": "python",
+      "kind": "divide",
+      "params": [
+        "a",
+        "b"
+      ]
+    },
+    {
+      "name": "session_magic_code",
+      "language": "python",
+      "kind": "magic_value",
+      "params": [
+        "x",
+        "y"
+      ],
+      "magic_values": [
+        4242,
+        9001
+      ]
+    }
+  ],
+  "arithmetic_checks": [
+    {
+      "name": "connection_counter",
+      "int_vars": [
+        "x",
+        "y"
+      ],
+      "condition": "x >= 0 and y >= 0 and x + y > 2000000000",
+      "overflow_expr": "x + y"
+    }
+  ]
+}

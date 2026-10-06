@@ -1,0 +1,122 @@
+{
+  "description": "Bai toan READERS-WRITERS KINH DIEN (uu tien reader): khac voi mutex (loai tru lan nhau TUYET DOI), o day NHIEU reader duoc phep doc DONG THOI, chi RIENG writer moi can duoc dam bao loai tru voi tat ca cac ben con lai (ca reader lan writer khac). Day la vi du de kiem tra 1 dang loai tru lan nhau 'BAT DOI XUNG' (asymmetric mutual exclusion): thu check_mutual_exclusion(model, 'writing', 'reading') tren luong ket hop de xac nhan writer khong bao gio ghi cung luc voi reader dang doc.",
+  "title": "Readers-Writers (toi da 2 doc gia dong thoi, ghi doc quyen)",
+  "flows": {
+    "Reader - riêng lẻ": {
+      "description": "1 Reader RIENG LE: 'idle' -> 'reading' -> quay lai 'idle'. Khong the hien duoc SO LUONG reader dong thoi o muc rieng le nay.",
+      "states": [
+        "idle",
+        "reading"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "reading": [
+          "reading"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "reading"
+        ],
+        [
+          "reading",
+          "idle"
+        ]
+      ]
+    },
+    "Writer - riêng lẻ": {
+      "description": "1 Writer RIENG LE: 'idle' -> 'writing' -> quay lai 'idle'.",
+      "states": [
+        "idle",
+        "writing"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "writing": [
+          "writing"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "writing"
+        ],
+        [
+          "writing",
+          "idle"
+        ]
+      ]
+    },
+    "Hệ thống kết hợp (Coordinator - đếm số đọc giả)": {
+      "description": "Mo hinh COORDINATOR (bo dieu phoi dem so reader dang doc) theo chinh sach 'uu tien reader' kinh dien: 'free' (khong ai dung tai nguyen) -> co the co NHIEU reader cung doc dong thoi ('reading1', 'reading2' — mo phong toi da 2 reader dong thoi de don gian hoa) NHUNG chi 1 writer duy nhat duoc ghi ('writing'), va writer KHONG duoc ghi khi CO BAT KY reader nao dang doc. Day la diem KHAC BIET quan trong so voi mutex don gian: 'reading' cho phep NHIEU BEN cung truy cap dong thoi (khong phai loai tru lan nhau tuyet doi), chi 'writing' moi can loai tru voi TAT CA cac ben con lai (kem ca 'reading').",
+      "states": [
+        "free",
+        "reading1",
+        "reading2",
+        "writing"
+      ],
+      "initial": [
+        "free"
+      ],
+      "labeling": {
+        "free": [
+          "safe"
+        ],
+        "reading1": [
+          "reading"
+        ],
+        "reading2": [
+          "reading"
+        ],
+        "writing": [
+          "writing"
+        ]
+      },
+      "transitions": [
+        [
+          "free",
+          "reading1"
+        ],
+        [
+          "free",
+          "writing"
+        ],
+        [
+          "reading1",
+          "free"
+        ],
+        [
+          "reading1",
+          "reading2"
+        ],
+        [
+          "reading2",
+          "reading1"
+        ],
+        [
+          "writing",
+          "free"
+        ]
+      ]
+    }
+  },
+  "suggested_ctl_formulas": [
+    "AG(!violation)",
+    "EF(writing)"
+  ],
+  "suggested_mutex_atoms": [
+    "writing",
+    "reading"
+  ]
+}

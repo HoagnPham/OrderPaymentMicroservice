@@ -1,0 +1,58 @@
+{
+  "title": "linear_terminating_chain",
+  "description": "Mo hinh mot TRINH CAI DAT PHAN MEM (setup wizard): 'welcome' -> 'license_agreement' -> 'choose_folder' -> 'installing' -> 'done', hoan toan TUYEN TINH, KHONG CO CHU TRINH nao quay nguoc lai (tru 1 self-loop BAT BUOC tai 'done' de thoa man tinh tong quan he cua R — quy uoc pho bien cho 'trang thai ket thuc'). Vi KHONG co bat ky duong di nao co the 'lan tran' mai ma khong toi 'done', AF(done) LUON DUNG (100% dam bao song con) — DOI LAP HOAN TOAN voi self_loop_retry_livelock.json (noi AF(success) la SAI vi co duong di retry vo han). Hai file nay NEN duoc kiem chung CANH NHAU de thay ro gia tri thuc te cua AF.",
+  "states": [
+    "welcome",
+    "license_agreement",
+    "choose_folder",
+    "installing",
+    "done"
+  ],
+  "initial": [
+    "welcome"
+  ],
+  "labeling": {
+    "welcome": [
+      "step1"
+    ],
+    "license_agreement": [
+      "step2"
+    ],
+    "choose_folder": [
+      "step3"
+    ],
+    "installing": [
+      "step4"
+    ],
+    "done": [
+      "finished"
+    ]
+  },
+  "transitions": [
+    [
+      "welcome",
+      "license_agreement"
+    ],
+    [
+      "license_agreement",
+      "choose_folder"
+    ],
+    [
+      "choose_folder",
+      "installing"
+    ],
+    [
+      "installing",
+      "done"
+    ],
+    [
+      "done",
+      "done"
+    ]
+  ],
+  "suggested_ctl_formulas": [
+    "AF(finished)",
+    "EF(finished)",
+    "AG(!violation)"
+  ]
+}

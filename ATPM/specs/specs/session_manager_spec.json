@@ -1,0 +1,153 @@
+{
+  "name": "session_manager",
+  "description": "Hệ thống quản lý phiên làm việc với 2 tiến trình tranh chấp tài nguyên vùng tranh chấp (critical section) và 1 hàm xử lý dữ liệu đầu vào người dùng.",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Hai tiến trình không được đồng thời ở vùng tranh chấp (mutual exclusion)",
+      "category": "safety",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-2",
+      "text": "Hệ thống không được rơi vào deadlock",
+      "category": "liveness",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-3",
+      "text": "Hàm xử lý chuỗi đầu vào không được gây tràn bộ đệm",
+      "category": "memory",
+      "priority": "HIGH"
+    }
+  ],
+  "state_machine": {
+    "states": [
+      "idle_idle",
+      "crit1_idle",
+      "idle_crit2",
+      "crit1_crit2"
+    ],
+    "initial": [
+      "idle_idle"
+    ],
+    "labeling": {
+      "idle_idle": [
+        "safe"
+      ],
+      "crit1_idle": [
+        "p1"
+      ],
+      "idle_crit2": [
+        "p2"
+      ],
+      "crit1_crit2": [
+        "p1",
+        "p2",
+        "violation"
+      ]
+    },
+    "transitions": [
+      [
+        "idle_idle",
+        "crit1_idle"
+      ],
+      [
+        "idle_idle",
+        "idle_crit2"
+      ],
+      [
+        "crit1_idle",
+        "idle_idle"
+      ],
+      [
+        "idle_crit2",
+        "idle_idle"
+      ],
+      [
+        "crit1_idle",
+        "crit1_crit2"
+      ],
+      [
+        "crit1_crit2",
+        "idle_idle"
+      ]
+    ]
+  },
+  "additional_flows": {
+    "Tiến trình 1 (riêng lẻ, trước khi kết hợp)": {
+      "states": [
+        "idle",
+        "crit1"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "crit1": [
+          "p1"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "crit1"
+        ],
+        [
+          "crit1",
+          "idle"
+        ]
+      ]
+    },
+    "Tiến trình 2 (riêng lẻ, trước khi kết hợp)": {
+      "states": [
+        "idle",
+        "crit2"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "crit2": [
+          "p2"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "crit2"
+        ],
+        [
+          "crit2",
+          "idle"
+        ]
+      ]
+    }
+  },
+  "safety_properties": [
+    "AG(!violation)"
+  ],
+  "mutual_exclusion": {
+    "atom1": "p1",
+    "atom2": "p2"
+  },
+  "functions": [
+    {
+      "name": "handle_input",
+      "language": "c",
+      "kind": "buffer_copy",
+      "params": [
+        "user_input"
+      ],
+      "buffer_size": 16,
+      "bug": "buffer-overflow"
+    }
+  ],
+  "arithmetic_checks": []
+}

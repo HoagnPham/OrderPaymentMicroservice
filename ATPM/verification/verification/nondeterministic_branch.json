@@ -1,0 +1,47 @@
+{
+  "title": "nondeterministic_branch",
+  "description": "Mo hinh mot BO DIEU PHOI SU KIEN (event dispatcher): tu trang thai 'waiting', khi co 1 su kien den, he thong CO THE re nhanh (nondeterministic) sang XU LY LOAI A hoac XU LY LOAI B — ke ca voi CUNG mot dau vao, khong the doan truoc duoc se di nhanh nao (vd do lich su dung luong CPU tai thoi diem do quyet dinh). Day la vi du KINH DIEN de phan biet EX (TON TAI it nhat 1 nhanh ke tiep thoa p) voi AX (TAT CA cac nhanh ke tiep deu thoa p).",
+  "states": [
+    "waiting",
+    "handling_a",
+    "handling_b"
+  ],
+  "initial": [
+    "waiting"
+  ],
+  "labeling": {
+    "waiting": [
+      "idle"
+    ],
+    "handling_a": [
+      "type_a"
+    ],
+    "handling_b": [
+      "type_b"
+    ]
+  },
+  "transitions": [
+    [
+      "waiting",
+      "handling_a"
+    ],
+    [
+      "waiting",
+      "handling_b"
+    ],
+    [
+      "handling_a",
+      "waiting"
+    ],
+    [
+      "handling_b",
+      "waiting"
+    ]
+  ],
+  "suggested_ctl_formulas": [
+    "EX(type_a)",
+    "AX(type_a)",
+    "EF(type_b)",
+    "AG(!violation)"
+  ]
+}

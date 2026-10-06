@@ -1,0 +1,53 @@
+{
+  "description": "May ban hang tu dong (Vending Machine) — 1 FSM DON GIAN, KHONG CO TINH DONG THOI: 'idle' -> 'selected' (da chon mon hang) -> 'paid' (da thanh toan) -> 'dispensing' (dang tra hang) -> quay lai 'idle'; RIENG tu 'selected' con co the HUY CHON va quay THANG ve 'idle' (khach doi y). Vi 2 trang thai 'idle' va 'selected' tao thanh 1 CHU TRINH co the lap LAI VO HAN LAN (chon roi huy, chon roi huy, ...) MA KHONG BAO GIO bat buoc phai di tiep den 'dispensing', day la vi du DON GIAN NHUNG RO RANG cho thay AF(dispensing) la SAI (khong dam bao chac chan se nhan duoc hang) — MAC DU EF(dispensing) van DUNG (VAN CO THE nhan duoc hang neu khach khong huy). So sanh voi linear_terminating_chain.json (noi AF luon dung vi khong co 'duong thoat lui') de thay ro vai tro cua 1 CANH QUAY LAI (back-edge) doi voi tinh chat song con (liveness).",
+  "states": [
+    "idle",
+    "selected",
+    "paid",
+    "dispensing"
+  ],
+  "initial": [
+    "idle"
+  ],
+  "labeling": {
+    "idle": [
+      "safe"
+    ],
+    "selected": [
+      "item_selected"
+    ],
+    "paid": [
+      "payment_ok"
+    ],
+    "dispensing": [
+      "dispensing"
+    ]
+  },
+  "transitions": [
+    [
+      "idle",
+      "selected"
+    ],
+    [
+      "selected",
+      "paid"
+    ],
+    [
+      "paid",
+      "dispensing"
+    ],
+    [
+      "dispensing",
+      "idle"
+    ],
+    [
+      "selected",
+      "idle"
+    ]
+  ],
+  "suggested_ctl_formulas": [
+    "EF(dispensing)",
+    "AF(dispensing)",
+    "AG(!violation)"
+  ]
+}

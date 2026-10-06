@@ -1,0 +1,249 @@
+{
+  "description": "Thuat toan TICKET LOCK — 1 CACH GIAI QUYET CU THE cho bai toan LOAI TRU LAN NHAU (khac voi mutex_fixed.json chi 'gia dinh' da co co che sua loi ma khong the hien thuat toan): moi tien trinh 'boc so thu tu' truoc khi vao vung tranh chap, giong co che xep hang tai quay giao dich — dam bao KHONG NHUNG loai tru lan nhau MA CON tinh cong bang (khong tien trinh nao bi 'doi vinh vien' trong khi tien trinh kia lien tuc duoc uu tien).",
+  "states": [
+    "idle_idle",
+    "wait1_idle",
+    "idle_wait2",
+    "crit1_idle",
+    "idle_crit2",
+    "wait1_wait2_t1first",
+    "wait1_wait2_t2first"
+  ],
+  "initial": [
+    "idle_idle"
+  ],
+  "labeling": {
+    "idle_idle": [
+      "safe"
+    ],
+    "wait1_idle": [
+      "p1_waiting"
+    ],
+    "idle_wait2": [
+      "p2_waiting"
+    ],
+    "crit1_idle": [
+      "p1"
+    ],
+    "idle_crit2": [
+      "p2"
+    ],
+    "wait1_wait2_t1first": [
+      "p1_waiting",
+      "p2_waiting",
+      "t1_turn"
+    ],
+    "wait1_wait2_t2first": [
+      "p1_waiting",
+      "p2_waiting",
+      "t2_turn"
+    ]
+  },
+  "transitions": [
+    [
+      "idle_idle",
+      "wait1_idle"
+    ],
+    [
+      "idle_idle",
+      "idle_wait2"
+    ],
+    [
+      "wait1_idle",
+      "crit1_idle"
+    ],
+    [
+      "idle_wait2",
+      "idle_crit2"
+    ],
+    [
+      "crit1_idle",
+      "idle_idle"
+    ],
+    [
+      "idle_crit2",
+      "idle_idle"
+    ],
+    [
+      "wait1_idle",
+      "wait1_wait2_t1first"
+    ],
+    [
+      "idle_wait2",
+      "wait1_wait2_t2first"
+    ],
+    [
+      "wait1_wait2_t1first",
+      "crit1_idle"
+    ],
+    [
+      "wait1_wait2_t2first",
+      "idle_crit2"
+    ]
+  ],
+  "flows": {
+    "Tiến trình 1 (P1) - riêng lẻ": {
+      "description": "Tien trinh 1 RIENG LE theo thuat toan Ticket Lock: 'idle' -> 'waiting' (da 'boc so thu tu', dang cho den luot) -> 'crit' (vung tranh chap) -> quay lai 'idle'.",
+      "states": [
+        "idle",
+        "waiting",
+        "crit"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "waiting": [
+          "p1_waiting"
+        ],
+        "crit": [
+          "p1"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "waiting"
+        ],
+        [
+          "waiting",
+          "crit"
+        ],
+        [
+          "crit",
+          "idle"
+        ]
+      ]
+    },
+    "Tiến trình 2 (P2) - riêng lẻ": {
+      "description": "Tien trinh 2 RIENG LE, cau truc doi xung voi Tien trinh 1.",
+      "states": [
+        "idle",
+        "waiting",
+        "crit"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "waiting": [
+          "p2_waiting"
+        ],
+        "crit": [
+          "p2"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "waiting"
+        ],
+        [
+          "waiting",
+          "crit"
+        ],
+        [
+          "crit",
+          "idle"
+        ]
+      ]
+    },
+    "Hệ thống kết hợp (Ticket Lock - AN TOÀN)": {
+      "description": "Mo hinh KET HOP theo thuat toan TICKET LOCK (tuong tu co che 'lay so thu tu' o quay giao dich): moi tien trinh 'boc 1 chiec ve' (ticket) khi muon vao vung tranh chap; 1 bien 'turn' dung chung quyet dinh AI duoc vao TRUOC neu ca hai cung boc ve gan nhu dong thoi (trang thai 'wait1_wait2_t1first' / 'wait1_wait2_t2first'). VI bien 'turn' dam bao CHI MOT tien trinh duoc tien vao 'crit' tai 1 thoi diem, KHONG BAO GIO ton tai trang thai 'crit1_crit2' — day la vi du CU THE HON (co thuat toan ro rang, khong chi 'gia dinh' da sua) so voi mutex_fixed.json de minh hoa 1 GIAI PHAP THUC SU cho bai toan loai tru lan nhau, dam bao them tinh CHAT KHONG DOI (starvation-free) ma mutex_fixed.json khong the hien ro.",
+      "states": [
+        "idle_idle",
+        "wait1_idle",
+        "idle_wait2",
+        "crit1_idle",
+        "idle_crit2",
+        "wait1_wait2_t1first",
+        "wait1_wait2_t2first"
+      ],
+      "initial": [
+        "idle_idle"
+      ],
+      "labeling": {
+        "idle_idle": [
+          "safe"
+        ],
+        "wait1_idle": [
+          "p1_waiting"
+        ],
+        "idle_wait2": [
+          "p2_waiting"
+        ],
+        "crit1_idle": [
+          "p1"
+        ],
+        "idle_crit2": [
+          "p2"
+        ],
+        "wait1_wait2_t1first": [
+          "p1_waiting",
+          "p2_waiting",
+          "t1_turn"
+        ],
+        "wait1_wait2_t2first": [
+          "p1_waiting",
+          "p2_waiting",
+          "t2_turn"
+        ]
+      },
+      "transitions": [
+        [
+          "idle_idle",
+          "wait1_idle"
+        ],
+        [
+          "idle_idle",
+          "idle_wait2"
+        ],
+        [
+          "wait1_idle",
+          "crit1_idle"
+        ],
+        [
+          "idle_wait2",
+          "idle_crit2"
+        ],
+        [
+          "crit1_idle",
+          "idle_idle"
+        ],
+        [
+          "idle_crit2",
+          "idle_idle"
+        ],
+        [
+          "wait1_idle",
+          "wait1_wait2_t1first"
+        ],
+        [
+          "idle_wait2",
+          "wait1_wait2_t2first"
+        ],
+        [
+          "wait1_wait2_t1first",
+          "crit1_idle"
+        ],
+        [
+          "wait1_wait2_t2first",
+          "idle_crit2"
+        ]
+      ]
+    }
+  },
+  "suggested_ctl_formulas": [
+    "AG(!violation)"
+  ],
+  "suggested_mutex_atoms": [
+    "p1",
+    "p2"
+  ]
+}

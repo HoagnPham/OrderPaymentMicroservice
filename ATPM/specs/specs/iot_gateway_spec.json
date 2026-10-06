@@ -1,0 +1,246 @@
+{
+  "name": "iot_gateway_auth",
+  "description": "Cổng IoT (gateway) xử lý xác thực thiết bị: khóa cấu hình dùng chung giữa 2 tiến trình (worker chính + worker ghi log), các hàm xử lý ID thiết bị/ghi log/đóng phiên, và bộ đếm số lượng phiên đã mở.",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Worker chính và worker ghi log không được đồng thời giữ khóa cấu hình (mutual exclusion)",
+      "category": "safety",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-2",
+      "text": "Hệ thống không được rơi vào deadlock khi tranh chấp khóa cấu hình",
+      "category": "liveness",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-3",
+      "text": "Hàm phân tích ID thiết bị từ chuỗi đầu vào không được gây tràn bộ đệm",
+      "category": "memory",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-4",
+      "text": "Bộ ghi log phải giải phóng bộ nhớ đã cấp phát cho mỗi bản ghi",
+      "category": "memory",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "REQ-5",
+      "text": "Hàm đóng phiên không được giải phóng cùng một con trỏ nhiều hơn 1 lần",
+      "category": "memory",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-6",
+      "text": "Sau khi giải phóng tài nguyên phiên, hệ thống không được tiếp tục truy cập con trỏ đó",
+      "category": "memory",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-7",
+      "text": "Bộ đếm tổng số byte dữ liệu telemetry không được tràn kiểu int 32-bit",
+      "category": "safety",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "REQ-8",
+      "text": "Hàm chia tỷ lệ token không được gây lỗi không kiểm soát với bất kỳ đầu vào nào",
+      "category": "functional",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "REQ-9",
+      "text": "Mã mở khóa thiết bị đặc biệt (device unlock code) cần được kiểm thử bằng kỹ thuật fuzzing hợp lý (concolic) vì không gian đầu vào quá lớn cho black-box",
+      "category": "functional",
+      "priority": "LOW"
+    }
+  ],
+  "state_machine": {
+    "states": [
+      "free",
+      "main_holds",
+      "log_holds",
+      "conflict"
+    ],
+    "initial": [
+      "free"
+    ],
+    "labeling": {
+      "free": [
+        "safe"
+      ],
+      "main_holds": [
+        "main_locked"
+      ],
+      "log_holds": [
+        "log_locked"
+      ],
+      "conflict": [
+        "main_locked",
+        "log_locked",
+        "violation"
+      ]
+    },
+    "transitions": [
+      [
+        "free",
+        "main_holds"
+      ],
+      [
+        "free",
+        "log_holds"
+      ],
+      [
+        "main_holds",
+        "free"
+      ],
+      [
+        "log_holds",
+        "free"
+      ],
+      [
+        "main_holds",
+        "conflict"
+      ],
+      [
+        "conflict",
+        "free"
+      ]
+    ]
+  },
+  "additional_flows": {
+    "Worker chính (riêng lẻ, trước khi kết hợp)": {
+      "states": [
+        "free",
+        "main_holds"
+      ],
+      "initial": [
+        "free"
+      ],
+      "labeling": {
+        "free": [
+          "safe"
+        ],
+        "main_holds": [
+          "main_locked"
+        ]
+      },
+      "transitions": [
+        [
+          "free",
+          "main_holds"
+        ],
+        [
+          "main_holds",
+          "free"
+        ]
+      ]
+    },
+    "Worker ghi log (riêng lẻ, trước khi kết hợp)": {
+      "states": [
+        "free",
+        "log_holds"
+      ],
+      "initial": [
+        "free"
+      ],
+      "labeling": {
+        "free": [
+          "safe"
+        ],
+        "log_holds": [
+          "log_locked"
+        ]
+      },
+      "transitions": [
+        [
+          "free",
+          "log_holds"
+        ],
+        [
+          "log_holds",
+          "free"
+        ]
+      ]
+    }
+  },
+  "safety_properties": [
+    "AG(!violation)",
+    "EF(main_locked)"
+  ],
+  "mutual_exclusion": {
+    "atom1": "main_locked",
+    "atom2": "log_locked"
+  },
+  "functions": [
+    {
+      "name": "parse_device_id",
+      "language": "c",
+      "kind": "buffer_copy",
+      "params": [
+        "raw_id"
+      ],
+      "buffer_size": 16,
+      "bug": "buffer-overflow"
+    },
+    {
+      "name": "write_log_entry",
+      "language": "c",
+      "kind": "alloc_release",
+      "params": [],
+      "buffer_size": 32,
+      "bug": "memory-leak"
+    },
+    {
+      "name": "close_session",
+      "language": "c",
+      "kind": "alloc_release",
+      "params": [],
+      "buffer_size": 4,
+      "bug": "double-free"
+    },
+    {
+      "name": "release_session_buffer",
+      "language": "c",
+      "kind": "alloc_release",
+      "params": [],
+      "buffer_size": 8,
+      "bug": "use-after-free"
+    },
+    {
+      "name": "token_ratio",
+      "language": "python",
+      "kind": "divide",
+      "params": [
+        "issued",
+        "consumed"
+      ]
+    },
+    {
+      "name": "device_unlock_code",
+      "language": "python",
+      "kind": "magic_value",
+      "params": [
+        "code_a",
+        "code_b"
+      ],
+      "magic_values": [
+        7421,
+        3390
+      ]
+    }
+  ],
+  "arithmetic_checks": [
+    {
+      "name": "telemetry_byte_counter",
+      "int_vars": [
+        "sent_bytes",
+        "queued_bytes"
+      ],
+      "condition": "sent_bytes >= 0 and queued_bytes >= 0 and sent_bytes + queued_bytes > 2000000000",
+      "overflow_expr": "sent_bytes + queued_bytes"
+    }
+  ]
+}

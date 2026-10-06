@@ -1,0 +1,174 @@
+{
+  "description": "Bai toan LOAI TRU LAN NHAU (Mutual Exclusion) KINH DIEN giua 2 tien trinh cung tranh chap 1 VUNG TRANH CHAP (critical section) DUNG CHUNG, o day CHU DICH THIET KE SAI (khong co lock/semaphore nao ca) de lam vi du 'phan chung' — doi chieu voi mutex_fixed.json (ban DA SUA) va ticket_lock_mutex.json (ban sua bang thuat toan ve so cu the) de thay ro SU KHAC BIET ma 1 co che dong bo dung mang lai.",
+  "states": [
+    "idle_idle",
+    "crit1_idle",
+    "idle_crit2",
+    "crit1_crit2"
+  ],
+  "initial": [
+    "idle_idle"
+  ],
+  "labeling": {
+    "idle_idle": [
+      "safe"
+    ],
+    "crit1_idle": [
+      "p1"
+    ],
+    "idle_crit2": [
+      "p2"
+    ],
+    "crit1_crit2": [
+      "p1",
+      "p2",
+      "violation"
+    ]
+  },
+  "transitions": [
+    [
+      "idle_idle",
+      "crit1_idle"
+    ],
+    [
+      "idle_idle",
+      "idle_crit2"
+    ],
+    [
+      "crit1_idle",
+      "idle_idle"
+    ],
+    [
+      "idle_crit2",
+      "idle_idle"
+    ],
+    [
+      "crit1_idle",
+      "crit1_crit2"
+    ],
+    [
+      "crit1_crit2",
+      "idle_idle"
+    ]
+  ],
+  "flows": {
+    "Tiến trình 1 (P1) - riêng lẻ": {
+      "description": "Tien trinh 1 RIENG LE: 'idle' -> 'crit1' (vung tranh chap) -> quay lai 'idle'. Khong the tu mo hinh nay phat hien loi — loi CHI xuat hien o muc KET HOP (tuong tac giua 2 tien trinh).",
+      "states": [
+        "idle",
+        "crit1"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "crit1": [
+          "p1"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "crit1"
+        ],
+        [
+          "crit1",
+          "idle"
+        ]
+      ]
+    },
+    "Tiến trình 2 (P2) - riêng lẻ": {
+      "description": "Tien trinh 2 RIENG LE, cau truc doi xung voi Tien trinh 1.",
+      "states": [
+        "idle",
+        "crit2"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "crit2": [
+          "p2"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "crit2"
+        ],
+        [
+          "crit2",
+          "idle"
+        ]
+      ]
+    },
+    "Hệ thống kết hợp (Product Automaton - CÓ LỖI THIẾT KẾ)": {
+      "description": "Mo hinh KET HOP (product automaton) CHU DICH CO LOI THIET KE: KHONG CO co che dong bo nao ngan 2 tien trinh CUNG luc vao vung tranh chap -> ton tai trang thai 'crit1_crit2' (gan nhan ['p1','p2','violation']) MA VAN reachable tu S0='idle_idle'. Day la vi du 'be' de kiem tra check_mutual_exclusion(model,'p1','p2') tra ve False, va cong thuc AG(!violation) SAI.",
+      "states": [
+        "idle_idle",
+        "crit1_idle",
+        "idle_crit2",
+        "crit1_crit2"
+      ],
+      "initial": [
+        "idle_idle"
+      ],
+      "labeling": {
+        "idle_idle": [
+          "safe"
+        ],
+        "crit1_idle": [
+          "p1"
+        ],
+        "idle_crit2": [
+          "p2"
+        ],
+        "crit1_crit2": [
+          "p1",
+          "p2",
+          "violation"
+        ]
+      },
+      "transitions": [
+        [
+          "idle_idle",
+          "crit1_idle"
+        ],
+        [
+          "idle_idle",
+          "idle_crit2"
+        ],
+        [
+          "crit1_idle",
+          "idle_idle"
+        ],
+        [
+          "idle_crit2",
+          "idle_idle"
+        ],
+        [
+          "crit1_idle",
+          "crit1_crit2"
+        ],
+        [
+          "crit1_crit2",
+          "idle_idle"
+        ]
+      ]
+    }
+  },
+  "suggested_ctl_formulas": [
+    "AG(!violation)",
+    "EF(violation)"
+  ],
+  "suggested_mutex_atoms": [
+    "p1",
+    "p2"
+  ]
+}

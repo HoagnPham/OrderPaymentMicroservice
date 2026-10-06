@@ -1,0 +1,51 @@
+{
+  "title": "self_loop_retry_livelock",
+  "description": "Mo hinh mot KET NOI MANG co CO CHE THU LAI (retry): o trang thai 'connecting', moi lan thu CO THE thanh cong (-> 'connected'), that bai han va BO CUOC (-> 'failed'), HOAC that bai nhung THU LAI (self-loop quay ve chinh 'connecting') — VE MAT LY THUYET co the thu lai VO HAN LAN ma khong bao gio thanh cong CUNG khong bao gio bo cuoc (LIVELOCK/'khong dam bao song con'). Day la vi du RO NHAT cho EG(connecting)=True (co duong di o mai trong trang thai cho) DONG THOI AF(connected)=False (KHONG dam bao chac chan roi cung se ket noi thanh cong) — khac han AF luon dung tren cac mo hinh 'chuoi tuyen tinh co ket thuc' nhu linear_terminating_chain.json.",
+  "states": [
+    "connecting",
+    "connected",
+    "failed"
+  ],
+  "initial": [
+    "connecting"
+  ],
+  "labeling": {
+    "connecting": [
+      "retrying"
+    ],
+    "connected": [
+      "success"
+    ],
+    "failed": [
+      "gave_up"
+    ]
+  },
+  "transitions": [
+    [
+      "connecting",
+      "connecting"
+    ],
+    [
+      "connecting",
+      "connected"
+    ],
+    [
+      "connecting",
+      "failed"
+    ],
+    [
+      "connected",
+      "connected"
+    ],
+    [
+      "failed",
+      "failed"
+    ]
+  ],
+  "suggested_ctl_formulas": [
+    "EG(retrying)",
+    "AF(success)",
+    "EF(success)",
+    "AG(!violation)"
+  ]
+}

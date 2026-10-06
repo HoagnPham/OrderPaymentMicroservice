@@ -1,0 +1,254 @@
+{
+  "name": "file_upload_auth",
+  "description": "Dich vu upload file voi kiem soat truy cap 2 tien trinh worker tranh chap mot khoa ghi file dung chung, 1 ham C cap phat bo dem upload co loi memory-leak, va 1 ham Python kiem tra ma xac thuc dac biet (magic value) can concolic fuzzing.",
+  "requirements": [
+    {
+      "id": "REQ-1",
+      "text": "Hai worker khong duoc dong thoi ghi vao cung mot file (mutual exclusion)",
+      "category": "safety",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-2",
+      "text": "He thong khong duoc roi vao deadlock khi ca hai worker cung yeu cau khoa",
+      "category": "liveness",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-3",
+      "text": "Bo dem upload cap phat dong phai duoc giai phong dung cach",
+      "category": "memory",
+      "priority": "MEDIUM"
+    },
+    {
+      "id": "REQ-4",
+      "text": "Ham kiem tra ma xac thuc khong duoc co 'cua sau' (backdoor) de lo qua kiem tra",
+      "category": "safety",
+      "priority": "HIGH"
+    }
+  ],
+  "state_machine": {
+    "states": [
+      "idle_idle",
+      "wait1_idle",
+      "idle_wait2",
+      "crit1_idle",
+      "idle_crit2",
+      "wait1_wait2_t1first",
+      "wait1_wait2_t2first"
+    ],
+    "initial": [
+      "idle_idle"
+    ],
+    "labeling": {
+      "idle_idle": [
+        "safe"
+      ],
+      "wait1_idle": [
+        "p1_waiting"
+      ],
+      "idle_wait2": [
+        "p2_waiting"
+      ],
+      "crit1_idle": [
+        "p1"
+      ],
+      "idle_crit2": [
+        "p2"
+      ],
+      "wait1_wait2_t1first": [
+        "p1_waiting",
+        "p2_waiting"
+      ],
+      "wait1_wait2_t2first": [
+        "p1_waiting",
+        "p2_waiting"
+      ]
+    },
+    "transitions": [
+      [
+        "idle_idle",
+        "wait1_idle"
+      ],
+      [
+        "idle_idle",
+        "idle_wait2"
+      ],
+      [
+        "wait1_idle",
+        "crit1_idle"
+      ],
+      [
+        "idle_wait2",
+        "idle_crit2"
+      ],
+      [
+        "crit1_idle",
+        "idle_idle"
+      ],
+      [
+        "idle_crit2",
+        "idle_idle"
+      ],
+      [
+        "wait1_idle",
+        "wait1_wait2_t1first"
+      ],
+      [
+        "idle_wait2",
+        "wait1_wait2_t2first"
+      ],
+      [
+        "wait1_wait2_t1first",
+        "crit1_idle"
+      ],
+      [
+        "wait1_wait2_t2first",
+        "idle_crit2"
+      ]
+    ]
+  },
+  "additional_flows": {
+    "Worker 1 - rieng le": {
+      "states": [
+        "idle",
+        "waiting",
+        "crit"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "waiting": [
+          "p1_waiting"
+        ],
+        "crit": [
+          "p1"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "waiting"
+        ],
+        [
+          "waiting",
+          "crit"
+        ],
+        [
+          "crit",
+          "idle"
+        ]
+      ]
+    },
+    "Worker 2 - rieng le": {
+      "states": [
+        "idle",
+        "waiting",
+        "crit"
+      ],
+      "initial": [
+        "idle"
+      ],
+      "labeling": {
+        "idle": [
+          "safe"
+        ],
+        "waiting": [
+          "p2_waiting"
+        ],
+        "crit": [
+          "p2"
+        ]
+      },
+      "transitions": [
+        [
+          "idle",
+          "waiting"
+        ],
+        [
+          "waiting",
+          "crit"
+        ],
+        [
+          "crit",
+          "idle"
+        ]
+      ]
+    }
+  },
+  "safety_properties": [
+    "AG(!violation)"
+  ],
+  "mutual_exclusion": {
+    "atom1": "p1",
+    "atom2": "p2"
+  },
+  "functions": [
+    {
+      "name": "alloc_upload_buffer",
+      "language": "c",
+      "kind": "alloc_release",
+      "params": [],
+      "buffer_size": 64,
+      "bug": "memory-leak"
+    },
+    {
+      "name": "check_auth_code",
+      "language": "python",
+      "kind": "magic_value",
+      "params": [
+        "user_code",
+        "session_salt"
+      ],
+      "magic_values": [
+        31337,
+        8080
+      ]
+    }
+  ],
+  "arithmetic_checks": [
+    {
+      "name": "upload_size_bound",
+      "int_vars": [
+        "size",
+        "chunks"
+      ],
+      "condition": "size >= 0 and chunks > 0 and size > chunks * 100000000",
+      "overflow_expr": "size * chunks"
+    }
+  ],
+  "test_cases": [
+    {
+      "id": "TC-1",
+      "requirement_ids": [
+        "REQ-1",
+        "REQ-2"
+      ],
+      "title": "Kiem chung loai tru lan nhau giua 2 worker",
+      "preconditions": "Mo hinh trang thai da duoc nap",
+      "steps": [
+        "Chay check_mutual_exclusion(model, 'p1', 'p2')"
+      ],
+      "expected_result": "Ket qua True (khong bao gio ca hai cung o trang thai co nhan p1 va p2)",
+      "priority": "HIGH"
+    },
+    {
+      "id": "TC-2",
+      "requirement_ids": [
+        "REQ-4"
+      ],
+      "title": "Concolic fuzzing tim ma xac thuc bi mat trong check_auth_code",
+      "preconditions": "Ham check_auth_code da duoc sinh ma",
+      "steps": [
+        "Chay black-box fuzz truoc (ky vong khong tim ra)",
+        "Chay concolic_fuzz voi branch predicate tuong ung"
+      ],
+      "expected_result": "Concolic fuzzing tim ra input (31337, 8080) gay loi trong vai buoc",
+      "priority": "HIGH"
+    }
+  ]
+}

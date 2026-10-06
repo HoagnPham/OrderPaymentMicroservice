@@ -81,3 +81,5 @@ Cuối BTL cần có:
 - Báo cáo kỹ thuật giải thích rõ phương pháp, kết quả và kết luận.
 - AI chỉ được đề xuất hoặc thực hiện những thay đổi phục vụ trực tiếp các mục tiêu BTL ở trên.
 Không tự mở rộng phạm vi dự án hoặc chuyển sang các vấn đề ngoài mục tiêu hiện tại.
+
+
