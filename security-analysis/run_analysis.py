@@ -81,6 +81,7 @@ def coverage():
 def main():
     checker = lab('atpm_kripke', 'ATPM/lab1/lab1_kripke_access_model/python/kripke_model.py')
     risk = lab('atpm_risk', 'ATPM/lab3_secure_memory/python/risk_assessor.py')
+    recovery = lab('order_payment_recovery', 'security-analysis/verify_recovery_model.py')
     correct = verify(BASE / 'order_state_model.json', checker)
     buggy = verify(BASE / 'order_state_model_buggy.json', checker)
     assert all(p['holds'] for p in correct['properties'])
@@ -97,6 +98,7 @@ def main():
         result['verified_by'] = source.get('verified_by')
     risk.print_report(results)
     save(OUT / 'risk_assessment_results.json', results)
+    recovery.main()
     coverage()
 
 

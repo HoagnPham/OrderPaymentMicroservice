@@ -4,6 +4,8 @@
 
 - Model kỳ vọng: **4/4 PASS**.
 - Model BUGGY: **P1 FAIL**, counterexample `CREATED → CANCELLED → PAID_AFTER_CANCELLED` (trạng thái nghiệp vụ PAID).
+- Model phục hồi Order-Payment: **10/10 PASS**, 14 trạng thái và 35 chuyển tiếp.
+- Bốn mutation về hồi sinh đơn hủy, sai amount, thanh toán trùng và xung đột payment-cancel đều bị phát hiện kèm witness.
 - xUnit: **34 PASS, 0 FAIL, 0 SKIP**.
 - Coverlet toàn lớp InputValidator: **31/32 nhánh = 96,875%** (bảng CLI hiển thị 96,87%).
 - `ValidateCreateOrderRequest()`: **100% branch coverage**, **100% line coverage**.
@@ -17,6 +19,18 @@ Từ thư mục gốc repository, dùng Python 3.10+ và .NET 10 SDK:
 dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj /p:CollectCoverage=true /p:CoverletOutput=../security-analysis/results/input-validator /p:CoverletOutputFormat=cobertura '/p:Include=[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.InputValidator' /p:Threshold=90 /p:ThresholdType=branch
 python security-analysis/run_analysis.py
 ```
+
+Có thể chạy riêng model phục hồi bằng:
+
+```powershell
+python security-analysis/verify_recovery_model.py
+```
+
+Đặc tả máy đọc được nằm trong `order_payment_recovery_model.json`; bảng giải
+thích từng state, sự cố, giải pháp và state tiếp theo nằm trong
+`MO_HINH_XU_LY_SU_CO.md`. Kết quả được lưu tại
+`results/order_payment_recovery_model.results.json`; ma trận state/sự cố/giải
+pháp nằm trong `results/order_payment_state_response_matrix.csv`.
 
 NuGet cần mạng trong lần restore đầu. Test không cần PostgreSQL và không khởi động API.
 `run_analysis.py` import trực tiếp `kripke_model.py` Lab 1 và `risk_assessor.py` Lab 3, không sao chép hay sửa script mẫu. Kết quả nằm trong `results/`.
@@ -40,6 +54,23 @@ Model kỳ vọng không có vòng chờ ở trạng thái nonterminal; terminal
 `PAID_AFTER_CANCELLED` là trạng thái PAID được gắn lịch sử và nhãn `invalid_transition`. Chỉ thêm cạnh CANCELLED → PAID trên tập trạng thái cũ sẽ không khiến bộ kiểm tra mệnh đề trạng thái của Lab 1 phát hiện lỗi. Monitor khắc phục giới hạn đó. Nhãn này phải được duy trì khi mở rộng model với các cạnh bất hợp lệ khác.
 
 Đây là **model thiết kế kỳ vọng**, không phải trích xuất đầy đủ từ implementation. Implementation còn thiếu các bước VALIDATED/CONFIRMED/COMPLETED và PaymentService thực tế có thể bỏ bước CREATED → PAID. Kết quả PASS không chứng minh API hiện tại đúng. BUGGY minh họa riêng lỗi CANCELLED → PAID; không cố mô hình hóa toàn bộ lỗi runtime.
+
+## Model xử lý sự cố và phục hồi
+
+Model mở rộng không chỉ ghi happy path của `OrderStatus`. Mỗi state còn khai
+báo trạng thái Order/Payment, sự cố, cách phát hiện, biện pháp xử lý và state
+tiếp theo.
+
+Các state thiết kế bổ sung gồm `PAYMENT_PROCESSING`, `PAYMENT_RETRY`,
+`PAYMENT_PROCESSING_FINAL`, `CONFIRMATION_RETRY`, `REFUND_PENDING` và
+`REFUNDED`. Retry được bounded bằng state `PAYMENT_PROCESSING_FINAL`. Phiên bản
+model đầu tiên cho phép vòng `PAYMENT_PROCESSING ↔ PAYMENT_RETRY` vô hạn và đã
+bị thuộc tính P10 phát hiện trước khi model được sửa.
+
+P10 kiểm tra mọi đường tiến triển cuối cùng tới terminal sau khi loại riêng các
+cạnh được đánh dấu `stutter`. Kết luận phụ thuộc vào giả định weak fairness đã
+ghi trong model. Đây là kiểm chứng model hữu hạn, chưa chứng minh source ASP.NET
+tuân thủ model.
 
 ## Case test và nhánh chưa được phủ
 

@@ -3,6 +3,10 @@
 **Định hướng: An toàn phần mềm trong quản lý đơn hàng và thanh toán**  
 Ngày cập nhật báo cáo: 24/09/2026
 
+**Bổ sung ngày 06/10/2026:** hoàn thiện model xử lý sự cố và phục hồi cho
+luồng Order-Payment, gồm bounded retry, serialization payment-cancel và
+compensation refund.
+
 Phạm vi: mã nguồn và các kết quả kiểm thử, kiểm chứng hiện có trong repository.
 
 ## 1. Tổng quan và mục tiêu
@@ -66,6 +70,36 @@ CREATED → CANCELLED → PAID_AFTER_CANCELLED
 ```
 
 Phản ví dụ thể hiện một đơn đã hủy vẫn có thể trở thành đơn đã thanh toán. Đây là nguy cơ từng được nhận diện trong PaymentService trước khi bổ sung `OrderStateMachine` và guard trạng thái nguồn. Kết quả cho thấy phương pháp kiểm chứng có thể phát hiện lỗi đã mô hình hóa; unit test hiện tại còn xác nhận đơn CANCELLED không thể được thanh toán.
+
+#### 3.3.1. Hoàn thiện model xử lý sự cố và phục hồi
+
+Đã bổ sung `order_payment_recovery_model.json` để mô tả cả happy path và đường
+xử lý sự cố tại từng state. Model có 14 state và 35 transition, bao gồm các
+state thiết kế `PAYMENT_PROCESSING`, `PAYMENT_RETRY`,
+`PAYMENT_PROCESSING_FINAL`, `CONFIRMATION_RETRY`, `REFUND_PENDING` và
+`REFUNDED`.
+
+Mỗi incident khai báo đủ vấn đề, event, cách phát hiện, giải pháp và state tiếp
+theo. Bộ kiểm chứng duyệt toàn bộ state graph và kiểm tra 10 thuộc tính về
+safety, consistency, reachability, incident completeness và liveness dưới giả
+định weak fairness. Model đúng đạt **10/10 PASS**.
+
+Trong lần chạy đầu, P10 phát hiện vòng retry vô hạn
+`PAYMENT_PROCESSING → PAYMENT_RETRY → PAYMENT_PROCESSING`. Model được sửa bằng
+state `PAYMENT_PROCESSING_FINAL`, khiến retry có bound thật trong graph thay vì
+chỉ được mô tả bằng lời.
+
+Bốn mutation được chèn độc lập để kiểm tra sức phát hiện của thuộc tính:
+
+- thanh toán Order đã CANCELLED;
+- chấp nhận payment sai amount;
+- tạo hai Payment SUCCESS;
+- payment và cancellation cùng sở hữu critical resource.
+
+Cả bốn mutation đều sinh lỗi thuộc tính và witness tương ứng. Kết quả nằm trong
+`results/order_payment_recovery_model.results.json`; diễn giải từng state nằm
+trong `MO_HINH_XU_LY_SU_CO.md`. Các state retry/refund hiện mới là thiết kế kiểm
+chứng, chưa được triển khai đầy đủ vào enum và API C#.
 
 ### 3.4. Kiểm thử dữ liệu đầu vào bằng xUnit
 

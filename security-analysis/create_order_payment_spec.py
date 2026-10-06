@@ -165,6 +165,109 @@ SHEETS = {
     },
 }
 
+# Keep the generated workbook aligned with the executable recovery model.  The
+# base rows above document the original project; this overlay adds the formal
+# recovery scope without duplicating the state graph by hand.
+RECOVERY_MODEL = ROOT / "security-analysis" / "order_payment_recovery_model.json"
+
+
+def apply_recovery_model() -> None:
+    import json
+
+    model = json.loads(RECOVERY_MODEL.read_text(encoding="utf-8"))
+    SHEETS["ThongTin"]["rows"][2][1] = (
+        "Đặc tả kiểm chứng hình thức cho luồng Order-Payment: state machine có xử lý sự cố "
+        "và phục hồi, safety/liveness, idempotency, serialization payment-cancel, bounded "
+        "retry, compensation refund, SMT số học và mô hình C về an toàn bộ nhớ."
+    )
+    SHEETS["YeuCauChucNang"]["rows"].extend([
+        ["REQ-15", "Mỗi trạng thái Order-Payment phải đặc tả sự cố, cách phát hiện, biện pháp xử lý và trạng thái tiếp theo; không được có sự cố không có đường phục hồi hoặc kết thúc.", "safety", "HIGH"],
+        ["REQ-16", "Retry thanh toán và xác nhận phải có bound; khi hết ngân sách retry phải chuyển FAILED hoặc REFUND_PENDING thay vì lặp vô hạn.", "liveness", "HIGH"],
+        ["REQ-17", "Nếu gateway đã charge nhưng không thể hoàn tất đơn hoặc commit PAID, hệ thống phải dùng REFUND_PENDING và REFUNDED để bù trừ; không được đổi thẳng sang FAILED.", "consistency", "HIGH"],
+        ["REQ-18", "Payment và cancellation trên cùng Order phải được serialize; không được đồng thời sở hữu critical resource hoặc tạo hai Payment SUCCESS.", "safety", "HIGH"],
+    ])
+    SHEETS["YeuCauPhiChucNang"]["rows"].append([
+        "NFR-6",
+        "Pipeline kiểm chứng phải duyệt toàn bộ model hữu hạn, lưu counterexample cho model lỗi và ghi rõ bound, fairness, assumptions và giới hạn kết luận.",
+        "HIGH",
+    ])
+    SHEETS["RangBuoc"]["rows"].extend([
+        ["CON-7", "Model dùng tối đa một lần retry thanh toán cuối; PAYMENT_PROCESSING_FINAL không được quay lại PAYMENT_RETRY.", "HIGH"],
+        ["CON-8", "Thuộc tính liveness dùng weak fairness: cạnh no-op/retry được đánh dấu stutter có thể lặp, nhưng transition tiến triển đang enable cuối cùng phải chạy.", "HIGH"],
+        ["CON-9", "Refund dùng idempotency key riêng; callback refund trùng chỉ trả kết quả đã lưu và không hoàn tiền lần hai.", "HIGH"],
+    ])
+
+    state_rows = [["TrangThai", "KhoiTao", "Nhan", "ChuyenDenCacTrangThai"]]
+    for state in model["states"]:
+        targets = []
+        for transition in state["normal"] + state["incidents"]:
+            if transition["to"] not in targets:
+                targets.append(transition["to"])
+        state_rows.append([
+            state["id"],
+            "x" if state["id"] == "CREATED" else "",
+            ", ".join(state["labels"]),
+            ", ".join(targets),
+        ])
+    SHEETS["MoHinhTrangThai"]["rows"] = state_rows
+    SHEETS["MoHinhTrangThai"]["widths"] = [28, 12, 68, 66]
+
+    SHEETS["ThuocTinhAnToan"]["rows"] = [
+        ["CongThucCTL"],
+        ["AG(!violation)"],
+        ["AG(paid -> payment_success)"],
+        ["AG(completed -> payment_success)"],
+        ["AG(cancelled -> !payment_success)"],
+        ["AG(failed -> !payment_success)"],
+        ["AG(payment_pending -> !payment_success)"],
+        ["AG(!resource_conflict)"],
+        ["AG(refund_pending -> payment_success)"],
+        ["AG(refunded -> payment_compensated)"],
+        ["AG(payment_processing -> AF(terminal))"],
+    ]
+    SHEETS["ThuocTinhAnToan"]["widths"] = [75]
+    SHEETS["LoaiTruLanNhau"]["rows"] = [
+        ["MenhDe1", "MenhDe2"],
+        ["payment_pending", "payment_success"],
+        ["cancelled", "payment_success"],
+        ["failed", "payment_success"],
+        ["resource_conflict", "payment_lock"],
+        ["resource_conflict", "cancel_lock"],
+        ["two_success_payments", "safe"],
+        ["amount_mismatch", "amount_verified"],
+        ["refunded", "refund_pending"],
+    ]
+    SHEETS["HamSinhMa"]["rows"] = [
+        ["Ten", "NgonNgu", "Loai", "ThamSo", "KichThuocBuffer", "Loi", "GiaTriBiMat1", "GiaTriBiMat2"],
+        ["register_user", "c", "buffer_copy", "input", 32, "buffer-overflow", 31, 32],
+        ["import_product_name", "c", "buffer_copy", "input", 32, "buffer-overflow", 31, 32],
+        ["remove_cart_item", "c", "alloc_release", "removed", 16, "use-after-free", 101, 1],
+        ["cancel_order", "c", "alloc_release", "order, order->items", 48, "memory-leak", 3, 5],
+        ["cleanup_payment", "c", "alloc_release", "transaction_code", 32, "double-free", 1, 2],
+        ["safe_divide_retry_budget", "python", "divide", "remaining_attempts, elapsed_ms", 0, "divide-by-zero", 0, 1000],
+        ["verify_gateway_callback", "python", "magic_value", "signature_code", 0, "authentication-bypass", 4919, 0],
+    ]
+    SHEETS["KiemTraSoHoc"]["rows"] = [
+        ["Ten", "BienSoNguyen", "DieuKien", "BieuThucTran"],
+        ["order_item_subtotal_cents", "quantity, unit_price_cents", "1 <= quantity <= 10000 and 1 <= unit_price_cents <= 99999999 and quantity * unit_price_cents > 2147483647", "quantity * unit_price_cents"],
+        ["order_total_cents", "subtotal1, subtotal2", "subtotal1 >= 0 and subtotal2 >= 0 and subtotal1 + subtotal2 > 2147483647", "subtotal1 + subtotal2"],
+        ["two_payment_total_cents", "payment1_cents, payment2_cents", "payment1_cents >= 0 and payment2_cents >= 0 and payment1_cents + payment2_cents > 2147483647", "payment1_cents + payment2_cents"],
+        ["inventory_after_reserve", "stock, quantity", "0 <= stock <= 2147483647 and 1 <= quantity <= 10000 and stock - quantity < 0", "stock - quantity"],
+        ["retry_counter_increment", "retry_count, one", "0 <= retry_count <= 2147483647 and one == 1 and retry_count + one > 2147483647", "retry_count + one"],
+        ["refund_total_cents", "paid_cents, refunded_cents", "paid_cents >= 0 and refunded_cents >= 0 and paid_cents + refunded_cents > 2147483647", "paid_cents + refunded_cents"],
+    ]
+    SHEETS["TestCase"]["rows"].extend([
+        ["TC-16", "REQ-15, REQ-16, NFR-6", "Kiểm chứng model phục hồi đầy đủ", "order_payment_recovery_model.json hợp lệ", "Chạy python security-analysis/verify_recovery_model.py\nĐọc 10 thuộc tính và tập state reachable", "Model đúng có 14 state, 35 transition; P1-P10 PASS và tất cả state reachable", "HIGH"],
+        ["TC-17", "REQ-5, REQ-15", "Phản ví dụ CANCELLED bị thanh toán", "Mutation BUG-CANCELLED-PAID được bật", "Thêm cạnh CANCELLED → PAID_AFTER_CANCELLED\nChạy lại toàn bộ thuộc tính", "P1 và P4 FAIL; witness đi từ CREATED tới CANCELLED rồi PAID_AFTER_CANCELLED", "HIGH"],
+        ["TC-18", "REQ-6, REQ-15", "Phản ví dụ payment sai amount", "Mutation BUG-WRONG-AMOUNT được bật", "Bỏ amount guard tại PAYMENT_PROCESSING\nChuyển tới PAID_WRONG_AMOUNT", "P1 FAIL và trả witness tới state amount_mismatch", "HIGH"],
+        ["TC-19", "REQ-7, REQ-18", "Phản ví dụ hai payment SUCCESS", "Mutation BUG-DUPLICATE-SUCCESS được bật", "Bỏ idempotency guard tại PAID\nTạo state PAID_TWICE", "P1 FAIL và trả witness tới state two_success_payments", "HIGH"],
+        ["TC-20", "REQ-18, NFR-1", "Phản ví dụ payment-cancel conflict", "Mutation BUG-RESOURCE-CONFLICT được bật", "Cho payment và cancel cùng sở hữu resource\nChạy kiểm chứng", "P1 và P7 FAIL với witness tới PAY_CANCEL_CONFLICT", "HIGH"],
+        ["TC-21", "REQ-16, REQ-17", "Bounded retry và compensation", "Model đúng, weak fairness được khai báo", "Đi PAYMENT_PROCESSING → PAYMENT_RETRY → PAYMENT_PROCESSING_FINAL\nThử timeout cuối và charged-but-commit-failed", "Không có vòng retry tiến triển vô hạn; nhánh cuối tới FAILED hoặc REFUND_PENDING → REFUNDED", "HIGH"],
+    ])
+
+
+apply_recovery_model()
+
 
 def col_name(index: int) -> str:
     result = ""

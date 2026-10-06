@@ -1,0 +1,240 @@
+{
+  "system_name": "Order-Payment recovery model",
+  "scope": "One order, one logical payment, bounded retry, cancellation and compensation",
+  "assumptions": [
+    "The database transaction serializes payment and cancellation updates for one order.",
+    "A retry transition marked stutter may repeat, but weak fairness requires an enabled progress transition to eventually run.",
+    "Gateway callbacks are authenticated and contain an idempotency key.",
+    "Inventory is reserved after validation and released on cancellation, terminal failure or refund."
+  ],
+  "terminal_labels": ["terminal"],
+  "states": [
+    {
+      "id": "CREATED",
+      "order_status": "CREATED",
+      "payment_status": "NONE",
+      "labels": ["created", "inventory_unreserved"],
+      "purpose": "Receive an order request before trusting client data.",
+      "normal": [
+        {"event": "validation_ok", "to": "VALIDATED", "action": "Load server prices, validate quantities and reserve inventory."}
+      ],
+      "incidents": [
+        {"problem": "Invalid input, missing product or insufficient stock", "event": "validation_rejected", "detection": "Validator and server-side product lookup reject the request", "solution": "Reject atomically; do not persist the order or reserve inventory", "to": "FAILED"},
+        {"problem": "Database error while reading products", "event": "validation_storage_error", "detection": "Database operation throws or transaction aborts", "solution": "Rollback and return a retryable error without creating an order", "to": "FAILED"}
+      ]
+    },
+    {
+      "id": "VALIDATED",
+      "order_status": "VALIDATED",
+      "payment_status": "NONE",
+      "labels": ["validated", "inventory_reserved", "amount_verified"],
+      "purpose": "Represent an order whose server price, total and inventory have been checked.",
+      "normal": [
+        {"event": "order_persisted", "to": "PAYMENT_PENDING", "action": "Persist order and items in the same transaction."}
+      ],
+      "incidents": [
+        {"problem": "Overflow or total mismatch discovered before commit", "event": "amount_invariant_failed", "detection": "Checked arithmetic or total equality assertion fails", "solution": "Rollback the transaction and release the reservation", "to": "FAILED"},
+        {"problem": "Persistence fails after inventory was reserved", "event": "order_commit_failed", "detection": "Save or commit fails", "solution": "Rollback all order and stock changes", "to": "FAILED"}
+      ]
+    },
+    {
+      "id": "PAYMENT_PENDING",
+      "order_status": "PAYMENT_PENDING",
+      "payment_status": "NONE",
+      "labels": ["payment_pending", "inventory_reserved", "amount_verified"],
+      "purpose": "Wait for a payment request while cancellation is still legal.",
+      "normal": [
+        {"event": "payment_request_accepted", "to": "PAYMENT_PROCESSING", "action": "Acquire the per-order transaction lock and record the idempotency key."}
+      ],
+      "incidents": [
+        {"problem": "Customer cancels before the gateway charge", "event": "cancel_requested", "detection": "Cancellation wins the serialized state update", "solution": "Cancel the order and release reserved inventory", "to": "CANCELLED"},
+        {"problem": "Duplicate request with the same idempotency key", "event": "duplicate_pending_request", "detection": "Existing key is found for the order", "solution": "Return the existing in-progress result and create no second payment", "to": "PAYMENT_PENDING", "kind": "stutter"},
+        {"problem": "Payment amount differs from the server total", "event": "payment_amount_rejected", "detection": "Request amount is not equal to Order.TotalAmount", "solution": "Reject the payment; keep the order payable with the correct amount", "to": "PAYMENT_PENDING", "kind": "stutter"}
+      ]
+    },
+    {
+      "id": "PAYMENT_PROCESSING",
+      "order_status": "PAYMENT_PENDING",
+      "payment_status": "PROCESSING",
+      "labels": ["payment_processing", "inventory_reserved", "amount_verified", "payment_lock"],
+      "purpose": "Own the exclusive payment operation and wait for a gateway result.",
+      "normal": [
+        {"event": "gateway_success_and_commit", "to": "PAID", "action": "Persist one SUCCESS payment and transition the order atomically."}
+      ],
+      "incidents": [
+        {"problem": "Gateway timeout or transient network error", "event": "gateway_transient_failure", "detection": "No authenticated final response before timeout", "solution": "Release the lock and enter a bounded retry state using the same idempotency key", "to": "PAYMENT_RETRY"},
+        {"problem": "Gateway permanently declines the charge", "event": "gateway_declined", "detection": "Authenticated final decline response", "solution": "Mark the flow failed and release inventory", "to": "FAILED"},
+        {"problem": "Gateway charged but local database commit failed", "event": "charged_but_commit_failed", "detection": "Gateway success exists but the local transaction cannot persist PAID", "solution": "Do not retry the charge; enqueue compensating refund", "to": "REFUND_PENDING"},
+        {"problem": "Cancellation races with payment", "event": "concurrent_cancel_loses_lock", "detection": "Cancellation observes payment lock or changed row version", "solution": "Serialize the operations; cancellation retries after the payment result", "to": "PAYMENT_PROCESSING", "kind": "stutter"}
+      ]
+    },
+    {
+      "id": "PAYMENT_RETRY",
+      "order_status": "PAYMENT_PENDING",
+      "payment_status": "UNKNOWN",
+      "labels": ["payment_retry", "inventory_reserved", "amount_verified"],
+      "purpose": "Resolve an unknown gateway outcome without creating a second logical charge.",
+      "normal": [
+        {"event": "retry_budget_available", "to": "PAYMENT_PROCESSING_FINAL", "action": "Use the final bounded attempt with the same idempotency key."}
+      ],
+      "incidents": [
+        {"problem": "Retry budget is exhausted", "event": "retry_exhausted", "detection": "Bounded retry counter reaches its configured maximum", "solution": "Stop automatic charging, mark failed and release inventory", "to": "FAILED"},
+        {"problem": "Customer cancels while no confirmed charge exists", "event": "cancel_during_retry", "detection": "Gateway reconciliation confirms no successful charge", "solution": "Cancel and release inventory", "to": "CANCELLED"}
+      ]
+    },
+    {
+      "id": "PAYMENT_PROCESSING_FINAL",
+      "order_status": "PAYMENT_PENDING",
+      "payment_status": "PROCESSING",
+      "labels": ["payment_processing", "final_retry", "inventory_reserved", "amount_verified", "payment_lock"],
+      "purpose": "Execute the final bounded payment reconciliation/attempt.",
+      "normal": [
+        {"event": "final_gateway_success_and_commit", "to": "PAID", "action": "Persist one SUCCESS payment and transition the order atomically."}
+      ],
+      "incidents": [
+        {"problem": "Final attempt times out or is declined", "event": "final_payment_failed", "detection": "The bounded final attempt has no successful result", "solution": "Stop automatic retry, mark failed and release inventory", "to": "FAILED"},
+        {"problem": "Final attempt charged but local commit failed", "event": "final_charged_but_commit_failed", "detection": "Gateway success exists but PAID cannot be committed", "solution": "Do not charge again; enqueue compensating refund", "to": "REFUND_PENDING"}
+      ]
+    },
+    {
+      "id": "PAID",
+      "order_status": "PAID",
+      "payment_status": "SUCCESS",
+      "labels": ["paid", "payment_success", "amount_verified", "inventory_reserved"],
+      "purpose": "Represent exactly one successful payment whose amount matches the order.",
+      "normal": [
+        {"event": "confirmation_ok", "to": "CONFIRMED", "action": "Confirm fulfillment and preserve the successful payment evidence."}
+      ],
+      "incidents": [
+        {"problem": "Duplicate success callback or client retry", "event": "duplicate_success", "detection": "The order already has a SUCCESS payment for the idempotency key", "solution": "Return the original payment; do not insert or charge again", "to": "PAID", "kind": "stutter"},
+        {"problem": "Transient confirmation failure", "event": "confirmation_transient_failure", "detection": "Fulfillment confirmation fails with a retryable error", "solution": "Keep PAID and retry confirmation without charging again", "to": "CONFIRMATION_RETRY"},
+        {"problem": "Order cannot be fulfilled after payment", "event": "fulfillment_unrecoverable", "detection": "Permanent inventory or fulfillment failure", "solution": "Start compensation; never silently change PAID to FAILED", "to": "REFUND_PENDING"}
+      ]
+    },
+    {
+      "id": "CONFIRMATION_RETRY",
+      "order_status": "PAID",
+      "payment_status": "SUCCESS",
+      "labels": ["paid", "payment_success", "confirmation_retry", "amount_verified"],
+      "purpose": "Retry fulfillment confirmation without issuing another charge.",
+      "normal": [
+        {"event": "confirmation_retry_ok", "to": "CONFIRMED", "action": "Persist confirmation."}
+      ],
+      "incidents": [
+        {"problem": "Confirmation retry budget exhausted", "event": "confirmation_retry_exhausted", "detection": "Bounded confirmation retry counter reaches its limit", "solution": "Escalate to compensating refund", "to": "REFUND_PENDING"}
+      ]
+    },
+    {
+      "id": "CONFIRMED",
+      "order_status": "CONFIRMED",
+      "payment_status": "SUCCESS",
+      "labels": ["confirmed", "paid", "payment_success", "amount_verified"],
+      "purpose": "Order is paid and accepted for fulfillment.",
+      "normal": [
+        {"event": "delivery_completed", "to": "COMPLETED", "action": "Close the successful order."}
+      ],
+      "incidents": [
+        {"problem": "Permanent fulfillment failure after confirmation", "event": "confirmed_fulfillment_failed", "detection": "The order cannot be delivered", "solution": "Start a refund and release inventory when compensation completes", "to": "REFUND_PENDING"}
+      ]
+    },
+    {
+      "id": "REFUND_PENDING",
+      "order_status": "PAID",
+      "payment_status": "REFUND_PENDING",
+      "labels": ["paid", "payment_success", "refund_pending", "amount_verified"],
+      "purpose": "Compensate a successful charge that cannot lead to completion.",
+      "normal": [
+        {"event": "refund_success", "to": "REFUNDED", "action": "Persist refund evidence and release inventory."}
+      ],
+      "incidents": [
+        {"problem": "Refund gateway timeout", "event": "refund_retry", "detection": "No authenticated final refund result", "solution": "Retry or query with the same refund idempotency key and alert operations", "to": "REFUND_PENDING", "kind": "stutter"}
+      ]
+    },
+    {
+      "id": "COMPLETED",
+      "order_status": "COMPLETED",
+      "payment_status": "SUCCESS",
+      "labels": ["completed", "paid", "payment_success", "amount_verified", "terminal"],
+      "purpose": "Successful terminal state.",
+      "normal": [],
+      "incidents": [
+        {"problem": "Late duplicate callback or state-change request", "event": "completed_late_event", "detection": "Order is already terminal", "solution": "Return the stored result, reject state mutation and audit the event", "to": "COMPLETED", "kind": "stutter"}
+      ]
+    },
+    {
+      "id": "CANCELLED",
+      "order_status": "CANCELLED",
+      "payment_status": "NONE",
+      "labels": ["cancelled", "inventory_released", "terminal"],
+      "purpose": "Terminal state for a cancellation that won before a confirmed charge.",
+      "normal": [],
+      "incidents": [
+        {"problem": "Late payment request or callback", "event": "cancelled_late_payment", "detection": "Order is terminal CANCELLED", "solution": "Reject the charge/state mutation and raise an alert if the gateway reports money captured", "to": "CANCELLED", "kind": "stutter"}
+      ]
+    },
+    {
+      "id": "FAILED",
+      "order_status": "FAILED",
+      "payment_status": "FAILED",
+      "labels": ["failed", "inventory_released", "terminal"],
+      "purpose": "Terminal state when no successful charge exists and automatic recovery is exhausted.",
+      "normal": [],
+      "incidents": [
+        {"problem": "Late retry after terminal failure", "event": "failed_late_retry", "detection": "Order is terminal FAILED", "solution": "Reject mutation; require a new order rather than reviving this one", "to": "FAILED", "kind": "stutter"}
+      ]
+    },
+    {
+      "id": "REFUNDED",
+      "order_status": "FAILED",
+      "payment_status": "REFUNDED",
+      "labels": ["refunded", "payment_compensated", "inventory_released", "terminal"],
+      "purpose": "Terminal compensated state after a previously successful charge.",
+      "normal": [],
+      "incidents": [
+        {"problem": "Duplicate refund callback", "event": "duplicate_refund", "detection": "Refund transaction is already final", "solution": "Return the original refund result and do not refund twice", "to": "REFUNDED", "kind": "stutter"}
+      ]
+    }
+  ],
+  "properties": [
+    {"id": "P1", "type": "AG_NOT", "label": "violation", "description": "No reachable state is explicitly unsafe."},
+    {"id": "P2", "type": "AG_IMPLIES", "if": "paid", "then": "payment_success", "description": "Every paid state has successful payment evidence."},
+    {"id": "P3", "type": "AG_IMPLIES", "if": "completed", "then": "payment_success", "description": "A completed order is paid."},
+    {"id": "P4", "type": "AG_EXCLUDES", "left": "cancelled", "right": "payment_success", "description": "A cancelled order cannot contain a successful charge."},
+    {"id": "P5", "type": "AG_EXCLUDES", "left": "failed", "right": "payment_success", "description": "FAILED is used only when no successful charge exists."},
+    {"id": "P6", "type": "AG_EXCLUDES", "left": "payment_pending", "right": "payment_success", "description": "Pending is not yet paid."},
+    {"id": "P7", "type": "AG_NOT", "label": "resource_conflict", "description": "Payment and cancellation never own the critical resource simultaneously."},
+    {"id": "P8", "type": "ALL_REACHABLE", "description": "Every declared state is reachable from CREATED."},
+    {"id": "P9", "type": "INCIDENT_COMPLETE", "description": "Every state documents detection, solution and next state for each incident."},
+    {"id": "P10", "type": "AF_TERMINAL_FAIR", "description": "Ignoring explicitly marked stutter retries, every reachable state inevitably reaches a terminal state."}
+  ],
+  "negative_scenarios": [
+    {
+      "id": "BUG-CANCELLED-PAID",
+      "description": "A cancelled order is revived and paid.",
+      "state": {"id": "PAID_AFTER_CANCELLED", "order_status": "PAID", "payment_status": "SUCCESS", "labels": ["cancelled", "paid", "payment_success", "violation"], "purpose": "History monitor for illegal revival", "normal": [], "incidents": [{"problem": "Illegal revival", "event": "stop", "detection": "History monitor", "solution": "Reject transition", "to": "PAID_AFTER_CANCELLED", "kind": "stutter"}]},
+      "transition": {"from": "CANCELLED", "event": "missing_status_guard", "to": "PAID_AFTER_CANCELLED", "action": "BUG"},
+      "expected_failed_properties": ["P1", "P4"]
+    },
+    {
+      "id": "BUG-WRONG-AMOUNT",
+      "description": "A mismatched amount is accepted as paid.",
+      "state": {"id": "PAID_WRONG_AMOUNT", "order_status": "PAID", "payment_status": "SUCCESS", "labels": ["paid", "payment_success", "amount_mismatch", "violation"], "purpose": "History monitor for amount mismatch", "normal": [], "incidents": [{"problem": "Wrong amount accepted", "event": "stop", "detection": "Amount invariant", "solution": "Reject payment", "to": "PAID_WRONG_AMOUNT", "kind": "stutter"}]},
+      "transition": {"from": "PAYMENT_PROCESSING", "event": "missing_amount_guard", "to": "PAID_WRONG_AMOUNT", "action": "BUG"},
+      "expected_failed_properties": ["P1"]
+    },
+    {
+      "id": "BUG-DUPLICATE-SUCCESS",
+      "description": "Two successful payments are persisted for one order.",
+      "state": {"id": "PAID_TWICE", "order_status": "PAID", "payment_status": "SUCCESS", "labels": ["paid", "payment_success", "two_success_payments", "violation"], "purpose": "History monitor for duplicate charge", "normal": [], "incidents": [{"problem": "Duplicate charge", "event": "stop", "detection": "Payment count", "solution": "Use idempotency and unique constraint", "to": "PAID_TWICE", "kind": "stutter"}]},
+      "transition": {"from": "PAID", "event": "missing_idempotency_guard", "to": "PAID_TWICE", "action": "BUG"},
+      "expected_failed_properties": ["P1"]
+    },
+    {
+      "id": "BUG-RESOURCE-CONFLICT",
+      "description": "Payment and cancellation enter their critical sections together.",
+      "state": {"id": "PAY_CANCEL_CONFLICT", "order_status": "PAYMENT_PENDING", "payment_status": "PROCESSING", "labels": ["payment_lock", "cancel_lock", "resource_conflict", "violation"], "purpose": "Product-state monitor for missing serialization", "normal": [], "incidents": [{"problem": "Concurrent owners", "event": "stop", "detection": "Lock ownership invariant", "solution": "Serialize with transaction/row lock", "to": "PAY_CANCEL_CONFLICT", "kind": "stutter"}]},
+      "transition": {"from": "PAYMENT_PENDING", "event": "missing_serialization", "to": "PAY_CANCEL_CONFLICT", "action": "BUG"},
+      "expected_failed_properties": ["P1", "P7"]
+    }
+  ]
+}
