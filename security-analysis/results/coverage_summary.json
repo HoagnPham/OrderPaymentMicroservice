@@ -5,7 +5,7 @@
   "uncovered_branches": [
     {
       "line": 101,
-      "hits": 12,
+      "hits": 14,
       "condition_coverage": "50% (1/2)"
     }
   ],
