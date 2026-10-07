@@ -7,11 +7,7 @@ using OrderPaymentMicroservice.Services.Interfaces;
 
 namespace OrderPaymentMicroservice.Services;
 
-/// <summary>
-/// Order service implementation - skeleton version
-/// TODO: Implement full business logic after skeleton is approved
-/// TODO: Kripke/BMC - add state machine verification
-/// </summary>
+/// <summary>Owns the durable order lifecycle and inventory reservation.</summary>
 public class OrderService : IOrderService
 {
     private readonly AppDbContext _context;
@@ -69,12 +65,14 @@ public class OrderService : IOrderService
         var order = new Order
         {
             CustomerId = request.CustomerId,
-            UserId = request.CustomerId,   // dùng CustomerId làm UserId (chưa có JWT)
+            UserId = request.CustomerId,   // Controller overwrites CustomerId from the authenticated principal.
             TotalAmount = serverTotal,
             Address = request.Address,
             City = request.City,
             Status = OrderStatus.CREATED,
-            CreatedAt = DateTime.UtcNow
+            InventoryStatus = InventoryReservationStatus.RESERVED,
+            CreatedAt = DateTime.UtcNow,
+            UpdatedAt = DateTime.UtcNow
         };
 
         // Create order items
@@ -94,7 +92,6 @@ public class OrderService : IOrderService
         OrderStateMachine.Transition(order, OrderStatus.VALIDATED);
         OrderStateMachine.Transition(order, OrderStatus.PAYMENT_PENDING);
 
-        // Save to database (skeleton - may not be persisted in earliest version)
         _context.Orders.Add(order);
         await _context.SaveChangesAsync();
         if (transaction != null)
@@ -141,21 +138,70 @@ public class OrderService : IOrderService
 
     /// <summary>
     /// Cancel an order
-    /// TODO: Kripke/BMC - verify order can transition to CANCELLED from current state
+    /// Cancellation is legal only before a charge can be successful or unknown.
     /// </summary>
     public async Task<bool> CancelOrderAsync(int orderId)
     {
-        var order = await _context.Orders.FindAsync(orderId);
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            : null;
+
+        var order = await _context.Orders
+            .Include(candidate => candidate.OrderItems)
+            .Include(candidate => candidate.Payments)
+            .FirstOrDefaultAsync(candidate => candidate.Id == orderId);
         if (order == null)
             return false;
 
         if (!OrderStateMachine.CanTransition(order.Status, OrderStatus.CANCELLED))
             return false;
 
+        if (order.Payments.Any(payment => payment.Status is
+                PaymentStatus.PROCESSING or PaymentStatus.UNKNOWN or PaymentStatus.SUCCESS or PaymentStatus.REFUND_PENDING))
+            return false;
+
         OrderStateMachine.Transition(order, OrderStatus.CANCELLED);
+        await InventoryReservation.ReleaseAsync(_context, order);
         await _context.SaveChangesAsync();
+        if (transaction != null)
+            await transaction.CommitAsync();
         return true;
     }
+
+    public async Task<OrderResponse> ConfirmOrderAsync(int orderId)
+    {
+        var order = await LoadOrderAggregateAsync(orderId)
+            ?? throw new InvalidOperationException($"Order {orderId} not found");
+
+        if (!order.Payments.Any(payment => payment.Status == PaymentStatus.SUCCESS))
+            throw new InvalidOperationException("Order cannot be confirmed without a successful payment");
+
+        OrderStateMachine.Transition(order, OrderStatus.CONFIRMED);
+        await _context.SaveChangesAsync();
+        return MapToResponse(order);
+    }
+
+    public async Task<OrderResponse> CompleteOrderAsync(int orderId)
+    {
+        var order = await LoadOrderAggregateAsync(orderId)
+            ?? throw new InvalidOperationException($"Order {orderId} not found");
+
+        if (!order.Payments.Any(payment => payment.Status == PaymentStatus.SUCCESS))
+            throw new InvalidOperationException("Order cannot be completed without a successful payment");
+
+        OrderStateMachine.Transition(order, OrderStatus.COMPLETED);
+        if (order.InventoryStatus != InventoryReservationStatus.RESERVED)
+            throw new InvalidOperationException($"Order inventory is {order.InventoryStatus}, expected RESERVED");
+        order.InventoryStatus = InventoryReservationStatus.CONSUMED;
+        await _context.SaveChangesAsync();
+        return MapToResponse(order);
+    }
+
+    private Task<Order?> LoadOrderAggregateAsync(int orderId) => _context.Orders
+        .Include(order => order.OrderItems)
+            .ThenInclude(item => item.Product)
+        .Include(order => order.Payments)
+        .FirstOrDefaultAsync(order => order.Id == orderId);
 
     private OrderResponse MapToResponse(Order order)
     {
@@ -165,7 +211,9 @@ public class OrderService : IOrderService
             CustomerId = order.CustomerId,
             TotalAmount = order.TotalAmount,
             Status = order.Status.ToString(),
+            InventoryStatus = order.InventoryStatus.ToString(),
             CreatedAt = order.CreatedAt,
+            UpdatedAt = order.UpdatedAt,
             Address = order.Address,
             City = order.City,
             Items = order.OrderItems.Select(oi => new OrderItemResponse

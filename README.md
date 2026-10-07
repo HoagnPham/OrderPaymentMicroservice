@@ -18,9 +18,10 @@ OrderPaymentMicroservice/
 ├── ATPM/                         Tài liệu, mã mẫu và các lab tham chiếu
 ├── OrderPaymentMicroservice/     Source ASP.NET Core, REST API và giao diện demo
 ├── OrderPaymentMicroservice.Tests/ Unit test xUnit và cấu hình Coverlet
+├── OrderPaymentMicroservice.IntegrationTests/ HTTP E2E test với PostgreSQL container
 ├── security-analysis/            Model, dataset, script và kết quả áp dụng ATPM
 ├── OrderPaymentMicroservice.slnx Solution .NET
-└── test-api.ps1                  Script thử API thủ công (cần cập nhật)
+└── test-api.ps1                  Script E2E thủ công có JWT và idempotency
 ```
 
 ### `ATPM/`
@@ -38,7 +39,7 @@ Source code ASP.NET Core trên .NET 10, Entity Framework Core và PostgreSQL. C�
 
 ### `OrderPaymentMicroservice.Tests/`
 
-Project xUnit hiện có 34 trường hợp cho InputValidator. Coverlet được dùng để đo branch coverage. Test này không khởi động API và không cần database.
+Project xUnit hiện có 84 unit test, trong đó 34 trường hợp tập trung vào InputValidator; phần còn lại kiểm tra User, Order, hai state machine, Payment, retry/reconciliation, refund, inventory compensation và race payment–cancel. Project integration test bổ sung 5 luồng HTTP chạy trên PostgreSQL container thật.
 
 ### `security-analysis/`
 
@@ -53,15 +54,51 @@ Chứa phần áp dụng kiến thức lab vào đề tài:
 
 | Hạng mục | Hiện trạng | Nhận xét |
 |---|---|---|
-| REST API | Đã có Controller cho User, Product, Cart, Order, Payment | Chưa có bảo vệ truy cập đầy đủ |
-| Dữ liệu | Có DbContext, PostgreSQL, migration và seed | Chưa xác nhận lại bằng integration test trong đợt đánh giá này |
-| Order | Có tạo, đọc danh sách/chi tiết và hủy | State machine kỳ vọng chưa được thực thi đầy đủ |
-| Payment | Có tạo và đọc thanh toán | SUCCESS đang mô phỏng; thiếu gateway/idempotency/đối soát |
-| Cart/Product/User | Có các chức năng hỗ trợ demo | Vượt trọng tâm Order–Payment ở mức hỗ trợ; Cart còn lỗi ownership |
+| REST API | Đã có Controller cho User, Product, Cart, Order, Payment | Có JWT/role/ownership và integration test 401/403 |
+| Dữ liệu | Có DbContext, PostgreSQL, migration và seed | Có bộ test tái lập bằng PostgreSQL Testcontainer; cần Docker để chạy |
+| Order | Có tạo, hủy, xác nhận, hoàn tất, thất bại và compensation/refund | Có test PostgreSQL cho hai payment request cạnh tranh |
+| Payment | Có processing, success, failed, unknown, bounded retry, reconciliation và refund | Adapter mặc định vẫn là FakePaymentGateway |
+| Cart/Product/User | Có các chức năng hỗ trợ demo | Đã có ownership check và test HTTP xuyên suốt |
 | Giao diện demo | Có nội dung tĩnh trong `wwwroot` | Chưa đánh giá E2E trong đợt này |
-| API script | Có `test-api.ps1` | Payload/endpoint đã lệch DTO/API hiện tại nên chưa phải bằng chứng demo hợp lệ |
+| API script | Có `test-api.ps1` | Đã khớp JWT, DTO, endpoint và idempotency contract hiện tại |
 
-`test-api.ps1` hiện gửi `customerId` dạng chuỗi `CUST...` trong khi DTO yêu cầu số nguyên, đồng thời gọi endpoint payment theo order không khớp Controller hiện tại. Cần cập nhật rồi chạy trên database sạch trước khi dùng làm minh chứng.
+`test-api.ps1` tạo tài khoản riêng cho mỗi lần chạy, đăng nhập lấy JWT, dùng giá sản phẩm từ server, tạo đơn, thanh toán với idempotency key, kiểm tra trạng thái `PAID` và xác nhận không thể hủy sau khi charge thành công.
+
+### 3.1. Vòng đời trạng thái hiện thực
+
+Order và Payment là hai state machine riêng. Trạng thái gateway không được dùng
+thay cho trạng thái nghiệp vụ của Order.
+
+```text
+Order:
+CREATED → VALIDATED → PAYMENT_PENDING → PAID → CONFIRMED → COMPLETED
+              └──────────────→ CANCELLED
+                         └────→ FAILED
+PAID/CONFIRMED → REFUND_PENDING → REFUNDED
+
+Payment:
+PENDING → PROCESSING → SUCCESS → REFUND_PENDING → REFUNDED
+                    ├→ FAILED
+                    └→ UNKNOWN → PROCESSING (retry/reconcile cùng key)
+
+Inventory:
+RESERVED → CONSUMED  (Order COMPLETED)
+RESERVED → RELEASED  (Order CANCELLED/FAILED/REFUNDED)
+```
+
+Các endpoint lifecycle bổ sung:
+
+- `POST /api/payments/{id}/retry`: retry bounded bằng cùng payment/idempotency key.
+- `POST /api/payments/{id}/reconcile`: hỏi lại gateway sau timeout hoặc process crash.
+- `POST /api/payments/{id}/refund`: Admin bắt đầu compensation idempotent.
+- `POST /api/payments/{id}/refund/retry`: Admin retry refund đang pending.
+- `POST /api/orders/{id}/confirm`: Admin xác nhận fulfillment.
+- `POST /api/orders/{id}/complete`: Admin hoàn tất và consume reservation.
+
+Nếu hết retry nhưng gateway vẫn chưa trả kết quả cuối cùng, hệ thống giữ Payment
+`UNKNOWN`, Order `PAYMENT_PENDING` và inventory `RESERVED`; không được suy diễn
+timeout là thất bại rồi hoàn kho. Chi tiết bất biến và xử lý sự cố xem
+[`WorkflowAnalysis.md`](OrderPaymentMicroservice/Security/WorkflowAnalysis.md).
 
 ## 4. Phần an toàn phần mềm đã hoàn thành
 
@@ -94,7 +131,7 @@ Kết quả chứng minh công cụ phát hiện được lỗi đã mô hình h
 
 ### 4.3. Unit test và coverage
 
-Đã xây dựng 34 test xUnit, gồm null/rỗng, ID không dương, biên TotalAmount/Quantity/UnitPrice, nhiều item, tolerance, decimal.MaxValue và các characterization test cho lỗi hiện tại.
+Đã xây dựng 34 test xUnit riêng cho InputValidator, gồm null/rỗng, ID không dương, biên TotalAmount/Quantity/UnitPrice, nhiều item, tolerance và decimal.MaxValue. Toàn solution hiện có 84 unit test và 5 integration test PostgreSQL, bổ sung test transition Order/Payment, timeout/unknown, retry giới hạn, crash reconciliation, refund, hoàn tồn kho, authorization và cạnh tranh payment/cancel.
 
 Kết quả chạy ngày **19/09/2026**:
 
@@ -134,9 +171,9 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 
 | Đầu ra yêu cầu | Trạng thái | Bằng chứng/khoảng trống |
 |---|---|---|
-| Hệ thống Order & Payment chạy được | **Một phần** | Có source/build/test; chưa xác nhận lại luồng E2E và Payment còn mô phỏng |
-| REST API tích hợp shop | **Một phần** | Có API; script demo hiện lệch contract và thiếu kiểm soát truy cập |
-| Database hoạt động | **Một phần** | Có EF/PostgreSQL/migration/seed; chưa có integration test tái lập trong đợt này |
+| Hệ thống Order & Payment chạy được | **Một phần** | Có lifecycle, test mức service và bộ E2E PostgreSQL; gateway mặc định còn mô phỏng |
+| REST API tích hợp shop | **Một phần** | Có JWT/role/ownership và HTTP integration test; script demo hiện còn lệch contract |
+| Database hoạt động | **Có bộ kiểm thử tái lập** | Testcontainers tạo PostgreSQL sạch, apply migration và seed; cần chạy khi Docker hoạt động để lưu kết quả |
 | Demo hệ thống | **Một phần** | Có frontend và script; chưa có kết quả demo E2E hiện hành |
 | Model và thuộc tính | **Đạt trong phạm vi model** | Kripke đúng + BUGGY + bốn kết quả kiểm chứng |
 | Bằng chứng kiểm thử | **Đạt cho InputValidator** | 34 test, Cobertura, branch coverage > 90% |
@@ -145,21 +182,20 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 | TLA+/BMC | **Chưa có bằng chứng hoàn thành** | Có `OrderPayment.tla`, chưa có config/kết quả TLC; Kripke checker là explicit-state checker giới hạn, không nên gọi thay cho toàn bộ BMC |
 | Fuzzing/dynamic testing | **Chưa hoàn thành** | Chưa có harness, corpus, log crash/coverage hoặc kết quả thực nghiệm |
 | Phân tích an toàn bộ nhớ/phương án phù hợp | **Chưa hoàn thành rõ ràng** | C# managed memory cần chọn kỹ thuật phù hợp và cung cấp bằng chứng |
-| Sửa lỗi và kiểm chứng lại | **Chưa hoàn thành** | Các vulnerability vẫn tồn tại trong source |
+| Sửa lỗi và kiểm chứng lại | **Đạt ở source/unit test, đã có harness tích hợp** | Năm phát hiện ban đầu đã có guard; integration test PostgreSQL cần Docker để thực thi |
 | Báo cáo kỹ thuật | **Đang hoàn thiện** | Đã có báo cáo tiến độ và tài liệu chi tiết; cần cập nhật sau sửa lỗi |
 
 **Kết luận:** phần phân tích ATPM đã có nền tảng tốt ở Kripke, unit test/coverage và risk assessment. Toàn bộ BTL chưa hoàn tất vì mục tiêu cuối yêu cầu sửa lỗi, kiểm chứng lại, SMT, dynamic/fuzz testing và demo tái lập.
 
 ## 6. Các lỗi còn tồn tại và thứ tự xử lý
 
-1. Thêm authentication thật (JWT hoặc cơ chế phù hợp) và `[Authorize]`; lấy user ID từ principal thay vì tin ID trong route/body.
-2. Kiểm tra ownership đối với Order, Payment và Cart ở lớp Service.
-3. Lấy UnitPrice từ Product phía server, tính lại TotalAmount và từ chối mismatch; áp dụng MIN_PRICE nhất quán.
-4. Tạo bảng/guard chuyển trạng thái và chặn Payment cho CANCELLED/COMPLETED/FAILED; không nhảy trực tiếp CREATED → PAID.
-5. Xác minh gateway, amount, idempotency và xử lý giao dịch đồng thời trước khi cập nhật PAID.
-6. Thay SHA-256 đơn giản bằng password hashing có salt/work factor phù hợp (Argon2/bcrypt/PBKDF2).
-7. Giới hạn CORS, bảo vệ secret/connection string và bổ sung rate limiting theo môi trường triển khai.
-8. Sau mỗi sửa đổi, đổi characterization test thành test yêu cầu hành vi an toàn và chạy lại toàn bộ bằng chứng.
+1. Bật Docker và chạy 5 integration test PostgreSQL để lưu bằng chứng runtime.
+2. Thay `FakePaymentGateway` bằng adapter sandbox/production có xác minh callback; giữ nguyên hợp đồng reconciliation theo idempotency key.
+3. Bổ sung transactional outbox cho side effect; background worker reconcile state bị kẹt đã có.
+4. Chạy TLC với `OrderPayment.cfg`, lưu output/counterexample và đối chiếu với state machine C#.
+5. Bổ sung fuzz harness/corpus cho validator và chuỗi transition.
+6. Chạy và lưu transcript `test-api.ps1` trên môi trường demo PostgreSQL sạch.
+7. Bổ sung rate limiting, audit log, health check và metrics cho các state bị kẹt.
 
 ## 7. Cách chạy
 
@@ -167,16 +203,18 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 
 - .NET 10 SDK.
 - Python 3.10 trở lên.
-- PostgreSQL và connection string phù hợp nếu chạy API.
+- PostgreSQL và connection string phù hợp nếu chạy API; Docker Desktop nếu chạy integration test.
 - Kết nối NuGet trong lần restore đầu.
 
 ### Build và test
 
 ```powershell
-dotnet restore OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
-dotnet build OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
-dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
+dotnet restore OrderPaymentMicroservice.slnx
+dotnet build OrderPaymentMicroservice.slnx
+dotnet test OrderPaymentMicroservice.slnx
 ```
+
+Khi Docker daemon không khả dụng, 5 integration test tự động `Skip`; 84 unit test vẫn chạy bình thường. Khi Docker đang chạy, Testcontainers tạo PostgreSQL riêng, apply migration, seed dữ liệu và hủy container sau khi test; không sử dụng database phát triển.
 
 OpenAPI ở môi trường Development được cung cấp tại `/openapi/v1.json`.
 
@@ -237,7 +275,7 @@ dotnet user-secrets set "Jwt:Key" "$(openssl rand -hex 32)" --project OrderPayme
 dotnet run --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj --launch-profile http
 ```
 
-Mở `http://localhost:5246`. Ứng dụng hiện dùng `EnsureCreated()` để tạo bảng và seed sản phẩm trên database mới/rỗng; không cần chạy `dotnet ef database update` cho quy trình này. `EnsureCreated()` không nâng cấp schema của database đã có bảng.
+Mở `http://localhost:5246`. Ứng dụng gọi `Database.Migrate()` khi khởi động rồi seed sản phẩm theo cách idempotent. Database từng được tạo bằng `EnsureCreated()` nhưng không có lịch sử migration cần được backup và baseline/reset trước khi nâng cấp.
 
 ### Chạy API
 

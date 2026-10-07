@@ -1,10 +1,6 @@
 namespace OrderPaymentMicroservice.Models;
 
-/// <summary>
-/// Order entity
-/// TODO: SMT verification - TotalAmount >= sum of OrderItems subtotal
-/// TODO: Fuzzing target - Handle negative amounts, overflow
-/// </summary>
+/// <summary>Order aggregate root.</summary>
 public class Order
 {
     public int Id { get; set; }
@@ -27,15 +23,20 @@ public class Order
     public decimal TotalAmount { get; set; }
 
     /// <summary>
-    /// Current order status
-    /// TODO: Kripke/BMC property - State transitions must follow the defined flowchart
+    /// Current durable business status; mutations go through OrderStateMachine.
     /// </summary>
     public OrderStatus Status { get; set; } = OrderStatus.CREATED;
+
+    public InventoryReservationStatus InventoryStatus { get; set; } = InventoryReservationStatus.RESERVED;
 
     /// <summary>
     /// Order creation timestamp
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public long Version { get; set; }
 
     /// <summary>
     /// Delivery address

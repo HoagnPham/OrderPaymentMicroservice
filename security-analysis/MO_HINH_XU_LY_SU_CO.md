@@ -25,13 +25,14 @@ stateDiagram-v2
     PAYMENT_PROCESSING --> PAID: gateway success + commit
     PAYMENT_PROCESSING --> PAYMENT_RETRY: transient failure
     PAYMENT_PROCESSING --> FAILED: permanent decline
-    PAYMENT_PROCESSING --> REFUND_PENDING: charged, commit failed
+    PAYMENT_PROCESSING --> PAYMENT_RETRY: charged/unknown, reconcile by key
     PAYMENT_RETRY --> PAYMENT_PROCESSING_FINAL: final bounded attempt
-    PAYMENT_RETRY --> FAILED: retry exhausted
+    PAYMENT_RETRY --> PAYMENT_RETRY: retry exhausted, reconcile/manual review
     PAYMENT_RETRY --> CANCELLED: cancel before charge
     PAYMENT_PROCESSING_FINAL --> PAID: final success
-    PAYMENT_PROCESSING_FINAL --> FAILED: final failure
-    PAYMENT_PROCESSING_FINAL --> REFUND_PENDING: charged, commit failed
+    PAYMENT_PROCESSING_FINAL --> FAILED: definitive decline
+    PAYMENT_PROCESSING_FINAL --> PAYMENT_RETRY: final outcome unknown
+    PAYMENT_PROCESSING_FINAL --> PAYMENT_RETRY: final result needs reconciliation
     PAID --> CONFIRMED: confirmation ok
     PAID --> CONFIRMATION_RETRY: transient confirmation failure
     PAID --> REFUND_PENDING: cannot fulfill
@@ -51,9 +52,9 @@ stateDiagram-v2
 | CREATED | Dữ liệu, sản phẩm và tồn kho hợp lệ → VALIDATED | Input sai, thiếu hàng, lỗi đọc DB | Từ chối/rollback → FAILED |
 | VALIDATED | Lưu Order và item nguyên tử → PAYMENT_PENDING | Sai tổng tiền, overflow, commit lỗi | Rollback và nhả tồn kho → FAILED |
 | PAYMENT_PENDING | Nhận payment hợp lệ → PAYMENT_PROCESSING | Hủy đơn; trùng idempotency key; sai amount | Hủy → CANCELLED; request trùng/sai giữ nguyên PAYMENT_PENDING |
-| PAYMENT_PROCESSING | Gateway thành công và commit được → PAID | Timeout; decline; đã charge nhưng commit lỗi; race với cancel | Retry → PAYMENT_RETRY; decline → FAILED; cần hoàn tiền → REFUND_PENDING; race được serialize |
-| PAYMENT_RETRY | Còn ngân sách retry → PAYMENT_PROCESSING_FINAL | Hết retry; người dùng hủy khi chưa charge | FAILED hoặc CANCELLED |
-| PAYMENT_PROCESSING_FINAL | Gateway thành công → PAID | Lần cuối timeout/decline; đã charge nhưng commit lỗi | FAILED hoặc REFUND_PENDING; không quay lại retry |
+| PAYMENT_PROCESSING | Gateway thành công và commit được → PAID | Timeout; decline; đã charge nhưng commit lỗi; race với cancel | Reconcile/retry cùng idempotency key → PAYMENT_RETRY; decline → FAILED; race được serialize |
+| PAYMENT_RETRY | Còn ngân sách retry → PAYMENT_PROCESSING_FINAL | Hết retry nhưng kết quả vẫn unknown; người dùng hủy khi đã xác nhận chưa charge | Giữ UNKNOWN để reconcile/manual review; chỉ CANCELLED khi có bằng chứng chưa charge |
+| PAYMENT_PROCESSING_FINAL | Gateway thành công → PAID | Decline cuối cùng; timeout cuối cùng | Decline xác thực → FAILED; timeout → giữ UNKNOWN và reconcile, không charge mới |
 | PAID | Xác nhận fulfillment → CONFIRMED | Callback trùng; xác nhận lỗi tạm thời; không thể fulfillment | Giữ PAID; → CONFIRMATION_RETRY; hoặc → REFUND_PENDING |
 | CONFIRMATION_RETRY | Retry thành công → CONFIRMED | Hết retry | Bù trừ → REFUND_PENDING |
 | CONFIRMED | Giao hàng hoàn tất → COMPLETED | Không thể giao hàng | Bù trừ → REFUND_PENDING |
@@ -85,10 +86,10 @@ thông tin phát hiện, giải pháp và state đích hợp lệ.
 |---|---|---|
 | Chưa ghi dữ liệu và chưa charge | Reject hoặc rollback | Không cần tạo trạng thái trung gian không có ý nghĩa |
 | Lỗi tạm thời, chưa biết kết quả gateway | Retry có bound và giữ nguyên idempotency key | Tránh charge trùng và tránh livelock |
-| Gateway đã charge nhưng lưu PAID thất bại | REFUND_PENDING | Không được đánh dấu FAILED rồi bỏ quên tiền đã thu |
+| Gateway đã charge nhưng lưu PAID thất bại | Reconcile charge theo idempotency key | Payment đã được ghi PROCESSING trước khi gọi gateway; không charge lại và không hoàn tiền khi Order vẫn có thể hoàn tất |
 | Hai thao tác payment/cancel cạnh tranh | Serialize bằng transaction/row version | Chỉ một thao tác được quyết định trạng thái cuối |
 | Callback/request đến sau terminal | No-op hoặc reject, kèm audit | Không hồi sinh terminal state |
-| Retry tự động đã hết | FAILED nếu chưa charge; REFUND_PENDING nếu đã charge | Phân biệt thất bại trước và sau khi tiền đã được thu |
+| Retry tự động đã hết | Chỉ FAILED khi gateway xác nhận decline/chưa charge; nếu còn unknown thì giữ reservation và manual review | Không suy diễn “timeout = thất bại”, tránh bỏ quên khoản tiền có thể đã thu |
 
 ## Thuộc tính được kiểm chứng
 
@@ -119,12 +120,14 @@ phát hiện lỗi mà nó được viết để kiểm chứng.
 ## Giới hạn và khoảng cách với source
 
 - Đây là mô hình aggregate hữu hạn, không phải bản sao toàn bộ database/API.
-- `PAYMENT_PROCESSING`, `PAYMENT_RETRY`, `CONFIRMATION_RETRY`,
-  `REFUND_PENDING` và `REFUNDED` là các trạng thái thiết kế cần có để mô tả
-  phục hồi. Enum `OrderStatus` hiện chưa biểu diễn riêng các trạng thái này.
-- Source hiện mô phỏng gateway luôn SUCCESS. Vì vậy nhánh timeout, decline,
-  callback và refund mới được kiểm chứng ở mức thiết kế, chưa phải bằng chứng
-  implementation.
+- `PAYMENT_PROCESSING`, `PAYMENT_RETRY` và `CONFIRMATION_RETRY` là trạng thái
+  kết hợp quan sát từ Order + Payment; chúng không nhất thiết là giá trị riêng
+  của `OrderStatus`. Source lưu PROCESSING/UNKNOWN tại `PaymentStatus`, còn
+  `REFUND_PENDING` và `REFUNDED` được lưu ở cả hai aggregate tương ứng.
+- Source dùng `IPaymentGateway`; adapter mặc định là gateway giả lập có lưu kết
+  quả theo idempotency key. Các nhánh success, decline, unknown, bounded retry,
+  reconciliation và refund đã có unit test; gateway sản xuất vẫn cần adapter
+  và integration test riêng.
 - P10 dùng giả định weak fairness: cạnh retry/no-op được đánh dấu `stutter`
   có thể lặp, nhưng một transition tiến triển đang enable cuối cùng phải chạy.
 

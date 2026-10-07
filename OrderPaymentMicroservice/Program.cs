@@ -7,6 +7,7 @@ using OrderPaymentMicroservice.Data;
 using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Services;
 using OrderPaymentMicroservice.Services.Interfaces;
+using OrderPaymentMicroservice.Services.Payments;
 using OrderPaymentMicroservice.Utilities;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -28,6 +29,10 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<InputValidator>();
 builder.Services.AddScoped<PaymentValidator>();
+builder.Services.AddSingleton<IPaymentGateway, FakePaymentGateway>();
+builder.Services.Configure<PaymentRecoveryOptions>(
+    builder.Configuration.GetSection(PaymentRecoveryOptions.SectionName));
+builder.Services.AddHostedService<PaymentRecoveryWorker>();
 builder.Services.AddScoped<IPasswordHasher<OrderPaymentMicroservice.Models.User>, PasswordHasher<OrderPaymentMicroservice.Models.User>>();
 
 var jwtKey = builder.Configuration["Jwt:Key"];
@@ -92,7 +97,7 @@ if (app.Environment.IsDevelopment())
     // Disable HTTPS redirect in Development
     // app.UseHttpsRedirection();
 }
-else
+else if (!app.Environment.IsEnvironment("Testing"))
 {
     app.UseHttpsRedirection();
 }
@@ -112,3 +117,6 @@ app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.Run();
+
+// Exposed for WebApplicationFactory-based end-to-end tests.
+public partial class Program;

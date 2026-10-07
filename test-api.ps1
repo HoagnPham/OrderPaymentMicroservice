@@ -1,167 +1,153 @@
 #!/usr/bin/env pwsh
 
-# API Test Script
-$baseUrl = "http://localhost:5245/api"
-$errorCount = 0
+param(
+    [string]$BaseUrl = "http://localhost:5246/api"
+)
+
+Set-StrictMode -Version Latest
+$ErrorActionPreference = "Stop"
 $successCount = 0
+$errorCount = 0
 
-function Test-Endpoint {
-	param(
-		[string]$name,
-		[string]$method,
-		[string]$endpoint,
-		[object]$body = $null
-	)
+function Invoke-ApiCheck {
+    param(
+        [Parameter(Mandatory)] [string]$Name,
+        [Parameter(Mandatory)] [string]$Method,
+        [Parameter(Mandatory)] [string]$Endpoint,
+        [object]$Body,
+        [hashtable]$Headers = @{},
+        [int[]]$ExpectedStatus = @(200)
+    )
 
-	Write-Host "`n📝 Testing: $name" -ForegroundColor Cyan
-	Write-Host "   $method $endpoint" -ForegroundColor Gray
+    Write-Host "`nTesting: $Name" -ForegroundColor Cyan
+    Write-Host "  $Method $Endpoint" -ForegroundColor DarkGray
 
-	try {
-		$params = @{
-			Uri         = "$baseUrl$endpoint"
-			Method      = $method
-			ErrorAction = 'Stop'
-		}
+    try {
+        $parameters = @{
+            Uri = "$BaseUrl$Endpoint"
+            Method = $Method
+            Headers = $Headers
+            SkipHttpErrorCheck = $true
+        }
+        if ($null -ne $Body) {
+            $parameters.Body = $Body | ConvertTo-Json -Depth 10
+            $parameters.ContentType = "application/json"
+        }
 
-		if ($body) {
-			$params['Body'] = $body | ConvertTo-Json -Depth 10
-			$params['ContentType'] = 'application/json'
-		}
+        $response = Invoke-WebRequest @parameters
+        $data = if ([string]::IsNullOrWhiteSpace($response.Content)) {
+            $null
+        } else {
+            $response.Content | ConvertFrom-Json
+        }
 
-		$response = Invoke-WebRequest @params
-		$data = $response.Content | ConvertFrom-Json
+        if ($response.StatusCode -notin $ExpectedStatus) {
+            $script:errorCount++
+            Write-Host "  FAIL: HTTP $($response.StatusCode), expected $($ExpectedStatus -join '/')" -ForegroundColor Red
+            if ($null -ne $data) {
+                Write-Host "  Response: $($data | ConvertTo-Json -Depth 4 -Compress)" -ForegroundColor Red
+            }
+            return @{ StatusCode = $response.StatusCode; Data = $data; Passed = $false }
+        }
 
-		Write-Host "   ✅ Status: $($response.StatusCode)" -ForegroundColor Green
-		Write-Host "   📦 Response: $($data | ConvertTo-Json -Depth 2 -Compress)" -ForegroundColor Green
-
-		$script:successCount++
-		return $data
-	}
-	catch {
-		Write-Host "   ❌ Error: $($_.Exception.Message)" -ForegroundColor Red
-		$script:errorCount++
-		return $null
-	}
+        $script:successCount++
+        Write-Host "  PASS: HTTP $($response.StatusCode)" -ForegroundColor Green
+        return @{ StatusCode = $response.StatusCode; Data = $data; Passed = $true }
+    }
+    catch {
+        $script:errorCount++
+        Write-Host "  ERROR: $($_.Exception.Message)" -ForegroundColor Red
+        return @{ StatusCode = 0; Data = $null; Passed = $false }
+    }
 }
 
-Write-Host "================================" -ForegroundColor Yellow
-Write-Host "  🛒 ORDER & PAYMENT MICROSERVICE - API TEST" -ForegroundColor Yellow
-Write-Host "  Base URL: $baseUrl" -ForegroundColor Yellow
-Write-Host "================================`n" -ForegroundColor Yellow
+Write-Host "============================================" -ForegroundColor Yellow
+Write-Host " ORDER & PAYMENT - AUTHENTICATED E2E CHECK" -ForegroundColor Yellow
+Write-Host " $BaseUrl" -ForegroundColor Yellow
+Write-Host "============================================" -ForegroundColor Yellow
 
-# 1. Test Products API
-Write-Host "`n🍽️  ===== PRODUCTS API =====" -ForegroundColor Magenta
+$productsResult = Invoke-ApiCheck -Name "List seeded products" -Method GET -Endpoint "/products"
+if (-not $productsResult.Passed -or @($productsResult.Data).Count -eq 0) {
+    Write-Host "`nAPI is unavailable or no seeded product exists." -ForegroundColor Red
+    exit 1
+}
+$product = @($productsResult.Data)[0]
 
-Test-Endpoint "GET All Products" "GET" "/products"
+$unique = "$(Get-Date -Format yyyyMMddHHmmss)-$([guid]::NewGuid().ToString('N').Substring(0, 8))"
+$email = "e2e-$unique@example.test"
+$password = "E2e-Test-Password!123"
 
-Test-Endpoint "GET Products by Category" "GET" "/products/category/Food"
+$registration = Invoke-ApiCheck -Name "Register customer" -Method POST -Endpoint "/users/register" -ExpectedStatus 201 -Body @{
+    email = $email
+    password = $password
+    fullName = "E2E Test Customer"
+    phoneNumber = "0900000000"
+}
+if (-not $registration.Passed) { exit 1 }
+$userId = [int]$registration.Data.id
 
-Test-Endpoint "GET Product by ID" "GET" "/products/1"
+$login = Invoke-ApiCheck -Name "Login and obtain JWT" -Method POST -Endpoint "/users/login" -Body @{
+    email = $email
+    password = $password
+}
+if (-not $login.Passed) { exit 1 }
+$authHeaders = @{ Authorization = "Bearer $($login.Data.token)" }
 
-# 2. Test Users API
-Write-Host "`n👤 ===== USERS API =====" -ForegroundColor Magenta
+Invoke-ApiCheck -Name "Read own profile" -Method GET -Endpoint "/users/$userId" -Headers $authHeaders | Out-Null
+Invoke-ApiCheck -Name "Create/read own cart" -Method GET -Endpoint "/cart/user/$userId" -Headers $authHeaders | Out-Null
+Invoke-ApiCheck -Name "Add seeded product to cart" -Method POST -Endpoint "/cart/user/$userId/add" -Headers $authHeaders -Body @{
+    productId = [int]$product.id
+    quantity = 2
+} | Out-Null
 
-$registerData = @{
-	email = "customer@example.com"
-	password = "Test@123456"
-	fullName = "Nguyễn Văn Đơn"
-	phoneNumber = "0901234567"
-	address = "123 Đường Lê Lợi, TP.HCM"
-	city = "Ho Chi Minh"
-	postalCode = "70000"
+$quantity = 2
+$total = [decimal]$product.price * $quantity
+$order = Invoke-ApiCheck -Name "Create order with server price" -Method POST -Endpoint "/orders" -Headers $authHeaders -ExpectedStatus 201 -Body @{
+    totalAmount = $total
+    address = "1 E2E Street"
+    city = "Ho Chi Minh City"
+    items = @(
+        @{
+            productId = [int]$product.id
+            quantity = $quantity
+            unitPrice = [decimal]$product.price
+        }
+    )
+}
+if (-not $order.Passed) { exit 1 }
+$orderId = [int]$order.Data.id
+
+$idempotencyKey = "charge-$([guid]::NewGuid().ToString('N'))"
+$paymentHeaders = @{
+    Authorization = $authHeaders.Authorization
+    "Idempotency-Key" = $idempotencyKey
+}
+$paymentBody = @{
+    orderId = $orderId
+    amount = [decimal]$order.Data.totalAmount
+}
+$payment = Invoke-ApiCheck -Name "Charge order" -Method POST -Endpoint "/payments" -Headers $paymentHeaders -ExpectedStatus 201 -Body $paymentBody
+if (-not $payment.Passed) { exit 1 }
+$paymentId = [int]$payment.Data.id
+
+Invoke-ApiCheck -Name "Repeat charge idempotently" -Method POST -Endpoint "/payments" -Headers $paymentHeaders -ExpectedStatus 201 -Body $paymentBody | Out-Null
+Invoke-ApiCheck -Name "Read payment" -Method GET -Endpoint "/payments/$paymentId" -Headers $authHeaders | Out-Null
+$mine = Invoke-ApiCheck -Name "Read own orders" -Method GET -Endpoint "/orders/mine" -Headers $authHeaders
+
+$paidOrder = @($mine.Data) | Where-Object { [int]$_.id -eq $orderId }
+if (@($paidOrder).Count -ne 1 -or $paidOrder.status -ne "PAID") {
+    $errorCount++
+    Write-Host "  FAIL: order $orderId is not uniquely visible in PAID state." -ForegroundColor Red
+} else {
+    $successCount++
+    Write-Host "  PASS: order $orderId reached PAID and remains RESERVED." -ForegroundColor Green
 }
 
-$registerResult = Test-Endpoint "Register User" "POST" "/users/register" $registerData
+Invoke-ApiCheck -Name "Reject cancellation after successful payment" -Method POST -Endpoint "/orders/$orderId/cancel" -Headers $authHeaders -ExpectedStatus 400 | Out-Null
 
-if ($registerResult) {
-	$userId = $registerResult.id
-	Write-Host "   💡 Created User ID: $userId" -ForegroundColor Cyan
+Write-Host "`n============================================" -ForegroundColor Yellow
+Write-Host "E2E SUMMARY: $successCount passed, $errorCount failed" -ForegroundColor $(if ($errorCount -eq 0) { "Green" } else { "Red" })
+Write-Host "User=$userId Order=$orderId Payment=$paymentId" -ForegroundColor Yellow
+Write-Host "============================================" -ForegroundColor Yellow
 
-	Test-Endpoint "Login User" "POST" "/users/login" @{
-		email = $registerData.email
-		password = $registerData.password
-	}
-
-	Test-Endpoint "Get User by ID" "GET" "/users/$userId"
-}
-
-# 3. Test Cart API
-Write-Host "`n🛒 ===== SHOPPING CART API =====" -ForegroundColor Magenta
-
-if ($userId) {
-	$cartResult = Test-Endpoint "Get/Create Cart for User" "GET" "/cart/user/$userId"
-
-	if ($cartResult) {
-		$cartId = $cartResult.id
-		Write-Host "   💡 Cart ID: $cartId" -ForegroundColor Cyan
-
-		# Add items to cart
-		Test-Endpoint "Add Item to Cart" "POST" "/cart/user/$userId/add" @{
-			productId = 1
-			quantity = 2
-		}
-
-		Test-Endpoint "Add Another Item" "POST" "/cart/user/$userId/add" @{
-			productId = 2
-			quantity = 1
-		}
-
-		# View updated cart
-		Test-Endpoint "Get Updated Cart" "GET" "/cart/user/$userId"
-	}
-}
-
-# 4. Test Orders API
-Write-Host "`n📦 ===== ORDERS API =====" -ForegroundColor Magenta
-
-if ($userId) {
-	$orderData = @{
-		customerId = "CUST$([int]$userId)"
-		userId = $userId
-		totalAmount = 150000
-		status = "Pending"
-		items = @(
-			@{
-				productId = 1
-				quantity = 2
-				unitPrice = 55000
-			},
-			@{
-				productId = 3
-				quantity = 1
-				unitPrice = 40000
-			}
-		)
-	}
-
-	$orderResult = Test-Endpoint "Create Order" "POST" "/orders" $orderData
-
-	if ($orderResult) {
-		$orderId = $orderResult.id
-		Write-Host "   💡 Order ID: $orderId" -ForegroundColor Cyan
-
-		Test-Endpoint "Get Order by ID" "GET" "/orders/$orderId"
-
-		# 5. Test Payments API
-		Write-Host "`n💳 ===== PAYMENTS API =====" -ForegroundColor Magenta
-
-		$paymentData = @{
-			orderId = $orderId
-			amount = $orderResult.totalAmount
-			method = "CreditCard"
-			status = "Completed"
-		}
-
-		Test-Endpoint "Process Payment" "POST" "/payments" $paymentData
-
-		Test-Endpoint "Get Payments for Order" "GET" "/payments/order/$orderId"
-	}
-}
-
-# Summary
-Write-Host "`n================================" -ForegroundColor Yellow
-Write-Host "📊 TEST SUMMARY" -ForegroundColor Yellow
-Write-Host "================================" -ForegroundColor Yellow
-Write-Host "✅ Success: $successCount" -ForegroundColor Green
-Write-Host "❌ Failed: $errorCount" -ForegroundColor $(if ($errorCount -gt 0) { 'Red' } else { 'Green' })
-Write-Host "================================" -ForegroundColor Yellow
+if ($errorCount -gt 0) { exit 1 }

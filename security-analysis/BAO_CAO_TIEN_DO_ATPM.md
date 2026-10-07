@@ -29,7 +29,7 @@ Về an toàn phần mềm, cách tổ chức này giúp xác định rõ nơi c
 
 Mã nguồn đã có xử lý tạo, xem và hủy đơn hàng; tạo và xem thanh toán; xem, thêm, cập nhật và xóa sản phẩm trong giỏ hàng. Order có tám trạng thái: CREATED, VALIDATED, PAYMENT_PENDING, PAID, CONFIRMED, COMPLETED, CANCELLED và FAILED.
 
-Phần thanh toán hiện còn mang tính mô phỏng: PaymentService tạo kết quả SUCCESS thay vì xác minh qua cổng thanh toán. Các bước chuyển trạng thái trung gian chưa được hiện thực đầy đủ theo luồng kỳ vọng. Vì vậy, tiến độ chức năng ở đây được ghi nhận ở mức **đã có mã xử lý**, không phải đã kiểm thử tích hợp đầy đủ hoặc sẵn sàng vận hành.
+Phần thanh toán đã được tách qua `IPaymentGateway`; adapter mặc định `FakePaymentGateway` lưu kết quả theo idempotency key và hỗ trợ success, decline, unknown, reconciliation và refund ở mức thiết kế/test. Đây vẫn là gateway mô phỏng, chưa có chữ ký callback hay đối soát với nhà cung cấp thật, nên chưa được xem là sẵn sàng vận hành.
 
 ## 3. Các công việc an toàn phần mềm đã hoàn thành
 
@@ -74,10 +74,16 @@ Phản ví dụ thể hiện một đơn đã hủy vẫn có thể trở thành
 #### 3.3.1. Hoàn thiện model xử lý sự cố và phục hồi
 
 Đã bổ sung `order_payment_recovery_model.json` để mô tả cả happy path và đường
-xử lý sự cố tại từng state. Model có 14 state và 35 transition, bao gồm các
+xử lý sự cố tại từng state. Model có 14 state và 36 transition, bao gồm các
 state thiết kế `PAYMENT_PROCESSING`, `PAYMENT_RETRY`,
 `PAYMENT_PROCESSING_FINAL`, `CONFIRMATION_RETRY`, `REFUND_PENDING` và
 `REFUNDED`.
+
+Source hiện biểu diễn các trạng thái kết hợp này bằng hai máy trạng thái riêng:
+Order lưu vòng đời nghiệp vụ, Payment lưu `PROCESSING`, `UNKNOWN`, `SUCCESS`,
+`FAILED`, `REFUND_PENDING`, `REFUNDED`. Các endpoint retry/reconcile/refund và
+inventory compensation đã được hiện thực; `CONFIRMATION_RETRY` vẫn là trạng
+thái quan sát khi Order giữ `PAID`, không phải enum bền vững riêng.
 
 Mỗi incident khai báo đủ vấn đề, event, cách phát hiện, giải pháp và state tiếp
 theo. Bộ kiểm chứng duyệt toàn bộ state graph và kiểm tra 10 thuộc tính về
@@ -107,7 +113,7 @@ chứng, chưa được triển khai đầy đủ vào enum và API C#.
 
 Các nhóm trường hợp đã kiểm tra gồm null request, null item, danh sách item null hoặc rỗng; ID không hợp lệ; số tiền âm, bằng 0 hoặc vượt giới hạn; số lượng dưới/trên biên; giá âm hoặc vượt mức tối đa; các giá trị biên hợp lệ; nhiều item; sai lệch tổng tiền trong và ngoài tolerance; decimal.MaxValue và phép nhân lớn nhất sau validation.
 
-Riêng InputValidator có **34 trường hợp kiểm thử**. Sau khi bổ sung test hồi quy cho OrderService, PaymentService, OrderStateMachine và UserService, toàn bộ test suite hiện có kết quả thực tế ngày 24/09/2026: **52 PASS, 0 FAIL, 0 SKIP**.
+Riêng InputValidator có **34 trường hợp kiểm thử**. Sau khi bổ sung test hồi quy cho hai state machine, lifecycle Order, gateway timeout/decline, bounded retry, crash reconciliation, refund, hoàn tồn kho và race payment–cancel, toàn bộ test suite ngày 07/10/2026 đạt **83 PASS, 0 FAIL, 0 SKIP**.
 
 Các test từng ghi nhận tổng tiền sai hoặc giá dưới mức tối thiểu được chuyển thành test yêu cầu từ chối. Test mới còn kiểm tra giá phía server, giảm tồn kho, chặn giá client bị sửa, chặn thanh toán đơn CANCELLED, đối chiếu số tiền, chuyển PAYMENT_PENDING → PAID, idempotency, password hashing và phát hành JWT.
 
@@ -187,13 +193,13 @@ Năm phát hiện ưu tiên đã có biện pháp khắc phục trong source và
 
 | Hạng mục chưa hoàn thành | Hiện trạng | Khoảng trống cần xử lý |
 |---|---|---|
-| Payment gateway thật | PaymentService luôn sinh kết quả `SUCCESS` và transaction code mô phỏng | Chưa ký/xác minh callback, xử lý timeout, từ chối giao dịch, retry, refund hoặc đối soát |
+| Payment gateway thật | Có `IPaymentGateway` và adapter giả lập idempotent; service xử lý success/decline/unknown/retry/reconcile/refund | Chưa có adapter nhà cung cấp, xác minh callback và integration test sandbox |
 | Integration/E2E với PostgreSQL | Có EF Core, migration, seed và cấu hình PostgreSQL | Chưa có test tự động khởi động API với database sạch và chạy trọn luồng đăng ký → đăng nhập → giỏ → order → payment |
 | Kiểm thử authentication/authorization | Đã có JWT, `[Authorize]`, role và ownership check | Chưa có test HTTP xác nhận 401 khi thiếu/sai token, 403 khi truy cập chéo và quyền Admin trên endpoint quản trị |
 | Đồng thời và idempotency trên database thật | Có transaction `Serializable`, idempotency key và unique index | Unit test đang dùng EF InMemory, chưa tái hiện hai request thanh toán/đặt hàng đồng thời trên PostgreSQL |
-| Vòng đời Order đầy đủ | Đã tạo đến PAYMENT_PENDING, thanh toán chuyển sang PAID và có bảng transition | Chưa có endpoint/quy trình nghiệp vụ CONFIRMED, COMPLETED, FAILED; chưa kiểm thử hoàn kho khi hủy/thất bại |
+| Vòng đời Order đầy đủ | Đã có PAYMENT_PENDING, PAID, CONFIRMED, COMPLETED, CANCELLED, FAILED, REFUND_PENDING, REFUNDED và inventory RESERVED/RELEASED/CONSUMED | Cần background worker tự reconcile/retry sau restart và integration test database thật |
 | SMT/Z3 | Có `PaymentVerification.z3` | Chưa lưu lệnh chạy, phiên bản solver, kết quả SAT/UNSAT và diễn giải ràng buộc đối chiếu với code hiện tại |
-| TLA+/BMC | Có `OrderPayment.tla` và Kripke model | Chưa có TLC config/kết quả; model chưa được trích xuất hoặc đồng bộ tự động từ implementation |
+| TLA+/BMC | `OrderPayment.tla` và `OrderPayment.cfg` đã được đồng bộ với hai state machine, cùng Kripke/recovery model | Chưa chạy TLC và chưa lưu output/counterexample; model chưa sinh tự động từ implementation |
 | Fuzzing | Source có đánh dấu target cho validator/payment | Chưa có harness, corpus, seed, crash artifact, timeout policy hoặc số liệu coverage của fuzzing |
 | Coverage toàn hệ thống | InputValidator đạt 96,87% branch coverage | Chưa có báo cáo coverage riêng cho Controller, Service, state machine và các nhánh lỗi database |
 | Hardening vận hành | Secret nằm ngoài source, CORS Development có allowlist | Chưa có rate limiting, rotation/revocation JWT, audit log bảo mật, health check, metrics/cảnh báo và cấu hình production được kiểm chứng |
@@ -220,7 +226,7 @@ Thứ tự ưu tiên đề xuất là integration/authorization trước, sau đ
 
 Phần 8 dưới đây trình bày chi tiết quá trình thực hiện, kiến thức áp dụng và các lỗi gặp phải để phục vụ thuyết trình hoặc báo cáo tiến độ.
 
-Dự án đã xây dựng được nền tảng đánh giá an toàn phần mềm kết hợp bốn hướng: **kiểm chứng mô hình, kiểm thử có đo coverage, đánh giá rủi ro từ mã nguồn và phân tích động lỗi bộ nhớ trên mô hình C**. Các kết quả nổi bật gồm model kỳ vọng PASS bốn thuộc tính, phản ví dụ cho lỗi hồi sinh đơn đã hủy, 52 test xUnit thành công, branch coverage InputValidator đạt 96,87% và 22/22 ca kiểm chứng C cho năm nhóm lỗi bộ nhớ.
+Dự án đã xây dựng được nền tảng đánh giá an toàn phần mềm kết hợp bốn hướng: **kiểm chứng mô hình, kiểm thử có đo coverage, đánh giá rủi ro từ mã nguồn và phân tích động lỗi bộ nhớ trên mô hình C**. Các kết quả nổi bật gồm model kỳ vọng PASS bốn thuộc tính, recovery model PASS 10 thuộc tính, phản ví dụ cho bốn mutation nguy hiểm, 84 unit test xUnit thành công, 5 integration test PostgreSQL đã có harness tái lập, branch coverage InputValidator đạt 96,87% và 22/22 ca kiểm chứng C cho năm nhóm lỗi bộ nhớ.
 
 Quan trọng hơn, năm phát hiện ưu tiên đã được chuyển thành guard và unit test hồi quy trong source hiện tại. Tiến độ hiện nay được đánh giá là **đã hoàn thành giai đoạn phát hiện và sửa bước đầu, đang chuyển sang integration/E2E, gateway thật, concurrency, formal verification và fuzzing**; chưa đủ cơ sở kết luận hệ thống đã an toàn để vận hành thực tế.
 
@@ -353,7 +359,7 @@ Tôi áp dụng phân lớp tương đương, phân tích giá trị biên, ki�
 
 34 trường hợp riêng cho InputValidator đều PASS. Các test trước đây dùng để ghi nhận lỗi đã giúp xác nhận tổng tiền sai và giá dưới mức tối thiểu từng được chấp nhận. Sau khi sửa validator, chúng được đổi thành `MismatchOrBelowMinimumPriceIsRejected` và hiện yêu cầu `ArgumentException`. Điều này biến characterization test thành regression test: nếu lỗi xuất hiện lại, test sẽ FAIL.
 
-Toàn test suite hiện có 52 trường hợp PASS. Mười tám trường hợp bổ sung kiểm tra giá server và tồn kho trong OrderService, các transition hợp lệ/cấm, Payment amount/idempotency/trạng thái, password hashing, JWT và nâng cấp tài khoản SHA-256 cũ.
+Toàn test suite hiện có 83 trường hợp PASS. Ngoài 34 test InputValidator, các test còn lại kiểm tra giá server/tồn kho, transition hợp lệ và bị cấm của Order/Payment, amount/idempotency, timeout/unknown, bounded retry, crash reconciliation, refund, hoàn kho, race payment–cancel, password hashing, JWT và nâng cấp tài khoản SHA-256 cũ.
 
 ### 8.6. Đo coverage và giải thích vì sao chưa đạt 100% toàn lớp
 
@@ -518,7 +524,7 @@ Tôi không ghi nhận các rủi ro dự kiến như race condition là lỗi �
 
 Qua phần công việc này, tôi đã áp dụng mô hình hóa hình thức để kiểm tra thiết kế; BFS và CTL để kiểm tra khả năng đạt tới và thuộc tính thời gian; kiểm thử biên và phân lớp tương đương để kiểm tra validator; coverage để xác định nhánh chưa chạy; CWE/CVSS-lite để phân loại, ưu tiên phát hiện; cùng ownership, lifetime và sanitizer để kiểm chứng động các lỗi bộ nhớ trong mô hình C.
 
-Kết quả quan trọng không chỉ là 52 test xUnit PASS, branch coverage InputValidator 96,87% hay 22/22 ca C PASS, mà là có minh chứng cụ thể cho những điều đã kiểm tra và giới hạn rõ ràng của kết luận. Tôi đã biết phân biệt bốn tình huống: **thiết kế thỏa thuộc tính**, **test ghi nhận đúng hành vi hiện tại**, **công cụ phát hiện đúng lỗi cố ý trong mô hình**, và **mã nghiệp vụ đã được sửa kèm kiểm thử hồi quy**. Cả bốn đã có kết quả trong phạm vi unit test/mô hình; integration với PostgreSQL, HTTP và gateway thật vẫn là nhiệm vụ của giai đoạn tiếp theo.
+Kết quả quan trọng không chỉ là 84 unit test xUnit PASS, branch coverage InputValidator 96,87% hay 22/22 ca C PASS, mà là có minh chứng cụ thể cho những điều đã kiểm tra và giới hạn rõ ràng của kết luận. Tôi đã biết phân biệt bốn tình huống: **thiết kế thỏa thuộc tính**, **test ghi nhận đúng hành vi hiện tại**, **công cụ phát hiện đúng lỗi cố ý trong mô hình**, và **mã nghiệp vụ đã được sửa kèm kiểm thử hồi quy**. Cả bốn đã có kết quả trong phạm vi unit test/mô hình; integration HTTP/PostgreSQL đã có 5 test Testcontainers nhưng cần chạy khi Docker hoạt động để lưu kết quả, còn gateway thật vẫn là nhiệm vụ của giai đoạn tiếp theo.
 
 ## 9. Kịch bản lệnh chạy khi báo cáo tiến độ
 
@@ -553,10 +559,10 @@ dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
 Kết quả mong đợi:
 
 ```text
-Passed: 52, Failed: 0, Skipped: 0, Total: 52
+Passed: 83, Failed: 0, Skipped: 0, Total: 83
 ```
 
-Khi trình bày, giải thích rằng 34 ca thuộc InputValidator và 18 ca còn lại kiểm tra OrderService, PaymentService, OrderStateMachine và UserService.
+Khi trình bày, giải thích rằng 34 ca thuộc InputValidator; các ca còn lại kiểm tra UserService, OrderService, PaymentService, hai state machine và các đường phục hồi/compensation.
 
 **Bước 2 — chạy model checking và risk assessment:**
 

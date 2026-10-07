@@ -1,16 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OrderPaymentMicroservice.DTOs.Payments;
 using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Services.Interfaces;
 
 namespace OrderPaymentMicroservice.Controllers;
 
-/// <summary>
-/// Payments API Controller
-/// TODO: Add authentication/authorization in future
-/// TODO: Add idempotency key for payment requests
-/// </summary>
+/// <summary>Authenticated payment, retry and compensation API.</summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -72,6 +69,11 @@ public class PaymentsController : ControllerBase
             _logger.LogWarning("Operation error: {Message}", ex.Message);
             return Conflict(ex.Message);
         }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogWarning(ex, "Concurrent payment conflict");
+            return Conflict("Payment or order state changed concurrently; reload and reconcile");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating payment");
@@ -111,5 +113,112 @@ public class PaymentsController : ControllerBase
             _logger.LogError(ex, "Error fetching payment {PaymentId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
         }
+    }
+
+    [HttpPost("{id}/retry")]
+    public async Task<IActionResult> RetryPayment(int id)
+    {
+        try
+        {
+            var access = await CheckPaymentAccessAsync(id);
+            if (access != null) return access;
+            return Ok(await _paymentService.RetryPaymentAsync(id));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Payment state changed concurrently; reload and reconcile");
+        }
+    }
+
+    [HttpPost("{id}/reconcile")]
+    public async Task<IActionResult> ReconcilePayment(int id)
+    {
+        try
+        {
+            var access = await CheckPaymentAccessAsync(id);
+            if (access != null) return access;
+            return Ok(await _paymentService.ReconcilePaymentAsync(id));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Payment state changed concurrently; reload and reconcile");
+        }
+    }
+
+    [HttpPost("{id}/refund")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RefundPayment(
+        int id,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey)
+    {
+        try
+        {
+            return Ok(await _paymentService.RefundPaymentAsync(id, idempotencyKey?.Trim() ?? string.Empty));
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Refund state changed concurrently; reload and reconcile");
+        }
+    }
+
+    [HttpPost("{id}/refund/retry")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> RetryRefund(int id)
+    {
+        try
+        {
+            return Ok(await _paymentService.RetryRefundAsync(id));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Refund state changed concurrently; reload and reconcile");
+        }
+    }
+
+    [HttpPost("{id}/refund/reconcile")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ReconcileRefund(int id)
+    {
+        try
+        {
+            return Ok(await _paymentService.ReconcileRefundAsync(id));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Refund state changed concurrently; reload and reconcile");
+        }
+    }
+
+    private async Task<IActionResult?> CheckPaymentAccessAsync(int id)
+    {
+        var payment = await _paymentService.GetPaymentByIdAsync(id);
+        if (payment == null) return NotFound($"Payment {id} not found");
+        var order = await _orderService.GetOrderByIdAsync(payment.OrderId);
+        if (order == null) return NotFound($"Order {payment.OrderId} not found");
+        return User.CanAccessUser(order.CustomerId) ? null : Forbid();
     }
 }

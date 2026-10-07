@@ -2,11 +2,7 @@ using OrderPaymentMicroservice.DTOs.Orders;
 
 namespace OrderPaymentMicroservice.Services.Interfaces;
 
-/// <summary>
-/// Order service interface
-/// TODO: Kripke/BMC - define order lifecycle contracts
-/// TODO: SMT - define amount and state transition constraints
-/// </summary>
+/// <summary>Order lifecycle and inventory reservation contract.</summary>
 public interface IOrderService
 {
     /// <summary>
@@ -31,7 +27,11 @@ public interface IOrderService
 
     /// <summary>
     /// Cancel an order
-    /// TODO: Kripke/BMC - verify order can be cancelled from current state
+    /// Cancels only a pre-charge order and releases inventory idempotently.
     /// </summary>
     Task<bool> CancelOrderAsync(int orderId);
+
+    Task<OrderResponse> ConfirmOrderAsync(int orderId);
+
+    Task<OrderResponse> CompleteOrderAsync(int orderId);
 }

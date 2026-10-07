@@ -64,7 +64,7 @@
       "incidents": [
         {"problem": "Gateway timeout or transient network error", "event": "gateway_transient_failure", "detection": "No authenticated final response before timeout", "solution": "Release the lock and enter a bounded retry state using the same idempotency key", "to": "PAYMENT_RETRY"},
         {"problem": "Gateway permanently declines the charge", "event": "gateway_declined", "detection": "Authenticated final decline response", "solution": "Mark the flow failed and release inventory", "to": "FAILED"},
-        {"problem": "Gateway charged but local database commit failed", "event": "charged_but_commit_failed", "detection": "Gateway success exists but the local transaction cannot persist PAID", "solution": "Do not retry the charge; enqueue compensating refund", "to": "REFUND_PENDING"},
+        {"problem": "Gateway charged but local database commit failed", "event": "charged_but_commit_failed", "detection": "Payment remains PROCESSING while the gateway has a final result for the idempotency key", "solution": "Reconcile the existing charge by idempotency key; never create another logical payment", "to": "PAYMENT_RETRY"},
         {"problem": "Cancellation races with payment", "event": "concurrent_cancel_loses_lock", "detection": "Cancellation observes payment lock or changed row version", "solution": "Serialize the operations; cancellation retries after the payment result", "to": "PAYMENT_PROCESSING", "kind": "stutter"}
       ]
     },
@@ -78,7 +78,7 @@
         {"event": "retry_budget_available", "to": "PAYMENT_PROCESSING_FINAL", "action": "Use the final bounded attempt with the same idempotency key."}
       ],
       "incidents": [
-        {"problem": "Retry budget is exhausted", "event": "retry_exhausted", "detection": "Bounded retry counter reaches its configured maximum", "solution": "Stop automatic charging, mark failed and release inventory", "to": "FAILED"},
+        {"problem": "Retry budget is exhausted while the gateway outcome remains unknown", "event": "retry_exhausted_unknown", "detection": "Bounded retry counter reaches its configured maximum without a final gateway result", "solution": "Stop automatic charging, keep inventory reserved and require reconciliation/manual review", "to": "PAYMENT_RETRY", "kind": "stutter"},
         {"problem": "Customer cancels while no confirmed charge exists", "event": "cancel_during_retry", "detection": "Gateway reconciliation confirms no successful charge", "solution": "Cancel and release inventory", "to": "CANCELLED"}
       ]
     },
@@ -92,13 +92,14 @@
         {"event": "final_gateway_success_and_commit", "to": "PAID", "action": "Persist one SUCCESS payment and transition the order atomically."}
       ],
       "incidents": [
-        {"problem": "Final attempt times out or is declined", "event": "final_payment_failed", "detection": "The bounded final attempt has no successful result", "solution": "Stop automatic retry, mark failed and release inventory", "to": "FAILED"},
-        {"problem": "Final attempt charged but local commit failed", "event": "final_charged_but_commit_failed", "detection": "Gateway success exists but PAID cannot be committed", "solution": "Do not charge again; enqueue compensating refund", "to": "REFUND_PENDING"}
+        {"problem": "Final attempt is definitively declined", "event": "final_payment_declined", "detection": "Authenticated final decline proves no charge succeeded", "solution": "Mark failed and release inventory", "to": "FAILED"},
+        {"problem": "Final attempt times out with an unknown outcome", "event": "final_payment_unknown", "detection": "No authenticated final response is available", "solution": "Stop charging automatically and continue reconciliation/manual review without releasing inventory", "to": "PAYMENT_RETRY", "kind": "stutter"},
+        {"problem": "Final attempt charged but local commit failed", "event": "final_charged_but_commit_failed", "detection": "Payment remains PROCESSING while the gateway has a final result", "solution": "Reconcile the existing charge; do not increase the charge attempt counter", "to": "PAYMENT_RETRY", "kind": "stutter"}
       ]
     },
     {
       "id": "PAID",
-      "order_status": "PAID",
+      "order_status": "REFUND_PENDING",
       "payment_status": "SUCCESS",
       "labels": ["paid", "payment_success", "amount_verified", "inventory_reserved"],
       "purpose": "Represent exactly one successful payment whose amount matches the order.",
@@ -174,7 +175,7 @@
     },
     {
       "id": "FAILED",
-      "order_status": "FAILED",
+      "order_status": "REFUNDED",
       "payment_status": "FAILED",
       "labels": ["failed", "inventory_released", "terminal"],
       "purpose": "Terminal state when no successful charge exists and automatic recovery is exhausted.",

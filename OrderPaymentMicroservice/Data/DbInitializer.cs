@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using OrderPaymentMicroservice.Models;
 
 namespace OrderPaymentMicroservice.Data
@@ -6,8 +7,8 @@ namespace OrderPaymentMicroservice.Data
     {
         public static void Initialize(AppDbContext context)
         {
-            // Đảm bảo cơ sở dữ liệu được tạo
-            context.Database.EnsureCreated();
+            // Apply the same versioned schema used by integration and production databases.
+            context.Database.Migrate();
 
             // Nếu đã có dữ liệu, không thêm nữa
             if (context.Products.Any())

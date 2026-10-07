@@ -1,16 +1,13 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using OrderPaymentMicroservice.DTOs.Orders;
 using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Services.Interfaces;
 
 namespace OrderPaymentMicroservice.Controllers;
 
-/// <summary>
-/// Orders API Controller
-/// TODO: Add authentication/authorization in future
-/// TODO: Add rate limiting for security
-/// </summary>
+/// <summary>Authenticated order lifecycle API.</summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize]
@@ -35,13 +32,13 @@ public class OrdersController : ControllerBase
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
+    public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest? request)
     {
         try
         {
-            request.CustomerId = User.GetRequiredUserId();
             if (request == null)
                 return BadRequest("Order request cannot be null");
+            request.CustomerId = User.GetRequiredUserId();
 
             _logger.LogInformation("Creating order for customer {CustomerId}", request.CustomerId);
             var response = await _orderService.CreateOrderAsync(request);
@@ -51,6 +48,11 @@ public class OrdersController : ControllerBase
         {
             _logger.LogWarning("Validation error: {Message}", ex.Message);
             return BadRequest(ex.Message);
+        }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogWarning(ex, "Concurrent order creation conflict");
+            return Conflict("Inventory or order data changed concurrently; reload and retry");
         }
         catch (Exception ex)
         {
@@ -127,7 +129,7 @@ public class OrdersController : ControllerBase
     /// POST /api/orders/{id}/cancel
     /// </summary>
     /// <remarks>
-    /// TODO: Kripke/BMC - verify state transition validity
+    /// The service rejects cancellation after payment starts processing.
     /// </remarks>
     [HttpPost("{id}/cancel")]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -149,10 +151,51 @@ public class OrdersController : ControllerBase
 
             return Ok(new { message = $"Order {id} cancelled successfully" });
         }
+        catch (DbUpdateException ex)
+        {
+            _logger.LogWarning(ex, "Concurrent cancellation conflict for order {OrderId}", id);
+            return Conflict("Order or inventory changed concurrently; reload and retry");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error cancelling order {OrderId}", id);
             return StatusCode(StatusCodes.Status500InternalServerError, "Internal server error");
+        }
+    }
+
+    [HttpPost("{id}/confirm")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> ConfirmOrder(int id)
+    {
+        try
+        {
+            return Ok(await _orderService.ConfirmOrderAsync(id));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Order state changed concurrently; reload and retry");
+        }
+    }
+
+    [HttpPost("{id}/complete")]
+    [Authorize(Roles = "Admin")]
+    public async Task<IActionResult> CompleteOrder(int id)
+    {
+        try
+        {
+            return Ok(await _orderService.CompleteOrderAsync(id));
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Order state changed concurrently; reload and retry");
         }
     }
 }

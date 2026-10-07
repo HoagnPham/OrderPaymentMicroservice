@@ -76,6 +76,9 @@ namespace OrderPaymentMicroservice.Migrations
                     b.Property<int>("CustomerId")
                         .HasColumnType("integer");
 
+                    b.Property<int>("InventoryStatus")
+                        .HasColumnType("integer");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -83,8 +86,15 @@ namespace OrderPaymentMicroservice.Migrations
                         .HasPrecision(19, 2)
                         .HasColumnType("numeric(19,2)");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<int>("UserId")
                         .HasColumnType("integer");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
 
                     b.HasKey("Id");
 
@@ -139,15 +149,34 @@ namespace OrderPaymentMicroservice.Migrations
                         .HasPrecision(19, 2)
                         .HasColumnType("numeric(19,2)");
 
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GatewayMessage")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
 
                     b.Property<string>("IdempotencyKey")
                         .HasMaxLength(128)
                         .HasColumnType("character varying(128)");
 
+                    b.Property<string>("LastErrorCode")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
                     b.Property<int>("OrderId")
                         .HasColumnType("integer");
+
+                    b.Property<string>("RefundIdempotencyKey")
+                        .HasMaxLength(128)
+                        .HasColumnType("character varying(128)");
+
+                    b.Property<string>("RefundTransactionCode")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
 
                     b.Property<int>("Status")
                         .HasColumnType("integer");
@@ -156,9 +185,22 @@ namespace OrderPaymentMicroservice.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<long>("Version")
+                        .IsConcurrencyToken()
+                        .HasColumnType("bigint");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("OrderId", "IdempotencyKey")
+                    b.HasIndex("IdempotencyKey")
+                        .IsUnique();
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("RefundIdempotencyKey")
                         .IsUnique();
 
                     b.ToTable("Payments");
@@ -204,6 +246,7 @@ namespace OrderPaymentMicroservice.Migrations
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("UpdatedAt")
+                        .IsConcurrencyToken()
                         .HasColumnType("timestamp with time zone");
 
                     b.HasKey("Id");

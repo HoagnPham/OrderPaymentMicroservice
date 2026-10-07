@@ -1,10 +1,6 @@
 namespace OrderPaymentMicroservice.Models;
 
-/// <summary>
-/// Payment entity
-/// TODO: SMT verification - Payment.Amount must equal Order.TotalAmount or be partial
-/// TODO: Kripke/BMC property - Order transitions to PAID only when Payment.Status == SUCCESS
-/// </summary>
+/// <summary>One logical, idempotent payment attempt for an order.</summary>
 public class Payment
 {
     public int Id { get; set; }
@@ -21,8 +17,7 @@ public class Payment
     public decimal Amount { get; set; }
 
     /// <summary>
-    /// Current payment status
-    /// TODO: Kripke/BMC property - FAILED status must prevent order completion
+    /// Current durable gateway status; mutations go through PaymentStateMachine.
     /// </summary>
     public PaymentStatus Status { get; set; } = PaymentStatus.PENDING;
 
@@ -31,12 +26,26 @@ public class Payment
     /// </summary>
     public string? TransactionCode { get; set; }
 
+    public string? RefundTransactionCode { get; set; }
+
     public string? IdempotencyKey { get; set; }
+
+    public string? RefundIdempotencyKey { get; set; }
+
+    public int AttemptCount { get; set; }
+
+    public string? LastErrorCode { get; set; }
+
+    public string? GatewayMessage { get; set; }
 
     /// <summary>
     /// Payment creation timestamp
     /// </summary>
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+
+    public long Version { get; set; }
 
     /// <summary>
     /// Navigation property

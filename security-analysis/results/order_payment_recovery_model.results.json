@@ -2,7 +2,7 @@
   "model": {
     "system_name": "Order-Payment recovery model",
     "state_count": 14,
-    "transition_count": 35,
+    "transition_count": 36,
     "reachable_states": [
       "CANCELLED",
       "COMPLETED",
@@ -243,9 +243,9 @@
       "payment_status": "PROCESSING",
       "case": "INCIDENT",
       "event_or_problem": "Gateway charged but local database commit failed",
-      "detection": "Gateway success exists but the local transaction cannot persist PAID",
-      "solution": "Do not retry the charge; enqueue compensating refund",
-      "next_state": "REFUND_PENDING",
+      "detection": "Payment remains PROCESSING while the gateway has a final result for the idempotency key",
+      "solution": "Reconcile the existing charge by idempotency key; never create another logical payment",
+      "next_state": "PAYMENT_RETRY",
       "kind": "progress"
     },
     {
@@ -275,11 +275,11 @@
       "order_status": "PAYMENT_PENDING",
       "payment_status": "UNKNOWN",
       "case": "INCIDENT",
-      "event_or_problem": "Retry budget is exhausted",
-      "detection": "Bounded retry counter reaches its configured maximum",
-      "solution": "Stop automatic charging, mark failed and release inventory",
-      "next_state": "FAILED",
-      "kind": "progress"
+      "event_or_problem": "Retry budget is exhausted while the gateway outcome remains unknown",
+      "detection": "Bounded retry counter reaches its configured maximum without a final gateway result",
+      "solution": "Stop automatic charging, keep inventory reserved and require reconciliation/manual review",
+      "next_state": "PAYMENT_RETRY",
+      "kind": "stutter"
     },
     {
       "state": "PAYMENT_RETRY",
@@ -308,9 +308,9 @@
       "order_status": "PAYMENT_PENDING",
       "payment_status": "PROCESSING",
       "case": "INCIDENT",
-      "event_or_problem": "Final attempt times out or is declined",
-      "detection": "The bounded final attempt has no successful result",
-      "solution": "Stop automatic retry, mark failed and release inventory",
+      "event_or_problem": "Final attempt is definitively declined",
+      "detection": "Authenticated final decline proves no charge succeeded",
+      "solution": "Mark failed and release inventory",
       "next_state": "FAILED",
       "kind": "progress"
     },
@@ -319,15 +319,26 @@
       "order_status": "PAYMENT_PENDING",
       "payment_status": "PROCESSING",
       "case": "INCIDENT",
+      "event_or_problem": "Final attempt times out with an unknown outcome",
+      "detection": "No authenticated final response is available",
+      "solution": "Stop charging automatically and continue reconciliation/manual review without releasing inventory",
+      "next_state": "PAYMENT_RETRY",
+      "kind": "stutter"
+    },
+    {
+      "state": "PAYMENT_PROCESSING_FINAL",
+      "order_status": "PAYMENT_PENDING",
+      "payment_status": "PROCESSING",
+      "case": "INCIDENT",
       "event_or_problem": "Final attempt charged but local commit failed",
-      "detection": "Gateway success exists but PAID cannot be committed",
-      "solution": "Do not charge again; enqueue compensating refund",
-      "next_state": "REFUND_PENDING",
-      "kind": "progress"
+      "detection": "Payment remains PROCESSING while the gateway has a final result",
+      "solution": "Reconcile the existing charge; do not increase the charge attempt counter",
+      "next_state": "PAYMENT_RETRY",
+      "kind": "stutter"
     },
     {
       "state": "PAID",
-      "order_status": "PAID",
+      "order_status": "REFUND_PENDING",
       "payment_status": "SUCCESS",
       "case": "NORMAL",
       "event_or_problem": "confirmation_ok",
@@ -338,7 +349,7 @@
     },
     {
       "state": "PAID",
-      "order_status": "PAID",
+      "order_status": "REFUND_PENDING",
       "payment_status": "SUCCESS",
       "case": "INCIDENT",
       "event_or_problem": "Duplicate success callback or client retry",
@@ -349,7 +360,7 @@
     },
     {
       "state": "PAID",
-      "order_status": "PAID",
+      "order_status": "REFUND_PENDING",
       "payment_status": "SUCCESS",
       "case": "INCIDENT",
       "event_or_problem": "Transient confirmation failure",
@@ -360,7 +371,7 @@
     },
     {
       "state": "PAID",
-      "order_status": "PAID",
+      "order_status": "REFUND_PENDING",
       "payment_status": "SUCCESS",
       "case": "INCIDENT",
       "event_or_problem": "Order cannot be fulfilled after payment",
@@ -459,7 +470,7 @@
     },
     {
       "state": "FAILED",
-      "order_status": "FAILED",
+      "order_status": "REFUNDED",
       "payment_status": "FAILED",
       "case": "INCIDENT",
       "event_or_problem": "Late retry after terminal failure",

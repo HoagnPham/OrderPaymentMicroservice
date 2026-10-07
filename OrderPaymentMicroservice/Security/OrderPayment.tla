@@ -1,199 +1,176 @@
 ---------------------------- MODULE OrderPayment ----------------------------
-(* 
-  TLA+ Model for Order & Payment System
+EXTENDS Naturals
 
-  States:
-	CREATED, VALIDATED, PAYMENT_PENDING, PAID, CONFIRMED, COMPLETED, CANCELLED, FAILED
+(***************************************************************************
+ One-order abstraction of the implementation state machines. Order and
+ payment states are deliberately separate. PROCESSING/UNKNOWN describe the
+ payment operation while the order remains PAYMENT_PENDING.
+***************************************************************************)
 
-  This model verifies:
-  1. Safety: States must follow the defined transition rules
-  2. Liveness: Every order eventually completes or fails
-  3. Consistency: Payment status matches Order status
-*)
+CONSTANT MaxAttempts
+ASSUME MaxAttempts \in Nat \ {0}
 
-EXTENDS Naturals, FiniteSets, Sequences
+OrderStatuses == {
+    "CREATED", "VALIDATED", "PAYMENT_PENDING", "PAID", "CONFIRMED",
+    "COMPLETED", "CANCELLED", "FAILED", "REFUND_PENDING", "REFUNDED"
+}
 
-CONSTANT MaxOrders
+PaymentStatuses == {
+    "NONE", "PENDING", "PROCESSING", "UNKNOWN", "SUCCESS", "FAILED",
+    "REFUND_PENDING", "REFUNDED"
+}
 
-ASSUME MaxOrders > 0
+InventoryStatuses == {"UNRESERVED", "RESERVED", "RELEASED", "CONSUMED"}
+TerminalOrderStatuses == {"COMPLETED", "CANCELLED", "FAILED", "REFUNDED"}
+PaymentEvidence == {"SUCCESS", "REFUND_PENDING", "REFUNDED"}
 
-(* Define possible order statuses *)
-OrderStatuses == {"CREATED", "VALIDATED", "PAYMENT_PENDING", "PAID", "CONFIRMED", "COMPLETED", "CANCELLED", "FAILED"}
-
-(* Define possible payment statuses *)
-PaymentStatuses == {"PENDING", "SUCCESS", "FAILED"}
-
-VARIABLE orders    \* Mapping from order ID to {status, totalAmount, payments}
-VARIABLE payments  \* Mapping from payment ID to {orderId, amount, status}
-VARIABLE orderCnt  \* Counter for order IDs
-VARIABLE paymentCnt \* Counter for payment IDs
-
-vars == <<orders, payments, orderCnt, paymentCnt>>
-
-(* ============== TYPE DEFINITIONS ============= *)
-
-Order(id, status, totalAmount, paymentIds) == 
-	[id |-> id, status |-> status, totalAmount |-> totalAmount, paymentIds |-> paymentIds]
-
-Payment(id, orderId, amount, status) == 
-	[id |-> id, orderId |-> orderId, amount |-> amount, status |-> status]
-
-(* ============== TRANSITION RULES ============= *)
-
-(* Allowed state transitions for an order *)
-AllowedTransition(fromStatus, toStatus) == 
-	LET transitions == {
-		("CREATED", "VALIDATED"),
-		("VALIDATED", "PAYMENT_PENDING"),
-		("VALIDATED", "CANCELLED"),
-		("PAYMENT_PENDING", "PAID"),
-		("PAYMENT_PENDING", "FAILED"),
-		("PAYMENT_PENDING", "CANCELLED"),
-		("PAID", "CONFIRMED"),
-		("PAID", "CANCELLED"),
-		("CONFIRMED", "COMPLETED"),
-		("CONFIRMED", "CANCELLED"),
-		("COMPLETED", "COMPLETED"),  (* Stay in completed *)
-		("FAILED", "FAILED"),           (* Stay in failed *)
-		("CANCELLED", "CANCELLED")      (* Stay in cancelled *)
-	}
-	IN <<fromStatus, toStatus>> \in transitions
-
-(* ============== INITIALIZATION ============= *)
+VARIABLES orderStatus, paymentStatus, inventoryStatus, attemptCount
+vars == <<orderStatus, paymentStatus, inventoryStatus, attemptCount>>
 
 Init ==
-	/\ orders = {}
-	/\ payments = {}
-	/\ orderCnt = 0
-	/\ paymentCnt = 0
+    /\ orderStatus = "CREATED"
+    /\ paymentStatus = "NONE"
+    /\ inventoryStatus = "UNRESERVED"
+    /\ attemptCount = 0
 
-(* ============== ACTIONS ============= *)
+Validate ==
+    /\ orderStatus = "CREATED"
+    /\ orderStatus' = "VALIDATED"
+    /\ inventoryStatus' = "RESERVED"
+    /\ UNCHANGED <<paymentStatus, attemptCount>>
 
-(* Create a new order in CREATED status *)
-CreateOrder(amount) ==
-	/\ orderCnt < MaxOrders
-	LET newOrderId == orderCnt + 1
-	IN /\ orders' = orders \cup {Order(newOrderId, "CREATED", amount, {})}
-	   /\ orderCnt' = newOrderId
-	   /\ paymentCnt' = paymentCnt
-	   /\ payments' = payments
+PersistOrder ==
+    /\ orderStatus = "VALIDATED"
+    /\ orderStatus' = "PAYMENT_PENDING"
+    /\ UNCHANGED <<paymentStatus, inventoryStatus, attemptCount>>
 
-(* Transition order to new status (if allowed) *)
-TransitionOrder(orderId, newStatus) ==
-	/\ orderId \in DOMAIN orders
-	/\ orders[orderId].status \in DOMAIN {}  (* TODO: Fix domain issue *)
-	/\ AllowedTransition(orders[orderId].status, newStatus)
-	/\ orders' = [orders EXCEPT ![orderId].status = newStatus]
-	/\ paymentCnt' = paymentCnt
-	/\ orderCnt' = orderCnt
-	/\ payments' = payments
+StartPayment ==
+    /\ orderStatus = "PAYMENT_PENDING"
+    /\ paymentStatus = "NONE"
+    /\ paymentStatus' = "PROCESSING"
+    /\ attemptCount' = 1
+    /\ UNCHANGED <<orderStatus, inventoryStatus>>
 
-(* Submit a payment for an order *)
-SubmitPayment(orderId, amount) ==
-	/\ orderId \in DOMAIN orders
-	/\ orders[orderId].status \in {"PAYMENT_PENDING", "PAID"}
-	/\ amount > 0
-	/\ amount <= orders[orderId].totalAmount
-	LET newPaymentId == paymentCnt + 1
-	IN /\ payments' = payments \cup {Payment(newPaymentId, orderId, amount, "PENDING")}
-	   /\ paymentCnt' = newPaymentId
-	   /\ orderCnt' = orderCnt
-	   /\ orders' = orders
+ChargeSucceeded ==
+    /\ orderStatus = "PAYMENT_PENDING"
+    /\ paymentStatus = "PROCESSING"
+    /\ orderStatus' = "PAID"
+    /\ paymentStatus' = "SUCCESS"
+    /\ UNCHANGED <<inventoryStatus, attemptCount>>
 
-(* Mark a payment as successful *)
-SuccessPayment(paymentId) ==
-	/\ paymentId \in DOMAIN payments
-	/\ payments[paymentId].status = "PENDING"
-	LET orderId == payments[paymentId].orderId
-		orderTotalAmount == orders[orderId].totalAmount
-		totalPaid == (CHOOSE sum \in Nat : 
-					  sum = SUM {payments[p].amount : p \in DOMAIN payments 
-								WHERE payments[p].orderId = orderId 
-								AND (payments[p].status = "SUCCESS" OR p = paymentId)})
-	IN /\ payments' = [payments EXCEPT ![paymentId].status = "SUCCESS"]
-	   /\ totalPaid >= orderTotalAmount  \* Constraint: total paid must cover order
-	   /\ IF totalPaid >= orderTotalAmount 
-		  THEN orders' = [orders EXCEPT ![orderId].status = "PAID"]
-		  ELSE orders' = orders
-	   /\ paymentCnt' = paymentCnt
-	   /\ orderCnt' = orderCnt
+ChargeDeclined ==
+    /\ orderStatus = "PAYMENT_PENDING"
+    /\ paymentStatus = "PROCESSING"
+    /\ orderStatus' = "FAILED"
+    /\ paymentStatus' = "FAILED"
+    /\ inventoryStatus' = "RELEASED"
+    /\ UNCHANGED attemptCount
 
-(* Mark a payment as failed *)
-FailPayment(paymentId) ==
-	/\ paymentId \in DOMAIN payments
-	/\ payments[paymentId].status = "PENDING"
-	LET orderId == payments[paymentId].orderId
-	IN /\ payments' = [payments EXCEPT ![paymentId].status = "FAILED"]
-	   /\ orders' = [orders EXCEPT ![orderId].status = "FAILED"]
-	   /\ paymentCnt' = paymentCnt
-	   /\ orderCnt' = orderCnt
+ChargeOutcomeUnknown ==
+    /\ orderStatus = "PAYMENT_PENDING"
+    /\ paymentStatus = "PROCESSING"
+    /\ paymentStatus' = "UNKNOWN"
+    /\ UNCHANGED <<orderStatus, inventoryStatus, attemptCount>>
 
-(* Next possible action *)
+RetryUnknownPayment ==
+    /\ orderStatus = "PAYMENT_PENDING"
+    /\ paymentStatus = "UNKNOWN"
+    /\ attemptCount < MaxAttempts
+    /\ paymentStatus' = "PROCESSING"
+    /\ attemptCount' = attemptCount + 1
+    /\ UNCHANGED <<orderStatus, inventoryStatus>>
+
+ReconcileUnknownSucceeded ==
+    /\ orderStatus = "PAYMENT_PENDING"
+    /\ paymentStatus = "UNKNOWN"
+    /\ orderStatus' = "PAID"
+    /\ paymentStatus' = "SUCCESS"
+    /\ UNCHANGED <<inventoryStatus, attemptCount>>
+
+ReconcileUnknownDeclined ==
+    /\ orderStatus = "PAYMENT_PENDING"
+    /\ paymentStatus = "UNKNOWN"
+    /\ orderStatus' = "FAILED"
+    /\ paymentStatus' = "FAILED"
+    /\ inventoryStatus' = "RELEASED"
+    /\ UNCHANGED attemptCount
+
+CancelBeforeCharge ==
+    /\ orderStatus \in {"CREATED", "VALIDATED", "PAYMENT_PENDING"}
+    /\ paymentStatus \in {"NONE", "PENDING", "FAILED"}
+    /\ orderStatus' = "CANCELLED"
+    /\ inventoryStatus' = "RELEASED"
+    /\ UNCHANGED <<paymentStatus, attemptCount>>
+
+ConfirmOrder ==
+    /\ orderStatus = "PAID"
+    /\ paymentStatus = "SUCCESS"
+    /\ orderStatus' = "CONFIRMED"
+    /\ UNCHANGED <<paymentStatus, inventoryStatus, attemptCount>>
+
+CompleteOrder ==
+    /\ orderStatus = "CONFIRMED"
+    /\ paymentStatus = "SUCCESS"
+    /\ orderStatus' = "COMPLETED"
+    /\ inventoryStatus' = "CONSUMED"
+    /\ UNCHANGED <<paymentStatus, attemptCount>>
+
+StartRefund ==
+    /\ orderStatus \in {"PAID", "CONFIRMED"}
+    /\ paymentStatus = "SUCCESS"
+    /\ orderStatus' = "REFUND_PENDING"
+    /\ paymentStatus' = "REFUND_PENDING"
+    /\ UNCHANGED <<inventoryStatus, attemptCount>>
+
+RefundSucceeded ==
+    /\ orderStatus = "REFUND_PENDING"
+    /\ paymentStatus = "REFUND_PENDING"
+    /\ orderStatus' = "REFUNDED"
+    /\ paymentStatus' = "REFUNDED"
+    /\ inventoryStatus' = "RELEASED"
+    /\ UNCHANGED attemptCount
+
 Next ==
-	\/ \E amount \in 1..1000 : CreateOrder(amount)
-	\/ \E orderId \in DOMAIN orders : \E status \in OrderStatuses : TransitionOrder(orderId, status)
-	\/ \E orderId \in DOMAIN orders : \E amount \in 1..1000 : SubmitPayment(orderId, amount)
-	\/ \E paymentId \in DOMAIN payments : SuccessPayment(paymentId)
-	\/ \E paymentId \in DOMAIN payments : FailPayment(paymentId)
+    \/ Validate
+    \/ PersistOrder
+    \/ StartPayment
+    \/ ChargeSucceeded
+    \/ ChargeDeclined
+    \/ ChargeOutcomeUnknown
+    \/ RetryUnknownPayment
+    \/ ReconcileUnknownSucceeded
+    \/ ReconcileUnknownDeclined
+    \/ CancelBeforeCharge
+    \/ ConfirmOrder
+    \/ CompleteOrder
+    \/ StartRefund
+    \/ RefundSucceeded
 
-(* ============== INVARIANTS ============= *)
+TypeOK ==
+    /\ orderStatus \in OrderStatuses
+    /\ paymentStatus \in PaymentStatuses
+    /\ inventoryStatus \in InventoryStatuses
+    /\ attemptCount \in 0..MaxAttempts
 
-(* I1: All orders have valid status *)
-I1_ValidOrderStatus ==
-	\A order \in RANGE orders : order.status \in OrderStatuses
+PaidStatesHavePaymentEvidence ==
+    orderStatus \in {"PAID", "CONFIRMED", "COMPLETED", "REFUND_PENDING", "REFUNDED"}
+        => paymentStatus \in PaymentEvidence
 
-(* I2: All payments have valid status *)
-I2_ValidPaymentStatus ==
-	\A payment \in RANGE payments : payment.status \in PaymentStatuses
+CancelledHasNoSuccessfulCharge ==
+    orderStatus = "CANCELLED" => paymentStatus \notin PaymentEvidence
 
-(* I3: Order cannot be PAID unless there is a successful payment *)
-I3_PaidRequiresPayment ==
-	\A order \in RANGE orders :
-		order.status = "PAID" =>
-		\E payment \in RANGE payments :
-			payment.orderId = order.id /\ payment.status = "SUCCESS"
+FailedHasNoSuccessfulCharge ==
+    orderStatus = "FAILED" => paymentStatus = "FAILED"
 
-(* I4: Order amount must be positive *)
-I4_PositiveAmount ==
-	\A order \in RANGE orders : order.totalAmount > 0
+InventoryLifecycleIsConsistent ==
+    /\ (orderStatus \in {"CANCELLED", "FAILED", "REFUNDED"} => inventoryStatus = "RELEASED")
+    /\ (orderStatus = "COMPLETED" => inventoryStatus = "CONSUMED")
+    /\ (orderStatus \in {"VALIDATED", "PAYMENT_PENDING", "PAID", "CONFIRMED", "REFUND_PENDING"}
+        => inventoryStatus = "RESERVED")
 
-(* I5: Payment amount cannot exceed order amount *)
-I5_PaymentNotExceedOrder ==
-	\A payment \in RANGE payments :
-		LET order == [o \in RANGE orders | o.id = payment.orderId][1]
-		IN payment.amount <= order.totalAmount
+Terminal == orderStatus \in TerminalOrderStatuses
+Termination == <>Terminal
 
-(* I6: No backward state transitions (history safety) *)
-I6_NoBackwardTransition ==
-	TRUE  \* This is enforced by AllowedTransition
+Spec == Init /\ [][Next]_vars /\ WF_vars(Next)
 
-(* ============== PROPERTIES ============= *)
-
-(* P1: Safety - State transitions are always valid *)
-SafetyProperty == [][
-	\A order \in RANGE orders':
-		\A order_old \in RANGE orders :
-			order.id = order_old.id /\ order.status # order_old.status =>
-			AllowedTransition(order_old.status, order.status)
-]_vars
-
-(* P2: Liveness - Eventually, orders reach a terminal state *)
-LivenessProperty ==
-	\A order \in RANGE orders :
-		<>(order.status \in {"COMPLETED", "FAILED", "CANCELLED"})
-
-(* ============== SPECIFICATION ============= *)
-
-Spec == Init /\ [][Next]_vars /\ 
-		WF_vars(Next)
-
-(* All invariants must hold *)
-AllInvariants ==
-	/\ I1_ValidOrderStatus
-	/\ I2_ValidPaymentStatus
-	/\ I3_PaidRequiresPayment
-	/\ I4_PositiveAmount
-	/\ I5_PaymentNotExceedOrder
-	/\ I6_NoBackwardTransition
-
-===============================================================================
+=============================================================================

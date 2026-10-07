@@ -1,8 +1,8 @@
 namespace OrderPaymentMicroservice.Models;
 
 /// <summary>
-/// Order status enumeration
-/// TODO: Kripke/BMC property - Order must complete state machine: CREATED -> VALIDATED -> PAYMENT_PENDING -> PAID -> CONFIRMED -> COMPLETED
+/// Durable business lifecycle of an order. Gateway execution states belong to
+/// <see cref="PaymentStatus"/>, not to this enum.
 /// </summary>
 public enum OrderStatus
 {
@@ -13,5 +13,7 @@ public enum OrderStatus
     CONFIRMED = 4,
     COMPLETED = 5,
     CANCELLED = 6,
-    FAILED = 7
+    FAILED = 7,
+    REFUND_PENDING = 8,
+    REFUNDED = 9
 }

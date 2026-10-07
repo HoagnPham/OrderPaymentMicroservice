@@ -4,6 +4,9 @@ namespace OrderPaymentMicroservice.Security;
 
 public static class OrderStateMachine
 {
+    public static bool IsTerminal(OrderStatus status) => status is
+        OrderStatus.COMPLETED or OrderStatus.CANCELLED or OrderStatus.FAILED or OrderStatus.REFUNDED;
+
     public static bool CanTransition(OrderStatus from, OrderStatus to) => (from, to) switch
     {
         (OrderStatus.CREATED, OrderStatus.VALIDATED) => true,
@@ -13,6 +16,8 @@ public static class OrderStateMachine
         (OrderStatus.CONFIRMED, OrderStatus.COMPLETED) => true,
         (OrderStatus.CREATED or OrderStatus.VALIDATED or OrderStatus.PAYMENT_PENDING, OrderStatus.CANCELLED) => true,
         (OrderStatus.PAYMENT_PENDING, OrderStatus.FAILED) => true,
+        (OrderStatus.PAID or OrderStatus.CONFIRMED, OrderStatus.REFUND_PENDING) => true,
+        (OrderStatus.REFUND_PENDING, OrderStatus.REFUNDED) => true,
         _ => false
     };
 
@@ -25,5 +30,7 @@ public static class OrderStateMachine
         }
 
         order.Status = target;
+        order.UpdatedAt = DateTime.UtcNow;
+        order.Version++;
     }
 }

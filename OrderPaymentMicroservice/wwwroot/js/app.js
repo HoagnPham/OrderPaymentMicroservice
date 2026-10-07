@@ -440,6 +440,12 @@ async function handlePayment(e) {
     const cardName = document.getElementById('cardName').value;
     const cardExpiry = document.getElementById('cardExpiry').value;
     const cardCvv = document.getElementById('cardCvv').value;
+    const paymentKeyStorage = `payment-idempotency-${orderId}`;
+    let paymentIdempotencyKey = sessionStorage.getItem(paymentKeyStorage);
+    if (!paymentIdempotencyKey) {
+        paymentIdempotencyKey = crypto.randomUUID();
+        sessionStorage.setItem(paymentKeyStorage, paymentIdempotencyKey);
+    }
 
     try {
         showMessage('Đang xử lý thanh toán...', 'info');
@@ -447,7 +453,7 @@ async function handlePayment(e) {
             method: 'POST',
             headers: {
                 ...authHeaders(true),
-                'Idempotency-Key': crypto.randomUUID()
+                'Idempotency-Key': paymentIdempotencyKey
             },
             body: JSON.stringify({
                 orderId,
@@ -468,7 +474,23 @@ async function handlePayment(e) {
         }
 
         const payment = await response.json();
-        showMessage('Thanh toán thành công!', 'success');
+        const paymentStatus = String(payment.status || '').toUpperCase();
+        if (paymentStatus === 'FAILED') {
+            sessionStorage.removeItem(paymentKeyStorage);
+            showMessage('Thanh toán bị từ chối. Đơn đã chuyển sang thất bại và tồn kho được hoàn lại.', 'error');
+            return;
+        }
+        if (!['SUCCESS', 'UNKNOWN', 'PROCESSING'].includes(paymentStatus)) {
+            showMessage(`Thanh toán đang ở trạng thái ${paymentStatus || 'không xác định'}.`, 'info');
+            return;
+        }
+
+        if (paymentStatus === 'SUCCESS') {
+            sessionStorage.removeItem(paymentKeyStorage);
+            showMessage('Thanh toán thành công!', 'success');
+        } else {
+            showMessage('Chưa xác định được kết quả thanh toán. Hệ thống sẽ đối soát bằng mã yêu cầu cũ; không thanh toán lại.', 'info');
+        }
 
         document.getElementById('paymentForm').reset();
 

@@ -3,10 +3,7 @@ using OrderPaymentMicroservice.Models;
 
 namespace OrderPaymentMicroservice.Data;
 
-/// <summary>
-/// Entity Framework Core DbContext for Order & Payment Microservice
-/// TODO: Add migrations after skeleton is complete
-/// </summary>
+/// <summary>Entity Framework Core persistence model and database invariants.</summary>
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
@@ -32,7 +29,10 @@ public class AppDbContext : DbContext
             entity.Property(o => o.CustomerId).IsRequired();
             entity.Property(o => o.TotalAmount).HasPrecision(19, 2).IsRequired();
             entity.Property(o => o.Status).HasConversion<int>().IsRequired();
+            entity.Property(o => o.InventoryStatus).HasConversion<int>().IsRequired();
             entity.Property(o => o.CreatedAt).IsRequired();
+            entity.Property(o => o.UpdatedAt).IsRequired();
+            entity.Property(o => o.Version).IsConcurrencyToken().IsRequired();
 
             // One-to-many: Order -> OrderItems
             entity.HasMany(o => o.OrderItems)
@@ -66,9 +66,17 @@ public class AppDbContext : DbContext
             entity.Property(p => p.Amount).HasPrecision(19, 2).IsRequired();
             entity.Property(p => p.Status).HasConversion<int>().IsRequired();
             entity.Property(p => p.TransactionCode).HasMaxLength(255);
+            entity.Property(p => p.RefundTransactionCode).HasMaxLength(255);
             entity.Property(p => p.IdempotencyKey).HasMaxLength(128);
+            entity.Property(p => p.RefundIdempotencyKey).HasMaxLength(128);
+            entity.Property(p => p.LastErrorCode).HasMaxLength(100);
+            entity.Property(p => p.GatewayMessage).HasMaxLength(1000);
             entity.Property(p => p.CreatedAt).IsRequired();
-            entity.HasIndex(p => new { p.OrderId, p.IdempotencyKey }).IsUnique();
+            entity.Property(p => p.UpdatedAt).IsRequired();
+            entity.Property(p => p.Version).IsConcurrencyToken().IsRequired();
+            entity.HasIndex(p => p.OrderId).IsUnique();
+            entity.HasIndex(p => p.IdempotencyKey).IsUnique();
+            entity.HasIndex(p => p.RefundIdempotencyKey).IsUnique();
         });
 
         // Configure Product entity
@@ -82,7 +90,7 @@ public class AppDbContext : DbContext
             entity.Property(p => p.ImageUrl).HasMaxLength(500);
             entity.Property(p => p.Category).HasMaxLength(100);
             entity.Property(p => p.CreatedAt).IsRequired();
-            entity.Property(p => p.UpdatedAt).IsRequired();
+            entity.Property(p => p.UpdatedAt).IsRequired().IsConcurrencyToken();
             entity.Property(p => p.IsActive).IsRequired();
 
             // Add index for better query performance

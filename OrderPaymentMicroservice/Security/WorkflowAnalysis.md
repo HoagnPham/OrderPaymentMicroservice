@@ -1,162 +1,92 @@
-# Order & Payment Workflow Analysis - For Formal Verification
+# Order–Payment lifecycle and invariants
 
-## 1. ORDER STATE MACHINE
+## 1. Hai máy trạng thái độc lập
 
-### Order Status States (from OrderStatus enum):
-```
-CREATED (0)
-  ↓
-VALIDATED (1)
-  ↓
-PAYMENT_PENDING (2)
-  ↓
-PAID (3)
-  ↓
-CONFIRMED (4)
-  ↓
-COMPLETED (5)
+Order biểu diễn vòng đời nghiệp vụ; Payment biểu diễn kết quả giao tiếp với
+gateway. Không đánh dấu Order là `PAID` chỉ vì đã gửi request tới gateway.
 
-Side paths:
-CANCELLED (6) - can transition from any state
-FAILED (7) - can transition from PAYMENT_PENDING, PAID
-```
-
-### Required Properties (from README & TODOs):
-1. **Safety Property (Safety)**: Order must follow state transitions in order
-   - `CREATED → VALIDATED → PAYMENT_PENDING → PAID → CONFIRMED → COMPLETED`
-   - No backward transitions allowed (except CANCELLED/FAILED)
-   - No skipping states allowed
-
-2. **Liveness Property**: Every order must eventually complete or fail/cancel
-   - `∀order: eventually (order.status ∈ {COMPLETED, CANCELLED, FAILED})`
-
-3. **Consistency Property**: Order cannot have invalid state combinations
-   - If `status == PAID`, then ∃payment with `status == SUCCESS`
-   - If `status == PAYMENT_PENDING`, then no payment.status == SUCCESS yet
-
----
-
-## 2. PAYMENT STATE MACHINE
-
-### Payment Status States:
-```
-PENDING (0)
-  ↓
-SUCCESS (1) or FAILED (2)
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED
+    CREATED --> VALIDATED
+    VALIDATED --> PAYMENT_PENDING
+    PAYMENT_PENDING --> PAID: Payment SUCCESS
+    PAYMENT_PENDING --> CANCELLED: chưa charge
+    PAYMENT_PENDING --> FAILED: decline / hết retry
+    PAID --> CONFIRMED
+    CONFIRMED --> COMPLETED
+    PAID --> REFUND_PENDING: không thể fulfillment
+    CONFIRMED --> REFUND_PENDING: không thể giao hàng
+    REFUND_PENDING --> REFUNDED
 ```
 
-### Required Properties:
-1. **Safety**: Payment statuses must be valid
-   - `PENDING → SUCCESS` or `PENDING → FAILED` only
-
-2. **Consistency with Order**:
-   - Order transitions to PAID iff Payment.status == SUCCESS
-   - If Payment.status == FAILED, Order cannot be PAID
-
----
-
-## 3. ARITHMETIC CONSTRAINTS (for SMT/Z3 verification)
-
-### Order Amount Constraints:
-```
-1. TotalAmount > 0 (non-negative requirement)
-2. TotalAmount == SUM(OrderItems.quantity * OrderItems.unitPrice)
-   - This is a SUM constraint that Z3 should verify
-3. TotalAmount must not overflow (decimal.MaxValue check)
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING
+    PENDING --> PROCESSING
+    PROCESSING --> SUCCESS
+    PROCESSING --> FAILED
+    PROCESSING --> UNKNOWN: timeout / mất kết nối
+    UNKNOWN --> PROCESSING: retry/reconcile
+    UNKNOWN --> FAILED: hết retry, xác nhận chưa charge
+    SUCCESS --> REFUND_PENDING
+    REFUND_PENDING --> REFUNDED
 ```
 
-### Payment Constraints:
-```
-1. Amount > 0
-2. Amount <= Order.TotalAmount (payment cannot exceed order amount)
-3. SUM(all payments for Order) <= Order.TotalAmount
-   - Partial payments are allowed, but sum cannot exceed order total
-4. If Order.status == PAID, then SUM(Payments where status==SUCCESS) == Order.TotalAmount
-   - All money must be accounted for
-```
+`PROCESSING` được ghi vào database trước khi gọi gateway. Gateway được gọi bên
+ngoài transaction database. Nếu process chết ở cửa sổ này, endpoint reconcile
+hỏi gateway bằng idempotency key và áp dụng kết quả đã tồn tại; nó không tạo
+một logical payment mới.
 
----
+## 2. Bất biến bắt buộc
 
-## 4. IDENTIFIED SECURITY/CORRECTNESS ISSUES FOR VERIFICATION
+1. `PAID`, `CONFIRMED`, `COMPLETED` phải có đúng một Payment `SUCCESS`.
+2. `CANCELLED` và `FAILED` không được có bằng chứng charge thành công.
+3. Payment `SUCCESS` chỉ được tạo khi amount bằng `Order.TotalAmount`.
+4. Mỗi Order chỉ sở hữu một logical Payment; retry dùng lại payment và
+   idempotency key cũ.
+5. Không hủy Order khi Payment đang `PROCESSING`, `UNKNOWN`, `SUCCESS` hoặc
+   `REFUND_PENDING`.
+6. `REFUNDED` phải xuất phát từ `REFUND_PENDING`; không đổi thẳng `PAID` thành
+   `FAILED` vì như vậy sẽ làm mất dấu tiền đã thu.
+7. Inventory ở đúng một trong ba trạng thái: `RESERVED`, `RELEASED`,
+   `CONSUMED`. Release là idempotent và không được hoàn kho hai lần.
+8. `COMPLETED` sử dụng inventory `CONSUMED`; `CANCELLED`, `FAILED`, `REFUNDED`
+   sử dụng inventory `RELEASED`.
+9. Các trạng thái terminal `COMPLETED`, `CANCELLED`, `FAILED`, `REFUNDED`
+   không có transition hồi sinh.
 
-From code review & API testing:
+## 3. Quy tắc sự cố
 
-### Issue #1: Order POST Returns 400
-- **Current**: Order creation endpoint validates but fails
-- **Property to Verify**: Inputs must be validated before state transition
-- **Test**: Fuzzing with invalid amounts, negative quantities
+| Sự cố | Trạng thái bền vững | Hành động |
+|---|---|---|
+| Gateway decline | Payment `FAILED`, Order `FAILED` | Hoàn tồn kho |
+| Gateway timeout | Payment `UNKNOWN`, Order `PAYMENT_PENDING` | Reconcile rồi retry có giới hạn bằng cùng key |
+| Process chết khi Payment `PROCESSING` | Giữ `PROCESSING` | Query gateway theo key; áp dụng kết quả, không charge mù |
+| Hết retry và xác nhận chưa charge | Payment/Order `FAILED` | Dừng tự động, hoàn tồn kho |
+| Không fulfillment được sau khi charge | Cả hai `REFUND_PENDING` | Gọi refund idempotent |
+| Refund timeout/decline | Giữ `REFUND_PENDING` | Retry/query cùng refund key, không giả vờ đã refund |
+| Refund thành công | Payment/Order `REFUNDED` | Lưu refund reference, hoàn tồn kho một lần |
+| Payment và cancel chạy đồng thời | Serialize tại database | Cancel bị chặn khi thấy trạng thái payment đang hoạt động |
 
-### Issue #2: TotalAmount vs OrderItems Sum
-- **Property**: TotalAmount must equal sum of items
-- **Risk**: Payment processing could be wrong if amount doesn't match
-- **Test**: SMT/Z3 constraint: TotalAmount ∈ calculation
+## 4. Ánh xạ implementation
 
-### Issue #3: Partial Payments
-- **Property**: Multiple payments allowed but sum ≤ TotalAmount
-- **Edge Case**: What if two concurrent payments both claim full amount?
-- **Test**: Concurrency fuzzing, overflow detection
+- Transition Order: `Security/OrderStateMachine.cs`.
+- Transition Payment: `Security/PaymentStateMachine.cs`.
+- Điều phối gateway, retry, reconciliation, refund: `Services/PaymentService.cs`.
+- Reserve/release/consume stock: `OrderService.cs` và
+  `Services/InventoryReservation.cs`.
+- Ràng buộc một payment/order và idempotency: `Data/AppDbContext.cs` cùng
+  migration `AddDurableOrderPaymentLifecycle`.
+- Mô hình hữu hạn có sự cố: `security-analysis/order_payment_recovery_model.json`.
+- TLA+ đồng bộ hai state machine: `Security/OrderPayment.tla` và `.cfg`.
 
-### Issue #4: Invalid State Transitions
-- **Property**: State must follow defined flow
-- **Risk**: Manual DB updates could violate state machine
-- **Test**: BMC model checking to enforce order
+## 5. Giới hạn còn lại
 
-### Issue #5: CANCELLED/FAILED from any state
-- **Property**: CANCELLED can come from any state, but what about partial payments?
-- **Risk**: If order is CANCELLED after PAID, refund logic is unclear
-- **Test**: Verify CANCELLED state handling after payments
-
----
-
-## 5. MAPPING TO FORMAL VERIFICATION TOOLS
-
-### Chapter 1: Kripke + BMC (Model Checking)
-**Tool**: TLA+ or Alloy
-**Model**: OrderPaymentStateMachine.tla
-```
-MODULE OrderPayment
-  - Define states: {CREATED, VALIDATED, ..., COMPLETED, CANCELLED, FAILED}
-  - Define transitions: allowed_transitions(s1, s2)
-  - Define invariants: no_backward_transitions(), no_skipped_states()
-  - Define safety: G(state_sequence_valid())
-  - Define liveness: G(F(terminal_state))
-  - Run BMC to check for counterexamples
-```
-
-### Chapter 2: Memory Safety
-**Tool**: Roslyn Analyzer / FxCop
-**Check**: null-reference, use-after-free, buffer overflows
-- Verify Order.User is not null when accessed
-- Verify OrderItems list is not null after creation
-- Verify Payments collection proper initialization
-
-### Chapter 3: SMT/Z3 (Arithmetic Verification)
-**Tool**: Z3 Solver
-**Constraints**:
-```
-assert(TotalAmount > 0)
-assert(TotalAmount == sum(OrderItems[i].quantity * OrderItems[i].unitPrice))
-assert(sum(Payment[i].Amount) <= TotalAmount)
-assert(!(status == PAID && !∃p: p.status == SUCCESS))
-```
-
-### Chapter 4: Fuzzing / Dynamic Testing
-**Tool**: FsCheck (Property-Based Testing) or LibFuzzer
-**Tests**:
-- Random order amounts (+, -, 0, max)
-- Random item quantities and prices
-- Random payment sequences
-- Random state transitions
-- Edge cases: overflow, underflow, precision loss
----
-
-## 6. NEXT STEPS
-
-1. ✅ Analyze workflow (this document)
-2. Create Kripke model (TLA+) → run BMC
-3. Create Z3 constraints → run solver
-4. Create FsCheck property tests or fuzzer
-5. Document findings & create counterexamples
-6. Fix issues found
-7. Re-verify fixed code
-8. Write security report
+- `FakePaymentGateway` chỉ là adapter phát triển, nhưng có lưu kết quả theo
+  idempotency key để test reconciliation. Cần adapter gateway thật và xác minh
+  chữ ký callback trước khi triển khai.
+- Transaction `Serializable` và unique index cần integration test đồng thời
+  trên PostgreSQL; EF InMemory không chứng minh hành vi khóa thật.
+- File TLA+ đã được đồng bộ lại nhưng chỉ được coi là bằng chứng formal sau khi
+  chạy TLC và lưu output/counterexample.
