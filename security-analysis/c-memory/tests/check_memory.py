@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import platform
 import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -24,7 +25,13 @@ def run(name, binary, args=(), expected=None, output=None):
                   and "runtime error:" not in log)
     if output is not None:
         passed = passed and output in result.stdout
-    checks.append(dict(case=name, passed=passed, exit_code=result.returncode))
+    checks.append(dict(
+        case=name,
+        passed=passed,
+        exit_code=result.returncode,
+        expected_diagnostic=expected or "clean sanitizer run",
+        expected_stdout=output,
+    ))
     print(f"{'PASS' if passed else 'FAIL'} {name}")
 
 
@@ -46,4 +53,17 @@ for module, prefix in (("product", "Product 101: "), ("user", "Registered email:
     run(f"{module}_buggy_valid", f"{module}_buggy", ["demo"], output=prefix + "demo")
 
 (RESULTS / "summary.json").write_text(json.dumps(checks, indent=2) + "\n")
+(ROOT / "evidence").mkdir(exist_ok=True)
+(ROOT / "evidence" / "dynamic-analysis.json").write_text(json.dumps({
+    "schema_version": 1,
+    "command": "make test",
+    "platform": platform.platform(),
+    "compiler": subprocess.run(
+        ["gcc", "--version"], capture_output=True, text=True, check=True
+    ).stdout.splitlines()[0],
+    "sanitizers": ["AddressSanitizer", "UndefinedBehaviorSanitizer", "LeakSanitizer"],
+    "cases": checks,
+    "passed": all(check["passed"] for check in checks),
+    "scope_limit": "Evidence covers the executed C teaching cases, not the ASP.NET implementation or every possible input.",
+}, indent=2) + "\n")
 raise SystemExit(0 if all(check["passed"] for check in checks) else 1)

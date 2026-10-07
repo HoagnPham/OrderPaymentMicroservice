@@ -4,7 +4,7 @@
 typedef struct { int order_id; char *transaction_code; } Payment;
 int main(void) {
     Payment payment = {1, allocate(32)};
-    strcpy(payment.transaction_code, "TX-DEMO-001");
+    snprintf(payment.transaction_code, 32, "%s", "TX-DEMO-001");
     puts("Gateway failure: release transaction code");
     free(payment.transaction_code);
 #ifdef FIXED

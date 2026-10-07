@@ -1,97 +1,109 @@
-(set-logic QF_LIA)  ;; Quantifier-Free Linear Integer Arithmetic
+; Order/payment arithmetic verification.
+; Monetary values are represented as integer cents. QF_NIA is required
+; because Quantity * UnitPriceCents multiplies two symbolic integers.
+(set-logic QF_NIA)
+(set-option :produce-models true)
 
-;; ORDER STATE MACHINE VERIFICATION IN Z3
-
-;; Define order amount constraint
-;; Property: TotalAmount must be positive and equal sum of items
-(declare-const TotalAmount Int)
-(declare-const OrderItem1_Qty Int)
-(declare-const OrderItem1_Price Int)
-(declare-const OrderItem2_Qty Int)
-(declare-const OrderItem2_Price Int)
-
-;; Define payment amounts
-(declare-const Payment1_Amount Int)
-(declare-const Payment2_Amount Int)
-
-;; Declare order status (0=CREATED, 1=VALIDATED, 2=PAYMENT_PENDING, 3=PAID, 4=CONFIRMED, 5=COMPLETED)
+(declare-const Quantity1 Int)
+(declare-const UnitPrice1Cents Int)
+(declare-const Quantity2 Int)
+(declare-const UnitPrice2Cents Int)
+(declare-const TotalAmountCents Int)
+(declare-const Payment1Cents Int)
+(declare-const Payment2Cents Int)
 (declare-const OrderStatus Int)
 
-;; ===== CONSTRAINT 1: TotalAmount must be positive =====
-(assert (> TotalAmount 0))
+(define-fun ValidItem ((quantity Int) (unitPriceCents Int)) Bool
+  (and (<= 1 quantity) (<= quantity 10000)
+       (<= 1 unitPriceCents) (<= unitPriceCents 99999999)))
 
-;; ===== CONSTRAINT 2: TotalAmount = sum(items) =====
-;; This is the critical invariant for payment correctness
-(assert (= TotalAmount (+ (* OrderItem1_Qty OrderItem1_Price) 
-						   (* OrderItem2_Qty OrderItem2_Price))))
+(define-fun AmountInvariant () Bool
+  (and (ValidItem Quantity1 UnitPrice1Cents)
+       (ValidItem Quantity2 UnitPrice2Cents)
+       (= TotalAmountCents
+          (+ (* Quantity1 UnitPrice1Cents)
+             (* Quantity2 UnitPrice2Cents)))
+       (<= 1 TotalAmountCents)
+       (<= TotalAmountCents 99999999)))
 
-;; ===== CONSTRAINT 3: Item quantities must be non-negative =====
-(assert (>= OrderItem1_Qty 0))
-(assert (>= OrderItem2_Qty 0))
-(assert (>= OrderItem1_Price 0))
-(assert (>= OrderItem2_Price 0))
+(define-fun PaymentInvariant () Bool
+  (and (<= 0 Payment1Cents)
+       (<= 0 Payment2Cents)
+       (<= (+ Payment1Cents Payment2Cents) TotalAmountCents)
+       (=> (= OrderStatus 3)
+           (= (+ Payment1Cents Payment2Cents) TotalAmountCents))))
 
-;; ===== CONSTRAINT 4: Payment amounts must be positive =====
-(assert (>= Payment1_Amount 0))
-(assert (>= Payment2_Amount 0))
-
-;; ===== CONSTRAINT 5: Sum of payments cannot exceed order total =====
-(assert (<= (+ Payment1_Amount Payment2_Amount) TotalAmount))
-
-;; ===== CONSTRAINT 6: Order can only be PAID if sum of payments equals total =====
-;; (This would require reasoning over conditionals, which is more complex)
-;; For now, we verify if order is in PAID state, then payments must cover full amount
-(assert (
-	=> (= OrderStatus 3)  ;; if OrderStatus == PAID
-	   (= (+ Payment1_Amount Payment2_Amount) TotalAmount)  ;; then total payments must equal order
-))
-
-;; ===== TEST CASE 1: Valid scenario =====
-;; Try to find a satisfying assignment
+(echo "TEST1_VALID_PAID")
 (push)
-(assert (= OrderItem1_Qty 2))
-(assert (= OrderItem1_Price 50000))
-(assert (= OrderItem2_Qty 1))
-(assert (= OrderItem2_Price 40000))
-(assert (= OrderStatus 3))  ;; PAID
+(assert (= Quantity1 2))
+(assert (= UnitPrice1Cents 50000))
+(assert (= Quantity2 1))
+(assert (= UnitPrice2Cents 40000))
+(assert (= TotalAmountCents 140000))
+(assert (= Payment1Cents 140000))
+(assert (= Payment2Cents 0))
+(assert (= OrderStatus 3))
+(assert AmountInvariant)
+(assert PaymentInvariant)
 (check-sat)
-(get-model)
+(get-value (TotalAmountCents Payment1Cents Payment2Cents))
 (pop)
 
-;; ===== TEST CASE 2: Invalid scenario - TotalAmount mismatch =====
-;; Try to create inconsistency: intentionally set wrong total
+(echo "TEST2_TOTAL_MISMATCH")
 (push)
-(assert (= OrderItem1_Qty 2))
-(assert (= OrderItem1_Price 50000))
-(assert (= OrderItem2_Qty 1))
-(assert (= OrderItem2_Price 40000))
-(assert (= TotalAmount 100000))  ;; WRONG: should be 140000
-(check-sat)
-(get-model)
-(pop)
-
-;; ===== TEST CASE 3: Overflow scenario =====
-;; Check if large numbers cause issues
-(push)
-(assert (= OrderItem1_Qty 1000000))
-(assert (= OrderItem1_Price 10000000))
-(assert (= OrderItem2_Qty 1000000))
-(assert (= OrderItem2_Price 10000000))
-(check-sat)
-(get-model)
-(pop)
-
-;; ===== TEST CASE 4: Negative amount =====
-;; Try to set negative payment (should be unsatisfiable)
-(push)
-(assert (= Payment1_Amount -50000))
+(assert (= Quantity1 2))
+(assert (= UnitPrice1Cents 50000))
+(assert (= Quantity2 1))
+(assert (= UnitPrice2Cents 40000))
+(assert (= TotalAmountCents 100000))
+(assert AmountInvariant)
 (check-sat)
 (pop)
 
-;; ===== TEST CASE 5: Payment exceeds order =====
+(echo "TEST3_PAID_UNDERPAYMENT")
 (push)
-(assert (= TotalAmount 100000))
-(assert (= Payment1_Amount 150000))
+(assert (= TotalAmountCents 140000))
+(assert (= Payment1Cents 100000))
+(assert (= Payment2Cents 0))
+(assert (= OrderStatus 3))
+(assert PaymentInvariant)
 (check-sat)
-(get-model)
+(pop)
+
+(echo "TEST4_NEGATIVE_PAYMENT")
+(push)
+(assert (= TotalAmountCents 140000))
+(assert (= Payment1Cents (- 1)))
+(assert (= Payment2Cents 0))
+(assert (= OrderStatus 2))
+(assert PaymentInvariant)
+(check-sat)
+(pop)
+
+(echo "TEST5_PAYMENT_EXCEEDS_TOTAL")
+(push)
+(assert (= TotalAmountCents 100000))
+(assert (= Payment1Cents 150000))
+(assert (= Payment2Cents 0))
+(assert (= OrderStatus 2))
+(assert PaymentInvariant)
+(check-sat)
+(pop)
+
+; Counterexample: allowed item bounds can overflow a signed 32-bit subtotal.
+(echo "TEST6_INT32_SUBTOTAL_OVERFLOW_EXISTS")
+(push)
+(assert (ValidItem Quantity1 UnitPrice1Cents))
+(assert (> (* Quantity1 UnitPrice1Cents) 2147483647))
+(check-sat)
+(get-value (Quantity1 UnitPrice1Cents (* Quantity1 UnitPrice1Cents)))
+(pop)
+
+; With the application total bound and positive items, an oversized subtotal
+; is impossible in a valid order.
+(echo "TEST7_TOTAL_BOUND_BLOCKS_OVERSIZED_SUBTOTAL")
+(push)
+(assert AmountInvariant)
+(assert (> (* Quantity1 UnitPrice1Cents) 99999999))
+(check-sat)
 (pop)

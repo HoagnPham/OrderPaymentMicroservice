@@ -18,6 +18,24 @@ MODEL_PATH = BASE / "order_payment_recovery_model.json"
 RESULT_PATH = BASE / "results" / "order_payment_recovery_model.results.json"
 MATRIX_PATH = BASE / "results" / "order_payment_state_response_matrix.csv"
 
+EXPECTED_AGGREGATE_STATUS = {
+    "CREATED": ("CREATED", "NONE"),
+    "VALIDATED": ("VALIDATED", "NONE"),
+    "PAYMENT_PENDING": ("PAYMENT_PENDING", "NONE"),
+    "PAYMENT_PROCESSING": ("PAYMENT_PENDING", "PROCESSING"),
+    "PAYMENT_RETRY": ("PAYMENT_PENDING", "UNKNOWN"),
+    "PAYMENT_PROCESSING_FINAL": ("PAYMENT_PENDING", "PROCESSING"),
+    "PAID": ("PAID", "SUCCESS"),
+    "CONFIRMATION_RETRY": ("PAID", "SUCCESS"),
+    "CONFIRMED": ("CONFIRMED", "SUCCESS"),
+    "REFUND_PENDING": ("REFUND_PENDING", "REFUND_PENDING"),
+    "COMPLETED": ("COMPLETED", "SUCCESS"),
+    "CANCELLED": ("CANCELLED", "NONE"),
+    "PRE_PAYMENT_REJECTED": ("FAILED", "NONE"),
+    "FAILED": ("FAILED", "FAILED"),
+    "REFUNDED": ("REFUNDED", "REFUNDED"),
+}
+
 
 def transitions(model: dict) -> list[dict]:
     edges: list[dict] = []
@@ -55,6 +73,65 @@ def shortest_paths(model: dict, initial: str = "CREATED") -> dict[str, list[str]
                 paths[target] = paths[current] + [target]
                 queue.append(target)
     return paths
+
+
+def functional_contract_index(model: dict) -> tuple[dict[str, dict], list[dict]]:
+    """Build the independent state/event -> function/outcome specification."""
+    index: dict[str, dict] = {}
+    failures: list[dict] = []
+    for contract in model.get("functional_contracts", []):
+        for state_id, outcomes in contract.get("state_outcomes", {}).items():
+            for event, target in outcomes.items():
+                key = f"{state_id}::{event}"
+                if key in index:
+                    failures.append({
+                        "state": state_id,
+                        "event": event,
+                        "reason": "event is assigned to more than one function",
+                        "functions": [index[key]["function_id"], contract["id"]],
+                    })
+                index[key] = {
+                    "function_id": contract["id"],
+                    "responsibility": contract["responsibility"],
+                    "precondition": contract["precondition"],
+                    "guarantees": contract["guarantees"],
+                    "to": target,
+                }
+    return index, failures
+
+
+def functional_contract_failures(model: dict) -> list[dict]:
+    index, failures = functional_contract_index(model)
+    graph_keys: set[str] = set()
+    for edge in transitions(model):
+        key = f"{edge['from']}::{edge['event']}"
+        if key in graph_keys:
+            failures.append({
+                "state": edge["from"], "event": edge["event"],
+                "reason": "event has more than one graph transition",
+            })
+        graph_keys.add(key)
+        contract = index.get(key)
+        if contract is None:
+            failures.append({
+                "state": edge["from"], "event": edge["event"],
+                "reason": "transition is not owned by a functional contract",
+            })
+        elif contract["to"] != edge["to"]:
+            failures.append({
+                "state": edge["from"], "event": edge["event"],
+                "actual_target": edge["to"], "contract_target": contract["to"],
+                "reason": "graph outcome differs from functional contract",
+            })
+    for key, contract in index.items():
+        if key not in graph_keys:
+            state_id, event = key.split("::", 1)
+            failures.append({
+                "state": state_id, "event": event,
+                "function": contract["function_id"],
+                "reason": "contract outcome has no graph transition",
+            })
+    return failures
 
 
 def property_result(prop: dict, model: dict, paths: dict[str, list[str]]) -> dict:
@@ -104,6 +181,54 @@ def property_result(prop: dict, model: dict, paths: dict[str, list[str]]) -> dic
             good = expanded
         for state_id in sorted(reachable - good):
             failures.append({"state": state_id, "witness": paths[state_id], "reason": "may avoid terminal on progress transitions"})
+    elif prop["type"] == "FUNCTION_CONTRACTS":
+        failures.extend(functional_contract_failures(model))
+    elif prop["type"] == "TERMINAL_CLOSED":
+        for edge in transitions(model):
+            source = states[edge["from"]]
+            if "terminal" in source["labels"] and (
+                edge["to"] != edge["from"] or edge.get("kind") != "stutter"
+            ):
+                failures.append({
+                    "state": edge["from"], "event": edge["event"],
+                    "target": edge["to"], "kind": edge.get("kind"),
+                    "reason": "terminal transition is not a stuttering self-loop",
+                })
+    elif prop["type"] == "PAID_FAILURE_COMPENSATES":
+        for edge in transitions(model):
+            source_labels = set(states[edge["from"]]["labels"])
+            target_labels = set(states[edge["to"]]["labels"])
+            if "payment_success" not in source_labels:
+                continue
+            safe_evidence = {"payment_success", "refund_pending", "payment_compensated"}
+            if not target_labels.intersection(safe_evidence):
+                failures.append({
+                    "state": edge["from"], "event": edge["event"],
+                    "target": edge["to"],
+                    "reason": "successful payment evidence was lost without compensation",
+                })
+    elif prop["type"] == "UNKNOWN_PAYMENT_SAFE":
+        for state_id in sorted(reachable):
+            state = states[state_id]
+            if state.get("payment_status") != "UNKNOWN":
+                continue
+            labels = set(state["labels"])
+            if "inventory_reserved" not in labels or "terminal" in labels or "payment_success" in labels:
+                failures.append({
+                    "state": state_id, "witness": paths[state_id],
+                    "reason": "UNKNOWN outcome is terminal, released, or incorrectly marked successful",
+                })
+    elif prop["type"] == "EVENT_DETERMINISTIC":
+        seen: dict[tuple[str, str], str] = {}
+        for edge in transitions(model):
+            key = (edge["from"], edge["event"])
+            if key in seen:
+                failures.append({
+                    "state": edge["from"], "event": edge["event"],
+                    "first_target": seen[key], "second_target": edge["to"],
+                    "reason": "same event has multiple transition declarations",
+                })
+            seen[key] = edge["to"]
     else:
         raise ValueError(f"Unsupported property type: {prop['type']}")
 
@@ -121,17 +246,47 @@ def verify(model: dict) -> dict:
     if len(state_ids) != len(set(state_ids)):
         raise ValueError("Duplicate state id")
     known = set(state_ids)
+    for state in model["states"]:
+        expected = EXPECTED_AGGREGATE_STATUS.get(state["id"])
+        if expected is None:
+            continue
+        actual = (state.get("order_status"), state.get("payment_status"))
+        if actual != expected:
+            raise ValueError(
+                f"State {state['id']} maps to aggregate status {actual}, expected {expected}"
+            )
     for edge in transitions(model):
         if edge["from"] not in known or edge["to"] not in known:
             raise ValueError(f"Transition references an unknown state: {edge}")
 
     paths = shortest_paths(model)
     results = [property_result(prop, model, paths) for prop in model["properties"]]
+    contract_index, _ = functional_contract_index(model)
+    function_summary = []
+    for contract in model.get("functional_contracts", []):
+        owned = [item for item in contract_index.values() if item["function_id"] == contract["id"]]
+        function_summary.append({
+            "id": contract["id"],
+            "responsibility": contract["responsibility"],
+            "precondition": contract["precondition"],
+            "states": sorted(contract["state_outcomes"]),
+            "outcome_count": len(owned),
+            "guarantees": contract["guarantees"],
+            "holds": not any(
+                item for item in functional_contract_failures(model)
+                if item.get("function") == contract["id"]
+                or f"{item.get('state')}::{item.get('event')}" in {
+                    key for key, value in contract_index.items()
+                    if value["function_id"] == contract["id"]
+                }
+            ),
+        })
     return {
         "system_name": model["system_name"],
         "state_count": len(state_ids),
         "transition_count": len(transitions(model)),
         "reachable_states": sorted(paths),
+        "functional_contracts": function_summary,
         "properties": results,
         "all_hold": all(item["holds"] for item in results),
     }
@@ -140,7 +295,8 @@ def verify(model: dict) -> dict:
 def apply_negative_scenario(model: dict, scenario: dict) -> dict:
     mutated = copy.deepcopy(model)
     mutated["system_name"] = f"{model['system_name']} / {scenario['id']}"
-    mutated["states"].append(copy.deepcopy(scenario["state"]))
+    if scenario.get("state"):
+        mutated["states"].append(copy.deepcopy(scenario["state"]))
     mutated.setdefault("extra_transitions", []).append({"kind": "progress", **scenario["transition"]})
     return mutated
 
@@ -148,29 +304,38 @@ def apply_negative_scenario(model: dict, scenario: dict) -> dict:
 def build_state_response_matrix(model: dict) -> list[dict]:
     """Flatten the model into a reviewable state/incident decision table."""
     rows: list[dict] = []
+    contract_index, _ = functional_contract_index(model)
     for state in model["states"]:
         for transition in state.get("normal", []):
+            contract = contract_index[f"{state['id']}::{transition['event']}"]
             rows.append({
+                "function": contract["function_id"],
                 "state": state["id"],
                 "order_status": state["order_status"],
                 "payment_status": state["payment_status"],
                 "case": "NORMAL",
-                "event_or_problem": transition["event"],
-                "detection": "Preconditions and invariants for the normal transition hold",
+                "event": transition["event"],
+                "problem": "None; normal precondition holds",
+                "guard_or_detection": contract["precondition"],
                 "solution": transition["action"],
                 "next_state": transition["to"],
+                "guarantees": " | ".join(contract["guarantees"]),
                 "kind": "progress",
             })
         for incident in state.get("incidents", []):
+            contract = contract_index[f"{state['id']}::{incident['event']}"]
             rows.append({
+                "function": contract["function_id"],
                 "state": state["id"],
                 "order_status": state["order_status"],
                 "payment_status": state["payment_status"],
                 "case": "INCIDENT",
-                "event_or_problem": incident["problem"],
-                "detection": incident["detection"],
+                "event": incident["event"],
+                "problem": incident["problem"],
+                "guard_or_detection": incident["detection"],
                 "solution": incident["solution"],
                 "next_state": incident["to"],
+                "guarantees": " | ".join(contract["guarantees"]),
                 "kind": incident.get("kind", "progress"),
             })
     return rows
@@ -217,7 +382,7 @@ def main() -> dict:
     RESULT_PATH.write_text(json.dumps(output, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     matrix = output["state_response_matrix"]
     with MATRIX_PATH.open("w", encoding="utf-8-sig", newline="") as stream:
-        writer = csv.DictWriter(stream, fieldnames=list(matrix[0]))
+        writer = csv.DictWriter(stream, fieldnames=list(matrix[0]), lineterminator="\n")
         writer.writeheader()
         writer.writerows(matrix)
 

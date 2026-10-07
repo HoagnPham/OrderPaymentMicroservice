@@ -1,13 +1,13 @@
 # BÁO CÁO TIẾN ĐỘ DỰ ÁN ORDERPAYMENTMICROSERVICE
 
 **Định hướng: An toàn phần mềm trong quản lý đơn hàng và thanh toán**  
-Ngày cập nhật báo cáo: 07/10/2026
+Ngày cập nhật báo cáo: 08/10/2026
 
 **Bổ sung ngày 06/10/2026:** hoàn thiện model xử lý sự cố và phục hồi cho
 luồng Order-Payment, gồm bounded retry, serialization payment-cancel và
 compensation refund.
 
-**Cập nhật ngày 07/10/2026:** chạy lại solution đạt 84/84 unit test; 5 integration test PostgreSQL đã được phát hiện nhưng bị skip vì Docker không khả dụng trong môi trường kiểm tra. Kiểm tra advisory NuGet trực tuyến không phát hiện package có lỗ hổng đã công bố theo các nguồn đang cấu hình. Repository đồng thời được dọn build output, dependency vendored, file tạm, tài liệu học phần, binary và archive không cần cho khả năng tái lập. Audit lịch sử phát hiện connection string từng chứa mật khẩu PostgreSQL ở commit cũ; mật khẩu phải được đổi và lịch sử phải được làm sạch trước khi public.
+**Cập nhật ngày 08/10/2026:** chạy lại solution đạt 84/84 unit test; 5 integration test PostgreSQL tồn tại nhưng bị skip vì Docker không khả dụng. Chương 1 được bổ sung threat model gồm 6 asset, 4 trust boundary, 9 threat, đủ CIA và 6/6 STRIDE; recovery Kripke được mở rộng thành 7 hợp đồng chức năng, 15 state, 37 transition và P1–P15 PASS. Chương 2 được bổ sung static analysis, bảng ownership/lifetime, đo alignment thực tế và snapshot bằng chứng sanitizer. Đặc tả SMT được sửa từ logic sai `QF_LIA` sang `QF_NIA`; Z3 5.1.0 chạy 7/7 truy vấn SAT/UNSAT đúng kỳ vọng. Các tài liệu học phần trong `ATPM/` chỉ dùng làm chuẩn đối chiếu, không được tính là sản phẩm của dự án.
 
 Phạm vi: mã nguồn và các kết quả kiểm thử, kiểm chứng hiện có trong repository.
 
@@ -17,7 +17,7 @@ OrderPaymentMicroservice là dự án xây dựng dịch vụ quản lý đơn h
 
 Ngoài chức năng nghiệp vụ, dự án được phát triển theo định hướng an toàn phần mềm: kiểm soát dữ liệu đầu vào, xác định các bất biến về tiền và trạng thái, kiểm chứng luồng xử lý, kiểm thử các trường hợp biên và đánh giá rủi ro từ mã nguồn. Mục tiêu là phát hiện sớm các hành vi có thể làm sai lệch đơn hàng, thanh toán hoặc quyền truy cập dữ liệu.
 
-Tại thời điểm báo cáo, dự án đã hoàn thành phần bổ sung mô hình Kripke, bộ test xUnit, dataset đánh giá rủi ro và bộ mô phỏng lỗi bộ nhớ bằng C theo ngữ cảnh năm module nghiệp vụ. Năm phát hiện ưu tiên đã có thay đổi khắc phục bước đầu trong source và unit test hồi quy. Giai đoạn tiếp theo cần kiểm chứng xuyên suốt trên API, PostgreSQL và gateway; các kết quả hiện có chưa đồng nghĩa với việc hệ thống đã đủ an toàn để triển khai thực tế.
+Tại thời điểm báo cáo, dự án đã có threat model và truy vết yêu cầu, mô hình Kripke, bộ test xUnit, dataset đánh giá rủi ro, static/dynamic analysis cho mô hình C và kiểm chứng SMT số học. Năm phát hiện ưu tiên đã có thay đổi khắc phục cùng unit test hồi quy. Giai đoạn tiếp theo vẫn cần TLC/BMC, fuzzing và bằng chứng HTTP/PostgreSQL thực chạy; các kết quả hiện có chưa đồng nghĩa hệ thống đủ an toàn để triển khai thực tế.
 
 ## 2. Nền tảng chức năng đã xây dựng
 
@@ -29,7 +29,7 @@ Về an toàn phần mềm, cách tổ chức này giúp xác định rõ nơi c
 
 ### 2.2. Đơn hàng, thanh toán và giỏ hàng
 
-Mã nguồn đã có xử lý tạo, xem và hủy đơn hàng; tạo và xem thanh toán; xem, thêm, cập nhật và xóa sản phẩm trong giỏ hàng. Order có tám trạng thái: CREATED, VALIDATED, PAYMENT_PENDING, PAID, CONFIRMED, COMPLETED, CANCELLED và FAILED.
+Mã nguồn đã có xử lý tạo, xem và hủy đơn hàng; tạo và xem thanh toán; xem, thêm, cập nhật và xóa sản phẩm trong giỏ hàng. Enum Order runtime có mười trạng thái: CREATED, VALIDATED, PAYMENT_PENDING, PAID, CONFIRMED, COMPLETED, CANCELLED, FAILED, REFUND_PENDING và REFUNDED. Model Kripke cơ sở ở mục 3.2 cố ý chỉ dùng tám trạng thái để tập trung vào luồng Order ban đầu.
 
 Phần thanh toán đã được tách qua `IPaymentGateway`; adapter mặc định `FakePaymentGateway` lưu kết quả theo idempotency key và hỗ trợ success, decline, unknown, reconciliation và refund ở mức thiết kế/test. Đây vẫn là gateway mô phỏng, chưa có chữ ký callback hay đối soát với nhà cung cấp thật, nên chưa được xem là sẵn sàng vận hành.
 
@@ -45,6 +45,22 @@ Dự án đã có tài liệu `WorkflowAnalysis.md` phân tích quan hệ giữa
 - Tổng tiền đơn hàng phải nhất quán với tổng tiền các item; thanh toán cần được đối chiếu với giá trị đơn hàng.
 
 Việc xác định các yêu cầu này giúp chuyển khái niệm “an toàn” thành những thuộc tính cụ thể có thể kiểm tra, thay vì chỉ đánh giá dựa trên việc chức năng chạy được.
+
+#### 3.1.1. Threat model theo CIA, trust boundary và STRIDE
+
+Threat model Chương 1 được lưu trong `threat_model.json` và diễn giải tại
+`THREAT_MODEL_CHUONG1.md`. Phạm vi xác định 6 asset, 4 trust boundary và 9
+threat. Script `verify_threat_model.py` kiểm tra ID/tham chiếu, công thức điểm
+rủi ro, chuỗi Asset → Threat → Vulnerability → Attack → Control → Evidence,
+đồng thời yêu cầu đủ Confidentiality, Integrity, Availability và 6/6 nhóm
+STRIDE. Kết quả hiện tại là **PASS**.
+
+Các threat được truy vết sang yêu cầu, hợp đồng chức năng và thuộc tính Kripke
+thay vì chỉ liệt kê độc lập. Test chỉ dùng ở lớp đối chiếu implementation,
+không thay thế chứng minh trên model. T3 (repudiation), T5 (DoS/rate limit) và T8 (xác thực gateway
+thật) vẫn OPEN; T9 về secret mới được giảm thiểu một phần. Kết quả PASS của
+script chỉ chứng minh threat model tự nhất quán, không chứng minh control
+runtime đã hoạt động.
 
 ### 3.2. Mô hình hóa và kiểm chứng bằng Kripke
 
@@ -76,7 +92,7 @@ Phản ví dụ thể hiện một đơn đã hủy vẫn có thể trở thành
 #### 3.3.1. Hoàn thiện model xử lý sự cố và phục hồi
 
 Đã bổ sung `order_payment_recovery_model.json` để mô tả cả happy path và đường
-xử lý sự cố tại từng state. Model có 14 state và 36 transition, bao gồm các
+xử lý sự cố tại từng state. Model có 15 state và 37 transition, bao gồm các
 state thiết kế `PAYMENT_PROCESSING`, `PAYMENT_RETRY`,
 `PAYMENT_PROCESSING_FINAL`, `CONFIRMATION_RETRY`, `REFUND_PENDING` và
 `REFUNDED`.
@@ -87,27 +103,82 @@ Order lưu vòng đời nghiệp vụ, Payment lưu `PROCESSING`, `UNKNOWN`, `SU
 inventory compensation đã được hiện thực; `CONFIRMATION_RETRY` vẫn là trạng
 thái quan sát khi Order giữ `PAID`, không phải enum bền vững riêng.
 
+Model còn tách `PRE_PAYMENT_REJECTED` khỏi `FAILED`. State thứ nhất là terminal
+quan sát khi validation/create/commit bị từ chối hoặc rollback, có
+`payment_status=NONE` và row Order có thể chưa được lưu. `FAILED` chỉ dùng cho
+gateway decline đã xác thực, có `payment_status=FAILED`. Việc tách này loại bỏ
+sự nhập nhằng “chưa có Payment” nhưng lại gắn metadata Payment thất bại.
+
 Mỗi incident khai báo đủ vấn đề, event, cách phát hiện, giải pháp và state tiếp
-theo. Bộ kiểm chứng duyệt toàn bộ state graph và kiểm tra 10 thuộc tính về
-safety, consistency, reachability, incident completeness và liveness dưới giả
-định weak fairness. Model đúng đạt **10/10 PASS**.
+theo. Quan trọng hơn, model định nghĩa độc lập 7 hợp đồng chức năng F1–F7:
+tạo/lưu Order, chọn payment hoặc cancel, thực thi và reconcile payment, xác nhận
+hoặc bù trừ, hoàn tất hoặc bù trừ, refund, và bảo vệ terminal state. Mỗi hợp
+đồng nêu state nguồn, tiền điều kiện, toàn bộ event/state đích được phép và
+guarantee phải giữ.
+
+Bộ kiểm chứng duyệt vét cạn toàn bộ state graph. P11 so khớp từng khóa
+`(state,event)` giữa graph và hợp đồng chức năng; P12 yêu cầu terminal chỉ có
+self-loop stutter; P13 cấm làm mất bằng chứng đã thu tiền mà không đi refund;
+P14 giữ an toàn khi payment UNKNOWN; P15 cấm một event có nhiều quyết định trong
+cùng state. Cùng P1–P10 về safety, consistency, reachability, incident
+completeness và liveness dưới weak fairness, model đúng đạt **15/15 PASS**.
 
 Trong lần chạy đầu, P10 phát hiện vòng retry vô hạn
 `PAYMENT_PROCESSING → PAYMENT_RETRY → PAYMENT_PROCESSING`. Model được sửa bằng
 state `PAYMENT_PROCESSING_FINAL`, khiến retry có bound thật trong graph thay vì
 chỉ được mô tả bằng lời.
 
-Bốn mutation được chèn độc lập để kiểm tra sức phát hiện của thuộc tính:
+Sáu mutation được chèn độc lập để kiểm tra sức phát hiện của thuộc tính:
 
 - thanh toán Order đã CANCELLED;
 - chấp nhận payment sai amount;
 - tạo hai Payment SUCCESS;
-- payment và cancellation cùng sở hữu critical resource.
+- payment và cancellation cùng sở hữu critical resource;
+- bỏ qua refund bằng cách chuyển PAID thẳng sang FAILED;
+- coi gateway UNKNOWN là thất bại cuối và giải phóng inventory.
 
-Cả bốn mutation đều sinh lỗi thuộc tính và witness tương ứng. Kết quả nằm trong
+Cả sáu mutation đều sinh lỗi thuộc tính và witness tương ứng; hai mutation mới
+xác nhận riêng P13 và P14 không PASS một cách hình thức/vô hiệu. Kết quả nằm trong
 `results/order_payment_recovery_model.results.json`; diễn giải từng state nằm
-trong `MO_HINH_XU_LY_SU_CO.md`. Các state retry/refund hiện mới là thiết kế kiểm
-chứng, chưa được triển khai đầy đủ vào enum và API C#.
+trong `MO_HINH_XU_LY_SU_CO.md`. Trong lần rà soát này còn phát hiện metadata
+của PAID/FAILED/REFUNDED từng ánh xạ sai sang `order_status` nhưng checker cũ
+vẫn PASS vì chỉ kiểm labels. Dữ liệu đã được sửa và verifier hiện kiểm trực
+tiếp cặp `order_status/payment_status` mong đợi cho cả 15 state trước khi xét
+P1–P15. Kết quả JSON còn có summary theo từng chức năng; ma trận CSV ghi
+`function, state, event/problem, guard/detection, solution, next_state,
+guarantees`, nên trả lời trực tiếp “đang ở state này, gặp sự cố kia thì xử lý
+thế nào”. Các endpoint retry, reconcile, refund và state
+REFUND_PENDING/REFUNDED đã có trong source; riêng CONFIRMATION_RETRY là state
+quan sát khi Order vẫn PAID.
+
+#### 3.3.2. Kiểm chứng quyết định chức năng tại từng state
+
+Recovery model không mô phỏng việc gọi API theo từng test case. Mỗi dòng trong
+ma trận là một nghĩa vụ hành vi: nếu aggregate đang ở state nguồn và event được
+quan sát, hệ thống chỉ được thực hiện action đã khai báo, đi tới state đích của
+hợp đồng và giữ các guarantee tương ứng. P11 đối chiếu độc lập hợp đồng với
+graph; vì vậy thiếu event, thừa event, gán event cho hai chức năng hoặc chọn sai
+state đích đều tạo counterexample.
+
+| State nguồn | Sự kiện/sự cố | Quyết định bắt buộc | State đích | Bất biến được giữ |
+|---|---|---|---|---|
+| CREATED/VALIDATED | Input sai, lỗi DB, mismatch hoặc commit lỗi | Reject/rollback nguyên tử; không tạo Payment | PRE_PAYMENT_REJECTED | `payment_status=NONE`, inventory không bị giữ một phần |
+| PAYMENT_PENDING | Cancel thắng transaction | Hủy Order và giải phóng reservation | CANCELLED | Không có `payment_success` |
+| PAYMENT_PROCESSING | Timeout hoặc kết quả gateway chưa rõ | Giữ idempotency key, chuyển sang bounded retry/reconcile | PAYMENT_RETRY | Không coi timeout là decline; inventory vẫn reserved |
+| PAYMENT_PROCESSING | Gateway decline xác thực | Kết thúc payment và giải phóng inventory | FAILED | Chỉ outcome cuối đã xác thực mới được FAILED |
+| PAID/CONFIRMED | Không thể fulfillment | Khởi tạo compensation, không xóa dấu vết đã charge | REFUND_PENDING | `payment_success` được giữ cho tới khi refund có bằng chứng |
+| REFUND_PENDING | Refund timeout | Query/retry cùng refund key và cảnh báo vận hành | REFUND_PENDING | Không hoàn tiền hai lần, không suy diễn timeout là chưa refund |
+| Terminal | Callback/request đến muộn | No-op hoặc reject và audit | Giữ nguyên state | Không hồi sinh aggregate |
+
+State `PRE_PAYMENT_REJECTED` là điểm tinh chỉnh quan trọng: lỗi trước khi tồn tại
+Payment không còn bị nhập chung với `FAILED`, là state dành cho payment đã nhận
+decline cuối. Ma trận đầy đủ 37 quyết định được sinh trực tiếp tại
+`results/order_payment_state_response_matrix.csv`, không chép tay vào báo cáo.
+
+P1–P15 PASS chỉ kết luận thiết kế hữu hạn đã khai báo thỏa các thuộc tính. Nó
+không chứng minh controller/service/database tự động phù hợp model. Unit và
+integration test là bằng chứng đối chiếu implementation riêng; 5 integration
+test hiện vẫn SKIP vì thiếu Docker nên chưa có kết luận end-to-end runtime.
 
 ### 3.4. Kiểm thử dữ liệu đầu vào bằng xUnit
 
@@ -115,7 +186,7 @@ chứng, chưa được triển khai đầy đủ vào enum và API C#.
 
 Các nhóm trường hợp đã kiểm tra gồm null request, null item, danh sách item null hoặc rỗng; ID không hợp lệ; số tiền âm, bằng 0 hoặc vượt giới hạn; số lượng dưới/trên biên; giá âm hoặc vượt mức tối đa; các giá trị biên hợp lệ; nhiều item; sai lệch tổng tiền trong và ngoài tolerance; decimal.MaxValue và phép nhân lớn nhất sau validation.
 
-Riêng InputValidator có **34 trường hợp kiểm thử**. Sau khi bổ sung test hồi quy cho hai state machine, lifecycle Order, gateway timeout/decline, bounded retry, crash reconciliation, refund, hoàn tồn kho và race payment–cancel, toàn bộ test suite ngày 07/10/2026 đạt **83 PASS, 0 FAIL, 0 SKIP**.
+Riêng InputValidator có **34 trường hợp kiểm thử**. Sau khi bổ sung test hồi quy cho hai state machine, lifecycle Order, gateway timeout/decline, bounded retry, crash reconciliation, refund, hoàn tồn kho và race payment–cancel, toàn bộ unit test suite trong lần xác minh ngày 08/10/2026 đạt **84 PASS, 0 FAIL, 0 SKIP**. Khi chạy solution còn có 5 integration test Testcontainers bị SKIP vì môi trường không có Docker; không tính các test này là PASS.
 
 Các test từng ghi nhận tổng tiền sai hoặc giá dưới mức tối thiểu được chuyển thành test yêu cầu từ chối. Test mới còn kiểm tra giá phía server, giảm tồn kho, chặn giá client bị sửa, chặn thanh toán đơn CANCELLED, đối chiếu số tiền, chuyển PAYMENT_PENDING → PAID, idempotency, password hashing và phát hành JWT.
 
@@ -141,13 +212,13 @@ Nhánh chưa được phủ là hướng true của `subtotal < 0` tại dòng 1
 
 | ID | Phát hiện ban đầu | CVSS-lite | Trạng thái source hiện tại |
 |---|---|---:|---|
-| VULN-001 | API Order thiếu xác thực và bảo vệ truy cập | 9,1 | Đã thêm JWT, `[Authorize]`, role Admin và identity từ claim; thiếu integration test HTTP |
-| VULN-005 | Thiếu kiểm tra quyền sở hữu giỏ hàng | 8,1 | Đã đối chiếu user/cart với principal tại Controller; thiếu test API xuyên suốt |
+| VULN-001 | API Order thiếu xác thực và bảo vệ truy cập | 9,1 | Đã thêm JWT, `[Authorize]`, role Admin và identity từ claim; integration test đã có nhưng chưa chạy PASS do thiếu Docker |
+| VULN-005 | Thiếu kiểm tra quyền sở hữu giỏ hàng | 8,1 | Đã đối chiếu user/cart với principal; integration test 401/403 đã có nhưng chưa chạy PASS |
 | VULN-002 | Giá và tổng tiền đơn hàng do client quyết định | 7,5 | Đã lấy giá Product phía server, tính lại total và có test hồi quy |
 | VULN-003 | Đơn CANCELLED có thể được chuyển sang PAID | 7,5 | Đã thêm state machine/guard và test chặn thanh toán đơn hủy |
 | VULN-004 | Tổng tiền sai lệch vẫn được validator chấp nhận | 7,5 | Đã từ chối mismatch và giá dưới tối thiểu; test cũ đã đổi thành test an toàn |
 
-Các điểm CVSS-lite trong bảng phản ánh mức rủi ro **tại thời điểm phát hiện**, không phải điểm rủi ro còn lại sau sửa. Source hiện đã có biện pháp khắc phục cho cả năm phát hiện, nhưng VULN-001 và VULN-005 chưa có integration test khởi động API thật để chứng minh các phản hồi 401/403 và ownership trên toàn pipeline.
+Các điểm CVSS-lite trong bảng phản ánh mức rủi ro **tại thời điểm phát hiện**, không phải điểm rủi ro còn lại sau sửa. Source hiện đã có biện pháp khắc phục cho cả năm phát hiện. VULN-001 và VULN-005 đã có integration test khởi động API/PostgreSQL để kiểm tra 401/403 và ownership, nhưng lần xác minh hiện tại bị SKIP do Docker không khả dụng nên chưa được đóng ở mức hệ thống chạy thật.
 
 Điểm 8,1 HIGH được tính với tác động confidentiality LOW, integrity HIGH và availability NONE. Chưa có bằng chứng về mất khả dụng toàn dịch vụ nên không nâng tác động availability. Toàn bộ điểm số là **CVSS-lite phục vụ học tập**, không phải CVSS chính thức; các phát hiện quyền truy cập dựa trên review mã, chưa phải khai thác trực tiếp API đang chạy.
 
@@ -174,6 +245,44 @@ Bộ test tự động chạy **22 trường hợp và đạt 22/22 PASS**:
 
 Trong kết quả này, `PASS cart_buggy` có nghĩa test đã kích hoạt và nhận diện đúng lỗi use-after-free, không có nghĩa bản buggy an toàn. Các log lưu vị trí cấp phát, vị trí giải phóng và vị trí truy cập sai, giúp truy nguyên vòng đời vùng nhớ. Bản fixed PASS mang ý nghĩa khác: chương trình thoát bình thường và không có dấu hiệu sanitizer trong ca đã chạy.
 
+Chương 2 hiện còn có pipeline static analysis tái lập bằng `make static-check`.
+Project-specific pattern scanner phát hiện đúng cả năm loại lỗi trên BUGGY và
+không còn finding tương ứng trên FIXED. Cppcheck 2.13.0 chỉ phát hiện trực tiếp
+stack overflow của `user.c` và một cảnh báo style; bốn lỗi còn lại bị bỏ sót.
+Kết quả này được giữ nguyên để minh họa false negative, không diễn giải thành
+“cppcheck chứng minh an toàn”. GCC syntax check chạy cho cả hai cấu hình.
+
+`layout_probe.c` đo layout thực tế trên x86-64: CartItem 16/8, OrderItem 16/8,
+Order 24/8, Payment 16/8 và Product 16/8 (size/alignment). Phân tích padding và
+offset được dùng để nối ownership/lifetime với kiến thức alignment, nhưng không
+coi tối ưu kích thước là bằng chứng memory safety. Snapshot static/layout nằm ở
+`c-memory/evidence/static-analysis.json`; snapshot 22 ca sanitizer nằm ở
+`c-memory/evidence/dynamic-analysis.json`. Raw stack trace trong `results/` là
+artifact cục bộ và bị ignore.
+
+### 3.8. Kiểm chứng số học bằng SMT/Z3
+
+`PaymentVerification.z3` biểu diễn tiền bằng số nguyên cent và dùng `QF_NIA`,
+vì biểu thức `Quantity × UnitPriceCents` là phép nhân hai biến tượng trưng.
+Phiên bản cũ khai báo `QF_LIA`, khiến Z3 từ chối assertion phi tuyến; các kết
+quả SAT sau lỗi đó không có giá trị. Script `verify_payment_smt.py` hiện yêu cầu
+Z3 thoát mã 0 và đối chiếu chính xác kết quả mong đợi của từng truy vấn.
+
+| Truy vấn | Kỳ vọng/kết quả | Ý nghĩa |
+|---|---|---|
+| Order PAID hợp lệ | SAT | Có model tổng tiền/payment nhất quán |
+| Total khác tổng item | UNSAT | Invariant loại mismatch |
+| PAID nhưng payment thiếu | UNSAT | PAID cần đủ payment evidence |
+| Payment âm | UNSAT | Miền số tiền loại giá trị âm |
+| Payment vượt total | UNSAT | Không cho overpayment trong model |
+| Tràn subtotal Int32 trong miền item | SAT | Counterexample `10000 × 99999999 = 999999990000` |
+| Total bound nhưng subtotal vượt max | UNSAT | Bound toàn đơn loại trường hợp đó khỏi order hợp lệ |
+
+Z3 5.1.0 chạy **7/7 đúng kỳ vọng**. Kết quả được lưu tại
+`results/payment_verification.results.json`. Đây là kiểm chứng mô hình số học
+trên mathematical integers; không thay thế kiểm thử EF Core, decimal runtime,
+gateway hoặc concurrency.
+
 ## 4. Minh chứng và khả năng tái lập
 
 Các sản phẩm bàn giao đã được lưu trong repository:
@@ -184,10 +293,13 @@ Các sản phẩm bàn giao đã được lưu trong repository:
 - [Dataset lỗ hổng](vulnerabilities.json) và [kết quả xếp hạng rủi ro](results/risk_assessment_results.json).
 - [Kết quả model kỳ vọng](results/order_state_model.results.json) và [kết quả model BUGGY](results/order_state_model_buggy.results.json).
 - [Script tích hợp](run_analysis.py) và [hướng dẫn chạy lại](README.md).
+- [Threat model](threat_model.json), [diễn giải Chương 1](THREAT_MODEL_CHUONG1.md) và [kết quả kiểm tra](results/threat_model_results.json).
+- [Recovery model](order_payment_recovery_model.json), [kết quả](results/order_payment_recovery_model.results.json) và [ma trận state/sự cố](results/order_payment_state_response_matrix.csv).
 - [Mã mô phỏng lỗi bộ nhớ bằng C](c-memory/modules), [hướng dẫn và ánh xạ module](c-memory/README.md).
-- [Script kiểm chứng bộ nhớ](c-memory/tests/check_memory.py); kết quả chạy cục bộ được sinh trong `c-memory/results/summary.json` và các log tương ứng.
+- [Static/layout evidence](c-memory/evidence/static-analysis.json) và [dynamic sanitizer evidence](c-memory/evidence/dynamic-analysis.json).
+- [Đặc tả SMT](../OrderPaymentMicroservice/Security/PaymentVerification.z3), [runner](verify_payment_smt.py) và [kết quả Z3](results/payment_verification.results.json).
 
-Dự án còn có các tệp đặc tả TLA+ và ràng buộc Z3  trong thư mục Security. Báo cáo này chỉ ghi nhận chúng là tài liệu/mã đặc tả hiện có; chưa có kết quả chạy TLC hoặc Z3 được xác nhận trong phạm vi công việc vừa thực hiện.
+Dự án còn có đặc tả TLA+ và config trong thư mục Security. Chưa có output TLC/BMC được lưu; không dùng kết quả explicit-state hoặc SMT số học để thay thế bằng chứng này.
 
 ## 5. Hạn chế và công việc chưa hoàn thành
 
@@ -196,11 +308,11 @@ Năm phát hiện ưu tiên đã có biện pháp khắc phục trong source và
 | Hạng mục chưa hoàn thành | Hiện trạng | Khoảng trống cần xử lý |
 |---|---|---|
 | Payment gateway thật | Có `IPaymentGateway` và adapter giả lập idempotent; service xử lý success/decline/unknown/retry/reconcile/refund | Chưa có adapter nhà cung cấp, xác minh callback và integration test sandbox |
-| Integration/E2E với PostgreSQL | Đã có 5 test Testcontainers tự khởi động API/database sạch và bao phủ luồng chính | Lần xác minh 07/10 bị skip do Docker không khả dụng; cần chạy lại đủ 5 test và lưu log PASS |
+| Integration/E2E với PostgreSQL | Đã có 5 test Testcontainers tự khởi động API/database sạch và bao phủ luồng chính | Lần xác minh 08/10 bị skip do Docker không khả dụng; cần chạy lại đủ 5 test và lưu log PASS |
 | Kiểm thử authentication/authorization | Đã có JWT, `[Authorize]`, role, ownership check và integration test cho 401/403 | Test đã được viết nhưng chưa có kết quả chạy trong lần xác minh vì Docker không khả dụng |
 | Đồng thời và idempotency trên database thật | Có transaction `Serializable`, idempotency key, unique index và test PostgreSQL cho payment/cancel cạnh tranh | Hai test concurrency bị skip cùng integration suite; chưa có log PASS từ môi trường hiện tại |
 | Vòng đời Order đầy đủ | Đã có các state chính, inventory RESERVED/RELEASED/CONSUMED và `PaymentRecoveryWorker` tự quét giao dịch stale | Cần kiểm chứng worker qua restart thật và chạy integration suite trên Docker |
-| SMT/Z3 | Có `PaymentVerification.z3` | Chưa lưu lệnh chạy, phiên bản solver, kết quả SAT/UNSAT và diễn giải ràng buộc đối chiếu với code hiện tại |
+| SMT/Z3 | **Đã hoàn thành trong phạm vi mô hình số học:** QF_NIA, Z3 5.1.0, 7/7 đúng kỳ vọng và có JSON evidence | Không chứng minh implementation, database hoặc gateway; giả định tiền được biểu diễn bằng integer cents |
 | TLA+/BMC | `OrderPayment.tla` và `OrderPayment.cfg` đã được đồng bộ với hai state machine, cùng Kripke/recovery model | Chưa chạy TLC và chưa lưu output/counterexample; model chưa sinh tự động từ implementation |
 | Fuzzing | Source có đánh dấu target cho validator/payment | Chưa có harness, corpus, seed, crash artifact, timeout policy hoặc số liệu coverage của fuzzing |
 | Coverage toàn hệ thống | InputValidator đạt 96,87% branch coverage | Chưa có báo cáo coverage riêng cho Controller, Service, state machine và các nhánh lỗi database |
@@ -218,7 +330,7 @@ Không đưa ra phần trăm hoàn thành toàn dự án vì chưa có rubric v�
 3. **Kiểm chứng phục hồi sau restart:** chạy `PaymentRecoveryWorker` với payment/refund stale trên PostgreSQL thật, restart API và xác nhận retry/reconcile giữ đúng idempotency.
 4. **Tích hợp payment gateway ở môi trường thử nghiệm:** xác minh chữ ký webhook/callback, đối chiếu order/amount/currency, xử lý timeout và kết quả FAILED, lưu transaction code thật. Tiêu chí đạt là Order chỉ chuyển PAID sau bằng chứng thành công hợp lệ từ gateway.
 5. **Kiểm thử đồng thời trên PostgreSQL:** gửi nhiều request cùng idempotency key và nhiều request khác key cho một Order; kiểm tra unique index, transaction và tồn kho. Tiêu chí đạt là chỉ có một Payment SUCCESS, không bán âm kho và retry trả lại cùng kết quả.
-6. **Hoàn thiện bằng chứng hình thức:** chạy Z3 cho các ràng buộc tiền, bổ sung TLC config cho TLA+, lưu version/lệnh/kết quả và đồng bộ đặc tả với source. Tiêu chí đạt là có output tái lập cùng diễn giải SAT/UNSAT hoặc counterexample.
+6. **Hoàn thiện TLC/BMC:** SMT số học đã có bằng chứng 7/7; bước còn lại là chạy TLC hoặc bounded checker cho state-transition model, lưu bound/completeness threshold, version, output và counterexample nếu có.
 7. **Bổ sung fuzzing:** chọn InputValidator, PaymentValidator hoặc parser request làm target; tạo seed corpus từ các ca biên hiện có, đặt timeout và lưu input gây lỗi. Tiêu chí đạt là có harness, corpus, thời lượng chạy, coverage và crash report hoặc kết luận không tìm thấy crash trong phạm vi thử.
 8. **Mở rộng coverage và hardening:** đo coverage Service/Controller, bổ sung rate limiting, audit log và cấu hình production; cập nhật script demo theo JWT và idempotency. Tiêu chí đạt là có báo cáo coverage mới và một kịch bản demo E2E chạy thành công từ môi trường sạch.
 
@@ -228,9 +340,9 @@ Thứ tự ưu tiên đề xuất là integration/authorization trước, sau đ
 
 Phần 8 dưới đây trình bày chi tiết quá trình thực hiện, kiến thức áp dụng và các lỗi gặp phải để phục vụ thuyết trình hoặc báo cáo tiến độ.
 
-Dự án đã xây dựng được nền tảng đánh giá an toàn phần mềm kết hợp bốn hướng: **kiểm chứng mô hình, kiểm thử có đo coverage, đánh giá rủi ro từ mã nguồn và phân tích động lỗi bộ nhớ trên mô hình C**. Các kết quả nổi bật gồm model kỳ vọng PASS bốn thuộc tính, recovery model PASS 10 thuộc tính, phản ví dụ cho bốn mutation nguy hiểm, 84 unit test xUnit thành công, 5 integration test PostgreSQL đã có harness tái lập, branch coverage InputValidator đạt 96,87% và 22/22 ca kiểm chứng C cho năm nhóm lỗi bộ nhớ.
+Dự án đã xây dựng được nền tảng đánh giá an toàn phần mềm gồm threat modeling, kiểm chứng model, kiểm thử có coverage, static/dynamic memory analysis và SMT. Kết quả nổi bật gồm threat model PASS với 6 asset/4 boundary/9 threat/6 STRIDE; model Order 4/4 PASS; recovery model 15/15 PASS trên 7 hợp đồng chức năng, 15 state và 37 transition; sáu mutation bị phát hiện; Z3 7/7 đúng kỳ vọng; 84 unit test PASS; branch coverage InputValidator 96,87%; static scanner phân biệt đủ 5 BUGGY/FIXED và sanitizer 22/22 PASS. Năm integration test có harness nhưng đều SKIP do thiếu Docker.
 
-Quan trọng hơn, năm phát hiện ưu tiên đã được chuyển thành guard và unit test hồi quy trong source hiện tại. Tiến độ hiện nay được đánh giá là **đã hoàn thành giai đoạn phát hiện và sửa bước đầu, đang chuyển sang integration/E2E, gateway thật, concurrency, formal verification và fuzzing**; chưa đủ cơ sở kết luận hệ thống đã an toàn để vận hành thực tế.
+Quan trọng hơn, năm phát hiện ưu tiên đã được chuyển thành guard và unit test hồi quy trong source hiện tại. Tiến độ hiện nay được đánh giá là **đã củng cố Chương 1, Chương 2 và SMT; còn thiếu TLC/BMC, fuzzing và bằng chứng integration/E2E chạy thật**. Vì vậy dự án vẫn chưa hoàn tất chuỗi end-to-end bốn chương và chưa đủ cơ sở kết luận an toàn để vận hành thực tế.
 
 ## 8. Chi tiết thực hiện và kiến thức an toàn phần mềm đã áp dụng
 
@@ -250,7 +362,12 @@ Tôi áp dụng kiến thức về bất biến nghiệp vụ, máy trạng thá
 
 **Kết quả và vấn đề gặp phải**
 
-Tôi chuyển yêu cầu nghiệp vụ thành bốn thuộc tính kiểm chứng và các nhóm test cụ thể. Tôi cũng nhận thấy sự khác biệt giữa thiết kế và implementation: enum có đầy đủ trạng thái nhưng mã chưa thực hiện đầy đủ các bước trung gian. Vì vậy, tôi tách rõ kết quả kiểm chứng thiết kế khỏi kết luận về mã chạy thực tế.
+Tôi chuyển yêu cầu nghiệp vụ thành bốn thuộc tính của model Order cơ sở, sau đó
+mở rộng recovery model thành 7 hợp đồng chức năng và 15 thuộc tính P1–P15. Mỗi
+hợp đồng trả lời rõ ở state hiện tại, khi event hoặc sự cố xảy ra thì hệ thống
+phải xử lý và chuyển đi đâu. Tôi cũng tách rõ kiểm chứng thiết kế khỏi test dùng
+để đối chiếu mã chạy thực tế; số test PASS không được dùng thay cho chứng minh
+trên Kripke.
 
 ### 8.2. Xây dựng model Order theo cấu trúc Kripke
 
@@ -355,13 +472,13 @@ Tôi áp dụng phân lớp tương đương, phân tích giá trị biên, ki�
 | Price | -0.01, 1000000, decimal.MaxValue | Kiểm tra giá âm hoặc quá lớn |
 | Biên hợp lệ | Total 0.01/999999.99, Quantity 10000 | Kiểm tra biên được chấp nhận |
 | Tolerance | Total 10.01/9.99 so với tổng item 10 | Kiểm tra đúng ngưỡng ±0.01 |
-| Hành vi lỗi | Total 10.011/9.989 so với 10; giá 0/0.001 | Ghi nhận validation chưa đầy đủ |
+| Input phải bị từ chối | Total 10.011/9.989 so với 10; giá 0/0.001 | Xác nhận validator hiện từ chối mismatch vượt tolerance và giá dưới `MIN_PRICE` |
 
 **Kết quả và lỗi được phát hiện**
 
 34 trường hợp riêng cho InputValidator đều PASS. Các test trước đây dùng để ghi nhận lỗi đã giúp xác nhận tổng tiền sai và giá dưới mức tối thiểu từng được chấp nhận. Sau khi sửa validator, chúng được đổi thành `MismatchOrBelowMinimumPriceIsRejected` và hiện yêu cầu `ArgumentException`. Điều này biến characterization test thành regression test: nếu lỗi xuất hiện lại, test sẽ FAIL.
 
-Toàn test suite hiện có 83 trường hợp PASS. Ngoài 34 test InputValidator, các test còn lại kiểm tra giá server/tồn kho, transition hợp lệ và bị cấm của Order/Payment, amount/idempotency, timeout/unknown, bounded retry, crash reconciliation, refund, hoàn kho, race payment–cancel, password hashing, JWT và nâng cấp tài khoản SHA-256 cũ.
+Toàn unit test suite hiện có 84 trường hợp PASS. Ngoài 34 test InputValidator, các test còn lại kiểm tra giá server/tồn kho, transition hợp lệ và bị cấm của Order/Payment, amount/idempotency, timeout/unknown, bounded retry, crash reconciliation, refund, hoàn kho, race payment–cancel, password hashing, JWT và nâng cấp tài khoản SHA-256 cũ. Năm integration test Testcontainers tồn tại nhưng bị SKIP trong lần xác minh hiện tại, nên không được cộng vào 84 PASS.
 
 ### 8.6. Đo coverage và giải thích vì sao chưa đạt 100% toàn lớp
 
@@ -379,7 +496,7 @@ Tôi phân biệt line coverage — dòng mã đã chạy — với branch cover
 
 **Kết quả cụ thể**
 
-Toàn lớp có 31/32 nhánh được phủ, đạt 96,875% theo số đếm; CLI/XML hiển thị xấp xỉ 96,87%. Riêng `ValidateCreateOrderRequest()` đạt 100% branch coverage. Dòng tolerance 61 có 2/2 nhánh được phủ, nên vấn đề ở đây là thiếu hành động từ chối, không còn là thiếu test đi qua nhánh.
+Toàn lớp có 31/32 nhánh được phủ, đạt 96,875% theo số đếm; CLI/XML hiển thị xấp xỉ 96,87%. Riêng `ValidateCreateOrderRequest()` đạt 100% branch coverage. Nhánh tolerance có 2/2 hướng được phủ và hiện ném `ArgumentException` khi mismatch vượt 0,01; đây là regression test cho lỗi lịch sử, không còn là hành vi lỗi hiện tại.
 
 Nhánh true của `subtotal < 0` chưa được phủ. Sau guard, Quantity ≥ 1 và UnitPrice ≥ 0 nên tích không âm. Tích lớn nhất là `10000 × 999999.99 = 9.999.999.900`, nằm trong miền decimal; catch overflow chưa được chạy vì không có input đi qua guard hiện tại gây tràn phép nhân này. Kết luận này chỉ áp dụng cho phép nhân item đã giới hạn, không phải chứng minh mọi phép cộng/tính tiền của toàn hệ thống không thể overflow.
 
@@ -511,23 +628,23 @@ LeakSanitizer có thể báo không hoạt động dưới `ptrace`, debugger ho
 | Vấn đề | Biểu hiện/nguyên nhân | Xử lý hoặc trạng thái hiện tại |
 |---|---|---|
 | Restore NuGet bị chặn | NU1301, socket tới api.nuget.org:443 bị từ chối trong môi trường hạn chế | Chạy lại với quyền truy cập được phê duyệt; tải được xUnit/Coverlet và chạy test thành công |
-| Phiên bản dependency | NU1603: yêu cầu Npgsql 8.0.7 nhưng resolve thành 8.0.8 | Ghi nhận warning; không thay dependency của ứng dụng trong phần bổ sung lab |
+| Phiên bản dependency lịch sử | Từng có NU1603 khi yêu cầu Npgsql 8.0.7 nhưng resolve 8.0.8 | Project hiện pin 8.0.8; không còn trình bày warning cũ như lỗi hiện tại |
 | Lab 1 thiếu AF | Không thể dùng checker gốc để kiểm tra trực tiếp liveness đã yêu cầu | Bổ sung fixed-point AF trong integration |
 | Nhãn không lưu lịch sử | PAID cũ không phân biệt thanh toán hợp lệ và thanh toán sau hủy | Thêm PAID_AFTER_CANCELLED làm history monitor |
 | Parser coverage sai chữ hoa/thường | `True` khác `true`, làm mất danh sách nhánh chưa phủ | Chuẩn hóa `.lower()`; nhận diện đúng dòng 101 |
 | Tổng tiền sai được chấp nhận | Nhánh tolerance từng rỗng | Đã sửa validator và đổi test thành yêu cầu từ chối mismatch |
 | Đơn hủy vẫn thanh toán được | PaymentService từng thiếu guard trạng thái nguồn | Đã thêm OrderStateMachine/guard và test `CancelledOrderCannotBePaid` |
-| Quyền truy cập chưa đầy đủ | API trước đây thiếu authentication/ownership | Đã thêm JWT, `[Authorize]`, ownership check và integration test HTTP; lần xác minh 07/10 chưa chạy được test vì Docker không khả dụng |
+| Quyền truy cập chưa đầy đủ | API trước đây thiếu authentication/ownership | Đã thêm JWT, `[Authorize]`, ownership check và integration test HTTP; lần xác minh 08/10 chưa chạy được test vì Docker không khả dụng |
 | LeakSanitizer bị giới hạn bởi ptrace/sandbox | Báo `LeakSanitizer has encountered a fatal error` thay vì phân tích leak | Chạy bộ test từ terminal bình thường ngoài debugger/sandbox; xác nhận 22/22 PASS |
-| Integration test bị skip | 5 test Testcontainers yêu cầu Docker nhưng Docker không khả dụng trong lần chạy 07/10/2026 | Unit test vẫn đạt 84/84; chưa ghi nhận integration PASS cho lần xác minh này |
+| Integration test bị skip | 5 test Testcontainers yêu cầu Docker nhưng Docker không khả dụng trong lần chạy 08/10/2026 | Unit test vẫn đạt 84/84; chưa ghi nhận integration PASS cho lần xác minh này |
 | Secret trong lịch sử Git | Connection string ở commit cũ từng chứa mật khẩu PostgreSQL dù HEAD hiện để trống | Phải rotate mật khẩu và rewrite history trước khi public; chỉ xóa file hiện tại là chưa đủ |
-| Repository chứa artefact không cần thiết | `tmp/node_modules`, build output, PDF/slide, EXE và ZIP/RAR làm repo nặng và khó audit | Đã loại khỏi working tree; `.gitignore` được mở rộng, còn cần rewrite history để thu hồi blob cũ |
+| Phạm vi tài liệu học phần | `ATPM/` còn chứa slide, lab, binary và archive tham chiếu | Loại chúng khỏi phạm vi sản phẩm được đánh giá; không tuyên bố đã xóa khỏi working tree |
 
-Tôi không ghi nhận các rủi ro dự kiến như race condition là lỗi đã tái hiện nếu chưa có kết quả kiểm thử đồng thời. Tương tự, chưa tuyên bố TLA+/Z3 hoặc fuzzing đã chạy thành công khi chưa có minh chứng. Phần dynamic analysis đã hoàn thành trong phạm vi năm lỗi bộ nhớ được chủ động đưa vào mô hình C.
+Tôi không ghi nhận các rủi ro dự kiến như race condition là lỗi đã tái hiện nếu chưa có kết quả kiểm thử đồng thời. SMT/Z3 đã có bằng chứng 7/7 trong phạm vi mô hình số học; TLC/BMC và fuzzing vẫn chưa có minh chứng hoàn thành. Phần dynamic analysis đã hoàn thành trong phạm vi năm lỗi bộ nhớ được chủ động đưa vào mô hình C.
 
 ### 8.11. Tổng hợp kiến thức và giá trị đạt được
 
-Qua phần công việc này, tôi đã áp dụng mô hình hóa hình thức để kiểm tra thiết kế; BFS và CTL để kiểm tra khả năng đạt tới và thuộc tính thời gian; kiểm thử biên và phân lớp tương đương để kiểm tra validator; coverage để xác định nhánh chưa chạy; CWE/CVSS-lite để phân loại, ưu tiên phát hiện; cùng ownership, lifetime và sanitizer để kiểm chứng động các lỗi bộ nhớ trong mô hình C.
+Qua phần công việc này, tôi đã áp dụng CIA, trust boundary và STRIDE để threat modeling; Kripke, BFS và CTL để kiểm tra thiết kế; kiểm thử biên và phân lớp tương đương cho validator; coverage để xác định nhánh chưa chạy; CWE/CVSS-lite để ưu tiên phát hiện; ownership, lifetime, alignment, pattern scanning, cppcheck và sanitizer cho mô hình C; cùng SMT/QF_NIA để kiểm chứng ràng buộc số học và sinh counterexample Int32.
 
 Kết quả quan trọng không chỉ là 84 unit test xUnit PASS, branch coverage InputValidator 96,87% hay 22/22 ca C PASS, mà là có minh chứng cụ thể cho những điều đã kiểm tra và giới hạn rõ ràng của kết luận. Tôi đã biết phân biệt bốn tình huống: **thiết kế thỏa thuộc tính**, **test ghi nhận đúng hành vi hiện tại**, **công cụ phát hiện đúng lỗi cố ý trong mô hình**, và **mã nghiệp vụ đã được sửa kèm kiểm thử hồi quy**. Cả bốn đã có kết quả trong phạm vi unit test/mô hình; integration HTTP/PostgreSQL đã có 5 test Testcontainers nhưng cần chạy khi Docker hoạt động để lưu kết quả, còn gateway thật vẫn là nhiệm vụ của giai đoạn tiếp theo.
 
@@ -535,7 +652,7 @@ Kết quả quan trọng không chỉ là 84 unit test xUnit PASS, branch covera
 
 ### 9.1. Chuẩn bị trước buổi báo cáo
 
-Chạy các lệnh sau từ thư mục gốc repository để xác nhận môi trường. Các phiên bản đã dùng khi cập nhật báo cáo là .NET SDK 10.0.112, Python 3.12.3, GCC 13.3.0 và GNU Make 4.3.
+Chạy các lệnh sau từ thư mục gốc repository để xác nhận môi trường. Các phiên bản đã dùng khi cập nhật báo cáo gồm .NET SDK 10.0.112, Python 3.12.3, GCC 13.3.0, GNU Make 4.3, Cppcheck 2.13.0 và Z3 5.1.0.
 
 ```bash
 cd ~/OrderPaymentMicroservice
@@ -543,6 +660,8 @@ dotnet --version
 python3 --version
 gcc --version | head -n 1
 make --version | head -n 1
+cppcheck --version
+z3 -version
 ```
 
 Restore và build trước buổi báo cáo để tránh dành thời gian tải package khi đang thuyết trình:
@@ -581,12 +700,25 @@ Các dòng kết quả cần chỉ ra:
 Model kỳ vọng: P1, P2, P3, P4 PASS
 Model BUGGY: P1 FAIL
 Counterexample: CREATED → CANCELLED → PAID_AFTER_CANCELLED
+Threat model: PASS (6 assets, 4 boundaries, 9 threats, 6/6 STRIDE)
+Recovery model: 7 functional contracts, 15 states, 37 transitions, P1-P15 PASS
+SMT verification: 7/7 PASS
 InputValidator branch coverage: 96.87%
 ```
 
 `P1 FAIL` ở model BUGGY là kết quả mong đợi vì công cụ đã phát hiện đúng lỗi cố ý. Không trình bày nó như lỗi chạy script.
 
-**Bước 3 — chạy toàn bộ mô phỏng lỗi bộ nhớ C:**
+**Bước 3 — chạy static analysis và layout Chương 2:**
+
+```bash
+make -C security-analysis/c-memory static-check
+```
+
+Kết quả mong đợi là `PASS static analysis`; mở
+`c-memory/evidence/static-analysis.json` để chỉ ra 5 finding BUGGY, FIXED sạch
+theo rule scanner, giới hạn false negative của cppcheck và số liệu alignment.
+
+**Bước 4 — chạy toàn bộ mô phỏng lỗi bộ nhớ C:**
 
 ```bash
 make -C security-analysis/c-memory test

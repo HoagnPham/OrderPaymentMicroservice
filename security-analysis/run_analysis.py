@@ -1,4 +1,8 @@
-"""Reproducible integration with the original ATPM labs; no third-party Python packages."""
+"""Run project threat/model/risk/SMT checks and summarize stored coverage.
+
+The Python code uses only the standard library and imports the original ATPM
+Lab 1/Lab 3 modules. SMT verification additionally requires the Z3 CLI.
+"""
 import importlib.util
 import json
 from pathlib import Path
@@ -81,7 +85,9 @@ def coverage():
 def main():
     checker = lab('atpm_kripke', 'ATPM/lab1/lab1_kripke_access_model/python/kripke_model.py')
     risk = lab('atpm_risk', 'ATPM/lab3_secure_memory/python/risk_assessor.py')
+    threat_model = lab('threat_model', 'security-analysis/verify_threat_model.py')
     recovery = lab('order_payment_recovery', 'security-analysis/verify_recovery_model.py')
+    payment_smt = lab('payment_smt', 'security-analysis/verify_payment_smt.py')
     correct = verify(BASE / 'order_state_model.json', checker)
     buggy = verify(BASE / 'order_state_model_buggy.json', checker)
     assert all(p['holds'] for p in correct['properties'])
@@ -98,7 +104,9 @@ def main():
         result['verified_by'] = source.get('verified_by')
     risk.print_report(results)
     save(OUT / 'risk_assessment_results.json', results)
+    threat_model.main()
     recovery.main()
+    payment_smt.main()
     coverage()
 
 

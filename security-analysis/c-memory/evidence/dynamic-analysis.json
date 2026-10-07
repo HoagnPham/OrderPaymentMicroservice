@@ -1,0 +1,169 @@
+{
+  "schema_version": 1,
+  "command": "make test",
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "compiler": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+  "sanitizers": [
+    "AddressSanitizer",
+    "UndefinedBehaviorSanitizer",
+    "LeakSanitizer"
+  ],
+  "cases": [
+    {
+      "case": "order_buggy",
+      "passed": true,
+      "exit_code": 1,
+      "expected_diagnostic": "LeakSanitizer: detected memory leaks",
+      "expected_stdout": null
+    },
+    {
+      "case": "order_fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": null
+    },
+    {
+      "case": "payment_buggy",
+      "passed": true,
+      "exit_code": 1,
+      "expected_diagnostic": "AddressSanitizer: attempting double-free",
+      "expected_stdout": null
+    },
+    {
+      "case": "payment_fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": null
+    },
+    {
+      "case": "cart_buggy",
+      "passed": true,
+      "exit_code": 1,
+      "expected_diagnostic": "AddressSanitizer: heap-use-after-free",
+      "expected_stdout": null
+    },
+    {
+      "case": "cart_fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": null
+    },
+    {
+      "case": "product_buggy",
+      "passed": true,
+      "exit_code": 1,
+      "expected_diagnostic": "AddressSanitizer: heap-buffer-overflow",
+      "expected_stdout": null
+    },
+    {
+      "case": "product_fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": null
+    },
+    {
+      "case": "user_buggy",
+      "passed": true,
+      "exit_code": 1,
+      "expected_diagnostic": "AddressSanitizer: stack-buffer-overflow",
+      "expected_stdout": null
+    },
+    {
+      "case": "user_fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": null
+    },
+    {
+      "case": "product_fixed_length_0",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "Product 101: \n"
+    },
+    {
+      "case": "product_fixed_length_1",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "Product 101: A\n"
+    },
+    {
+      "case": "product_fixed_length_31",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "Product 101: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n"
+    },
+    {
+      "case": "product_fixed_length_32",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "REJECTED:"
+    },
+    {
+      "case": "product_fixed_length_128",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "REJECTED:"
+    },
+    {
+      "case": "product_buggy_valid",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "Product 101: demo"
+    },
+    {
+      "case": "user_fixed_length_0",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "Registered email: \n"
+    },
+    {
+      "case": "user_fixed_length_1",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "Registered email: A\n"
+    },
+    {
+      "case": "user_fixed_length_31",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "Registered email: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA\n"
+    },
+    {
+      "case": "user_fixed_length_32",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "REJECTED:"
+    },
+    {
+      "case": "user_fixed_length_128",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "REJECTED:"
+    },
+    {
+      "case": "user_buggy_valid",
+      "passed": true,
+      "exit_code": 0,
+      "expected_diagnostic": "clean sanitizer run",
+      "expected_stdout": "Registered email: demo"
+    }
+  ],
+  "passed": true,
+  "scope_limit": "Evidence covers the executed C teaching cases, not the ASP.NET implementation or every possible input."
+}

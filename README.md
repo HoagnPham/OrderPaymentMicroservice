@@ -15,7 +15,7 @@ Các mục tiêu gốc được mô tả tại [README của source](OrderPaymen
 
 ```text
 OrderPaymentMicroservice/
-├── ATPM/                         Hai module lab tối thiểu dùng bởi pipeline phân tích
+├── ATPM/                         Tài liệu/lab tham chiếu; hai module được pipeline import
 ├── OrderPaymentMicroservice/     Source ASP.NET Core, REST API và giao diện demo
 ├── OrderPaymentMicroservice.Tests/ Unit test xUnit và cấu hình Coverlet
 ├── OrderPaymentMicroservice.IntegrationTests/ HTTP E2E test với PostgreSQL container
@@ -26,12 +26,12 @@ OrderPaymentMicroservice/
 
 ### `ATPM/`
 
-Chỉ giữ hai module source tối thiểu mà pipeline phân tích đang dùng trực tiếp:
+Pipeline phân tích chỉ import trực tiếp hai module source sau; các nội dung ATPM còn lại là tài liệu/công cụ tham chiếu và không được tính là sản phẩm của dự án:
 
 - `lab1/.../python/kripke_model.py` để kiểm tra model Kripke.
 - `lab3_secure_memory/python/risk_assessor.py` để tính CVSS-lite.
 
-PDF/slide, ảnh chụp, EXE, ZIP/RAR, toolkit và các lab không được pipeline sử dụng đã được loại khỏi repository. Đây là nguồn tham chiếu nên không trộn kết quả riêng của dự án vào dataset gốc.
+Kết quả riêng của dự án được lưu dưới `security-analysis/`, không ghi đè dataset gốc trong `ATPM/`.
 
 ### `OrderPaymentMicroservice/`
 
@@ -45,7 +45,11 @@ Project xUnit hiện có 84 unit test, trong đó 34 trường hợp tập trung
 
 Chứa phần áp dụng kiến thức lab vào đề tài:
 
+- Threat model CIA/STRIDE, trust boundary và truy vết evidence.
 - Model Order đúng và model BUGGY.
+- Recovery model 7 hợp đồng chức năng, 15 state/37 transition, P1–P15 và negative mutations.
+- Static/dynamic memory analysis cùng alignment evidence cho năm module C.
+- SMT/Z3 cho bất biến tổng tiền và payment.
 - Script tích hợp Lab 1/Lab 3.
 - Dataset năm lỗ hổng và kết quả xếp hạng.
 - Báo cáo coverage, báo cáo tiến độ và tài liệu giải thích test.
@@ -133,10 +137,11 @@ Kết quả chứng minh công cụ phát hiện được lỗi đã mô hình h
 
 Đã xây dựng 34 test xUnit riêng cho InputValidator, gồm null/rỗng, ID không dương, biên TotalAmount/Quantity/UnitPrice, nhiều item, tolerance và decimal.MaxValue. Toàn solution hiện có 84 unit test và 5 integration test PostgreSQL, bổ sung test transition Order/Payment, timeout/unknown, retry giới hạn, crash reconciliation, refund, hoàn tồn kho, authorization và cạnh tranh payment/cancel.
 
-Kết quả chạy ngày **19/09/2026**:
+Kết quả chạy lại ngày **08/10/2026**:
 
 ```text
-Passed: 34, Failed: 0, Skipped: 0
+Unit: Passed 84, Failed 0, Skipped 0
+Integration: Passed 0, Failed 0, Skipped 5 (Docker unavailable)
 ```
 
 Coverage đã lưu:
@@ -147,7 +152,7 @@ Coverage đã lưu:
 | ValidateCreateOrderRequest() | 100% |
 | ValidateOrderItem() | 92,85% |
 
-Nhánh chưa phủ là `subtotal < 0` theo hướng true. Sau các guard, Quantity ≥ 1 và UnitPrice ≥ 0 nên đường này bất khả thi với input hợp lệ đi tới vị trí đó. Coverage cao không chứng minh logic đúng: nhánh tolerance được phủ cả hai hướng nhưng block xử lý hiện rỗng.
+Nhánh chưa phủ là `subtotal < 0` theo hướng true. Sau các guard, Quantity ≥ 1 và UnitPrice ≥ 0 nên đường này bất khả thi với input hợp lệ đi tới vị trí đó. Coverage cao không tự chứng minh logic đúng; nhánh tolerance hiện có regression test xác nhận mismatch vượt 0,01 bị từ chối.
 
 Chi tiết xem [Giải thích kiểm thử InputValidator](security-analysis/GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md).
 
@@ -172,20 +177,20 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 | Đầu ra yêu cầu | Trạng thái | Bằng chứng/khoảng trống |
 |---|---|---|
 | Hệ thống Order & Payment chạy được | **Một phần** | Có lifecycle, test mức service và bộ E2E PostgreSQL; gateway mặc định còn mô phỏng |
-| REST API tích hợp shop | **Một phần** | Có JWT/role/ownership và HTTP integration test; script demo hiện còn lệch contract |
+| REST API tích hợp shop | **Một phần** | Có JWT/role/ownership và HTTP integration test; script đã đồng bộ contract nhưng chưa có transcript demo hiện hành |
 | Database hoạt động | **Có bộ kiểm thử tái lập** | Testcontainers tạo PostgreSQL sạch, apply migration và seed; cần chạy khi Docker hoạt động để lưu kết quả |
 | Demo hệ thống | **Một phần** | Có frontend và script; chưa có kết quả demo E2E hiện hành |
 | Model và thuộc tính | **Đạt trong phạm vi model** | Kripke đúng + BUGGY + bốn kết quả kiểm chứng |
 | Bằng chứng kiểm thử | **Đạt cho InputValidator** | 34 test, Cobertura, branch coverage > 90% |
 | Phát hiện và phân tích lỗi | **Đạt giai đoạn phát hiện** | Năm vulnerability, counterexample, xếp hạng CVSS-lite |
-| SMT/Z3 | **Chưa có bằng chứng hoàn thành** | Có `PaymentVerification.z3`, chưa có kết quả chạy được quản lý |
-| TLA+/BMC | **Chưa có bằng chứng hoàn thành** | Có `OrderPayment.tla`, chưa có config/kết quả TLC; Kripke checker là explicit-state checker giới hạn, không nên gọi thay cho toàn bộ BMC |
+| SMT/Z3 | **Đạt trong phạm vi số học** | QF_NIA, Z3 5.1.0, 7/7 truy vấn đúng kỳ vọng và có JSON evidence |
+| TLA+/BMC | **Chưa có bằng chứng hoàn thành** | Có `OrderPayment.tla` và `.cfg`, nhưng chưa có output TLC/BMC; Kripke checker không thay thế bằng chứng này |
 | Fuzzing/dynamic testing | **Chưa hoàn thành** | Chưa có harness, corpus, log crash/coverage hoặc kết quả thực nghiệm |
-| Phân tích an toàn bộ nhớ/phương án phù hợp | **Chưa hoàn thành rõ ràng** | C# managed memory cần chọn kỹ thuật phù hợp và cung cấp bằng chứng |
+| Phân tích an toàn bộ nhớ/phương án phù hợp | **Đạt trên mô hình C học tập** | Static scanner phân biệt 5 BUGGY/FIXED, có cppcheck/layout evidence và sanitizer 22/22; không suy rộng sang C# |
 | Sửa lỗi và kiểm chứng lại | **Đạt ở source/unit test, đã có harness tích hợp** | Năm phát hiện ban đầu đã có guard; integration test PostgreSQL cần Docker để thực thi |
 | Báo cáo kỹ thuật | **Đang hoàn thiện** | Đã có báo cáo tiến độ và tài liệu chi tiết; cần cập nhật sau sửa lỗi |
 
-**Kết luận:** phần phân tích ATPM đã có nền tảng tốt ở Kripke, unit test/coverage và risk assessment. Toàn bộ BTL chưa hoàn tất vì mục tiêu cuối yêu cầu sửa lỗi, kiểm chứng lại, SMT, dynamic/fuzz testing và demo tái lập.
+**Kết luận:** Chương 1, Chương 2 và SMT đã có artifact cùng bằng chứng tái lập. Toàn bộ BTL end-to-end vẫn chưa hoàn tất vì còn thiếu TLC/BMC, fuzzing và log integration/demo chạy thật.
 
 ## 6. Các lỗi còn tồn tại và thứ tự xử lý
 
@@ -230,7 +235,7 @@ dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
 python security-analysis/run_analysis.py
 ```
 
-Script chạy model đúng, model BUGGY, risk assessment và đọc báo cáo coverage hiện có. Muốn chủ động tạo lại dataset/model từ mã sinh:
+Script chạy threat model, model đúng/BUGGY, recovery model, risk assessment, SMT/Z3 và đọc báo cáo coverage hiện có. Static/dynamic analysis C chạy riêng bằng `make -C security-analysis/c-memory static-check` và `make -C security-analysis/c-memory test`. Muốn chủ động tạo lại dataset/model từ mã sinh:
 
 ```powershell
 python security-analysis/create_datasets.py
@@ -304,6 +309,11 @@ Không dùng tài khoản/secret mẫu cho môi trường thật. `test-api.ps1`
 - [Cobertura XML](security-analysis/results/input-validator.cobertura.xml)
 - [Kết quả model đúng](security-analysis/results/order_state_model.results.json)
 - [Kết quả model BUGGY](security-analysis/results/order_state_model_buggy.results.json)
+- [Threat model và kết quả](security-analysis/THREAT_MODEL_CHUONG1.md)
+- [Recovery model và kết quả](security-analysis/results/order_payment_recovery_model.results.json)
+- [Static/layout evidence Chương 2](security-analysis/c-memory/evidence/static-analysis.json)
+- [Sanitizer evidence Chương 2](security-analysis/c-memory/evidence/dynamic-analysis.json)
+- [SMT/Z3 evidence](security-analysis/results/payment_verification.results.json)
 - [Kết quả risk assessment](security-analysis/results/risk_assessment_results.json)
 
 ## 9. Quy ước repository và dọn dẹp
@@ -312,6 +322,6 @@ Các thư mục `bin/`, `obj/`, `TestResults/`, `.vs/`, `.pytest_cache/`, `__pyc
 
 Các file kết quả JSON/Cobertura trong `security-analysis/results/` được giữ lại vì là bằng chứng thực nghiệm của BTL. Hai file trung gian `*.lab1.json` không được giữ; script tích hợp tự xóa sau khi checker chạy.
 
-Trong lần dọn ngày 07/10/2026, repository đã loại build output, dependency vendored, file tạm, PDF/slide, ảnh chụp, công cụ thực thi và archive không cần cho khả năng tái lập. Hai module Python tham chiếu trong `ATPM/` được giữ vì `security-analysis/run_analysis.py` vẫn gọi trực tiếp.
+Build output và file tạm được loại khỏi phần bàn giao. Thư mục `ATPM/` vẫn chứa tài liệu học phần, lab, công cụ và archive tham chiếu; chúng không được tính là artifact của dự án. `security-analysis/run_analysis.py` chỉ import trực tiếp hai module Python cần thiết từ Lab 1 và Lab 3.
 
 Việc xóa ở working tree không loại dữ liệu khỏi các commit cũ. Trước khi chuyển repository sang public cần đổi mật khẩu PostgreSQL từng xuất hiện trong lịch sử và rewrite history để loại secret cùng các blob lớn.

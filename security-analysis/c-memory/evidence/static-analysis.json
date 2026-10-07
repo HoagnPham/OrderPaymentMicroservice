@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "scope": [
+    "order",
+    "payment",
+    "cart",
+    "product",
+    "user"
+  ],
+  "expected_buggy_rule": {
+    "order": "owned-allocation-leak",
+    "payment": "double-free",
+    "cart": "use-after-free",
+    "product": "unbounded-string-copy",
+    "user": "unbounded-string-copy"
+  },
+  "environment": {
+    "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+    "gcc": "gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0",
+    "cppcheck": "Cppcheck 2.13.0"
+  },
+  "method_note": "Pattern rules are project-specific teaching checks, not a replacement for a C parser or sound static analyzer.",
+  "modes": {
+    "buggy": {
+      "pattern_scanner": {
+        "order": [
+          {
+            "rule": "owned-allocation-leak",
+            "cwe": "CWE-401",
+            "line": 17,
+            "detail": "order->items remains owned when order is freed"
+          }
+        ],
+        "payment": [
+          {
+            "rule": "double-free",
+            "cwe": "CWE-415",
+            "line": 13,
+            "detail": "payment.transaction_code was already freed at line 9"
+          }
+        ],
+        "cart": [
+          {
+            "rule": "use-after-free",
+            "cwe": "CWE-416",
+            "line": 17,
+            "detail": "removed was freed at line 16"
+          }
+        ],
+        "product": [
+          {
+            "rule": "unbounded-string-copy",
+            "cwe": "CWE-120",
+            "line": 17,
+            "detail": "strcpy destination capacity is not guarded"
+          }
+        ],
+        "user": [
+          {
+            "rule": "unbounded-string-copy",
+            "cwe": "CWE-120",
+            "line": 13,
+            "detail": "strcpy destination capacity is not guarded"
+          }
+        ]
+      },
+      "cppcheck": {
+        "command": [
+          "cppcheck",
+          "--enable=all",
+          "--inconclusive",
+          "--std=c11",
+          "--max-configs=1",
+          "-UFIXED",
+          "--suppress=missingIncludeSystem",
+          "--xml",
+          "--xml-version=2",
+          "modules/order.c",
+          "modules/payment.c",
+          "modules/cart.c",
+          "modules/product.c",
+          "modules/user.c"
+        ],
+        "return_code": 0,
+        "findings": [
+          {
+            "id": "unusedStructMember",
+            "severity": "style",
+            "cwe": "563",
+            "message": "struct member 'Payment::order_id' is never used.",
+            "file": "modules/payment.c",
+            "line": 4
+          },
+          {
+            "id": "bufferAccessOutOfBounds",
+            "severity": "error",
+            "cwe": "788",
+            "message": "Buffer is accessed out of bounds: email",
+            "file": "modules/user.c",
+            "line": 13
+          }
+        ]
+      },
+      "compiler": {
+        "command": [
+          "gcc",
+          "-std=c11",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic",
+          "-fsyntax-only",
+          "modules/order.c",
+          "modules/payment.c",
+          "modules/cart.c",
+          "modules/product.c",
+          "modules/user.c"
+        ],
+        "return_code": 0,
+        "diagnostics": []
+      }
+    },
+    "fixed": {
+      "pattern_scanner": {
+        "order": [],
+        "payment": [],
+        "cart": [],
+        "product": [],
+        "user": []
+      },
+      "cppcheck": {
+        "command": [
+          "cppcheck",
+          "--enable=all",
+          "--inconclusive",
+          "--std=c11",
+          "--max-configs=1",
+          "-DFIXED=1",
+          "--suppress=missingIncludeSystem",
+          "--xml",
+          "--xml-version=2",
+          "modules/order.c",
+          "modules/payment.c",
+          "modules/cart.c",
+          "modules/product.c",
+          "modules/user.c"
+        ],
+        "return_code": 0,
+        "findings": [
+          {
+            "id": "unusedStructMember",
+            "severity": "style",
+            "cwe": "563",
+            "message": "struct member 'Payment::order_id' is never used.",
+            "file": "modules/payment.c",
+            "line": 4
+          }
+        ]
+      },
+      "compiler": {
+        "command": [
+          "gcc",
+          "-std=c11",
+          "-Wall",
+          "-Wextra",
+          "-Wpedantic",
+          "-fsyntax-only",
+          "-DFIXED=1",
+          "modules/order.c",
+          "modules/payment.c",
+          "modules/cart.c",
+          "modules/product.c",
+          "modules/user.c"
+        ],
+        "return_code": 0,
+        "diagnostics": []
+      }
+    }
+  },
+  "layout": {
+    "CartItem": {
+      "size": 16,
+      "alignment": 8
+    },
+    "OrderItem": {
+      "size": 16,
+      "alignment": 8
+    },
+    "Order": {
+      "size": 24,
+      "alignment": 8
+    },
+    "Payment": {
+      "size": 16,
+      "alignment": 8
+    },
+    "Product": {
+      "size": 16,
+      "alignment": 8
+    },
+    "offsets": {
+      "Order.items": 16,
+      "Payment.transaction_code": 8,
+      "Product.name": 8
+    }
+  },
+  "assertions": {
+    "passed": true,
+    "failures": []
+  }
+}

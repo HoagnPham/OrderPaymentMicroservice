@@ -1,0 +1,33 @@
+{
+  "passed": true,
+  "assets": 6,
+  "trust_boundaries": 4,
+  "threats": 9,
+  "stride_categories": [
+    "DENIAL_OF_SERVICE",
+    "ELEVATION_OF_PRIVILEGE",
+    "INFORMATION_DISCLOSURE",
+    "REPUDIATION",
+    "SPOOFING",
+    "TAMPERING"
+  ],
+  "cia_properties": [
+    "AVAILABILITY",
+    "CONFIDENTIALITY",
+    "INTEGRITY"
+  ],
+  "open_threats": [
+    "T3",
+    "T5",
+    "T8"
+  ],
+  "checks": [
+    "unique identifiers",
+    "valid asset and boundary references",
+    "complete STRIDE and CIA coverage",
+    "risk = likelihood x impact",
+    "complete threat chain and evidence",
+    "valid Kripke property references",
+    "recommendation for open threats"
+  ]
+}

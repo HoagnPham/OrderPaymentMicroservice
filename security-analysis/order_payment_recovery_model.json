@@ -8,6 +8,143 @@
     "Inventory is reserved after validation and released on cancellation, terminal failure or refund."
   ],
   "terminal_labels": ["terminal"],
+  "functional_contracts": [
+    {
+      "id": "F1_CREATE_ORDER",
+      "responsibility": "Validate trusted server data and persist the order atomically before payment is allowed.",
+      "precondition": "The request is new and no payment exists.",
+      "state_outcomes": {
+        "CREATED": {
+          "validation_ok": "VALIDATED",
+          "validation_rejected": "PRE_PAYMENT_REJECTED",
+          "validation_storage_error": "PRE_PAYMENT_REJECTED"
+        },
+        "VALIDATED": {
+          "order_persisted": "PAYMENT_PENDING",
+          "amount_invariant_failed": "PRE_PAYMENT_REJECTED",
+          "order_commit_failed": "PRE_PAYMENT_REJECTED"
+        }
+      },
+      "guarantees": [
+        "Client-supplied prices never become the authoritative amount.",
+        "A persistence failure cannot leave an order payable with a partial inventory update."
+      ]
+    },
+    {
+      "id": "F2_ACCEPT_PAYMENT_OR_CANCEL",
+      "responsibility": "Choose exactly one legal decision while the order is payable: start payment, cancel, or reject a duplicate/invalid request.",
+      "precondition": "Order is PAYMENT_PENDING, amount was verified and inventory is reserved.",
+      "state_outcomes": {
+        "PAYMENT_PENDING": {
+          "payment_request_accepted": "PAYMENT_PROCESSING",
+          "cancel_requested": "CANCELLED",
+          "duplicate_pending_request": "PAYMENT_PENDING",
+          "payment_amount_rejected": "PAYMENT_PENDING"
+        }
+      },
+      "guarantees": [
+        "Payment and cancellation decisions are serialized.",
+        "A rejected or duplicate request cannot create another logical payment."
+      ]
+    },
+    {
+      "id": "F3_EXECUTE_AND_RECONCILE_PAYMENT",
+      "responsibility": "Resolve the gateway outcome with bounded retry and one idempotency key without interpreting timeout as decline.",
+      "precondition": "The order is payable and no successful payment has been committed.",
+      "state_outcomes": {
+        "PAYMENT_PROCESSING": {
+          "gateway_success_and_commit": "PAID",
+          "gateway_transient_failure": "PAYMENT_RETRY",
+          "gateway_declined": "FAILED",
+          "charged_but_commit_failed": "PAYMENT_RETRY",
+          "concurrent_cancel_loses_lock": "PAYMENT_PROCESSING"
+        },
+        "PAYMENT_RETRY": {
+          "retry_budget_available": "PAYMENT_PROCESSING_FINAL",
+          "retry_exhausted_unknown": "PAYMENT_RETRY",
+          "cancel_during_retry": "CANCELLED"
+        },
+        "PAYMENT_PROCESSING_FINAL": {
+          "final_gateway_success_and_commit": "PAID",
+          "final_payment_declined": "FAILED",
+          "final_payment_unknown": "PAYMENT_RETRY",
+          "final_charged_but_commit_failed": "PAYMENT_RETRY"
+        }
+      },
+      "guarantees": [
+        "Only an authenticated definitive decline may end the payment flow as FAILED.",
+        "An UNKNOWN outcome keeps inventory reserved and is reconciled with the same idempotency key.",
+        "A successful charge is committed at most once."
+      ]
+    },
+    {
+      "id": "F4_CONFIRM_OR_COMPENSATE",
+      "responsibility": "Confirm a paid order or start compensation when confirmation cannot succeed.",
+      "precondition": "Successful payment evidence exists.",
+      "state_outcomes": {
+        "PAID": {
+          "confirmation_ok": "CONFIRMED",
+          "duplicate_success": "PAID",
+          "confirmation_transient_failure": "CONFIRMATION_RETRY",
+          "fulfillment_unrecoverable": "REFUND_PENDING"
+        },
+        "CONFIRMATION_RETRY": {
+          "confirmation_retry_ok": "CONFIRMED",
+          "confirmation_retry_exhausted": "REFUND_PENDING"
+        }
+      },
+      "guarantees": [
+        "Confirmation retry never charges the customer again.",
+        "A paid order that cannot be confirmed enters compensation instead of FAILED."
+      ]
+    },
+    {
+      "id": "F5_COMPLETE_OR_COMPENSATE",
+      "responsibility": "Complete delivery or compensate a paid order that can no longer be fulfilled.",
+      "precondition": "Order is CONFIRMED and successful payment evidence is retained.",
+      "state_outcomes": {
+        "CONFIRMED": {
+          "delivery_completed": "COMPLETED",
+          "confirmed_fulfillment_failed": "REFUND_PENDING"
+        }
+      },
+      "guarantees": [
+        "Completion preserves successful payment evidence.",
+        "Post-payment fulfillment failure always starts refund compensation."
+      ]
+    },
+    {
+      "id": "F6_REFUND",
+      "responsibility": "Finish compensation idempotently and release inventory only with durable refund evidence.",
+      "precondition": "A successful charge exists and the order is REFUND_PENDING.",
+      "state_outcomes": {
+        "REFUND_PENDING": {
+          "refund_success": "REFUNDED",
+          "refund_retry": "REFUND_PENDING"
+        }
+      },
+      "guarantees": [
+        "Refund retry uses the same refund idempotency key.",
+        "A timeout cannot be treated as proof that no refund occurred."
+      ]
+    },
+    {
+      "id": "F7_PROTECT_TERMINAL_STATE",
+      "responsibility": "Reject late mutation and return the stored result without reviving a terminal aggregate.",
+      "precondition": "Order is already terminal.",
+      "state_outcomes": {
+        "COMPLETED": {"completed_late_event": "COMPLETED"},
+        "CANCELLED": {"cancelled_late_payment": "CANCELLED"},
+        "PRE_PAYMENT_REJECTED": {"rejected_late_retry": "PRE_PAYMENT_REJECTED"},
+        "FAILED": {"failed_late_retry": "FAILED"},
+        "REFUNDED": {"duplicate_refund": "REFUNDED"}
+      },
+      "guarantees": [
+        "No terminal state is revived by a late request or callback.",
+        "Repeated terminal operations are idempotent and auditable."
+      ]
+    }
+  ],
   "states": [
     {
       "id": "CREATED",
@@ -19,8 +156,8 @@
         {"event": "validation_ok", "to": "VALIDATED", "action": "Load server prices, validate quantities and reserve inventory."}
       ],
       "incidents": [
-        {"problem": "Invalid input, missing product or insufficient stock", "event": "validation_rejected", "detection": "Validator and server-side product lookup reject the request", "solution": "Reject atomically; do not persist the order or reserve inventory", "to": "FAILED"},
-        {"problem": "Database error while reading products", "event": "validation_storage_error", "detection": "Database operation throws or transaction aborts", "solution": "Rollback and return a retryable error without creating an order", "to": "FAILED"}
+        {"problem": "Invalid input, missing product or insufficient stock", "event": "validation_rejected", "detection": "Validator and server-side product lookup reject the request", "solution": "Reject atomically; do not persist the order or reserve inventory", "to": "PRE_PAYMENT_REJECTED"},
+        {"problem": "Database error while reading products", "event": "validation_storage_error", "detection": "Database operation throws or transaction aborts", "solution": "Rollback and return a retryable error without creating an order", "to": "PRE_PAYMENT_REJECTED"}
       ]
     },
     {
@@ -33,8 +170,8 @@
         {"event": "order_persisted", "to": "PAYMENT_PENDING", "action": "Persist order and items in the same transaction."}
       ],
       "incidents": [
-        {"problem": "Overflow or total mismatch discovered before commit", "event": "amount_invariant_failed", "detection": "Checked arithmetic or total equality assertion fails", "solution": "Rollback the transaction and release the reservation", "to": "FAILED"},
-        {"problem": "Persistence fails after inventory was reserved", "event": "order_commit_failed", "detection": "Save or commit fails", "solution": "Rollback all order and stock changes", "to": "FAILED"}
+        {"problem": "Overflow or total mismatch discovered before commit", "event": "amount_invariant_failed", "detection": "Checked arithmetic or total equality assertion fails", "solution": "Rollback the transaction and release the reservation", "to": "PRE_PAYMENT_REJECTED"},
+        {"problem": "Persistence fails after inventory was reserved", "event": "order_commit_failed", "detection": "Save or commit fails", "solution": "Rollback all order and stock changes", "to": "PRE_PAYMENT_REJECTED"}
       ]
     },
     {
@@ -99,7 +236,7 @@
     },
     {
       "id": "PAID",
-      "order_status": "REFUND_PENDING",
+      "order_status": "PAID",
       "payment_status": "SUCCESS",
       "labels": ["paid", "payment_success", "amount_verified", "inventory_reserved"],
       "purpose": "Represent exactly one successful payment whose amount matches the order.",
@@ -140,7 +277,7 @@
     },
     {
       "id": "REFUND_PENDING",
-      "order_status": "PAID",
+      "order_status": "REFUND_PENDING",
       "payment_status": "REFUND_PENDING",
       "labels": ["paid", "payment_success", "refund_pending", "amount_verified"],
       "purpose": "Compensate a successful charge that cannot lead to completion.",
@@ -174,8 +311,19 @@
       ]
     },
     {
+      "id": "PRE_PAYMENT_REJECTED",
+      "order_status": "FAILED",
+      "payment_status": "NONE",
+      "labels": ["failed", "pre_payment_failure", "inventory_unreserved", "terminal"],
+      "purpose": "Terminal observation for a request/order transaction rejected before any payment existed; the order row may not have been persisted.",
+      "normal": [],
+      "incidents": [
+        {"problem": "Late retry attempts to revive a rejected request", "event": "rejected_late_retry", "detection": "The original create transaction was rejected or rolled back", "solution": "Reject mutation; require a corrected new request with a new operation identity", "to": "PRE_PAYMENT_REJECTED", "kind": "stutter"}
+      ]
+    },
+    {
       "id": "FAILED",
-      "order_status": "REFUNDED",
+      "order_status": "FAILED",
       "payment_status": "FAILED",
       "labels": ["failed", "inventory_released", "terminal"],
       "purpose": "Terminal state when no successful charge exists and automatic recovery is exhausted.",
@@ -186,7 +334,7 @@
     },
     {
       "id": "REFUNDED",
-      "order_status": "FAILED",
+      "order_status": "REFUNDED",
       "payment_status": "REFUNDED",
       "labels": ["refunded", "payment_compensated", "inventory_released", "terminal"],
       "purpose": "Terminal compensated state after a previously successful charge.",
@@ -206,7 +354,12 @@
     {"id": "P7", "type": "AG_NOT", "label": "resource_conflict", "description": "Payment and cancellation never own the critical resource simultaneously."},
     {"id": "P8", "type": "ALL_REACHABLE", "description": "Every declared state is reachable from CREATED."},
     {"id": "P9", "type": "INCIDENT_COMPLETE", "description": "Every state documents detection, solution and next state for each incident."},
-    {"id": "P10", "type": "AF_TERMINAL_FAIR", "description": "Ignoring explicitly marked stutter retries, every reachable state inevitably reaches a terminal state."}
+    {"id": "P10", "type": "AF_TERMINAL_FAIR", "description": "Ignoring explicitly marked stutter retries, every reachable state inevitably reaches a terminal state."},
+    {"id": "P11", "type": "FUNCTION_CONTRACTS", "description": "Every state/event transition belongs to exactly one function and matches its declared outcome."},
+    {"id": "P12", "type": "TERMINAL_CLOSED", "description": "A terminal state can only reject/no-op and remain in the same terminal state."},
+    {"id": "P13", "type": "PAID_FAILURE_COMPENSATES", "description": "A failure after successful payment can only preserve paid evidence or enter the refund path, never FAILED/CANCELLED."},
+    {"id": "P14", "type": "UNKNOWN_PAYMENT_SAFE", "description": "An unknown payment outcome remains non-terminal with inventory reserved until an authoritative outcome is known."},
+    {"id": "P15", "type": "EVENT_DETERMINISTIC", "description": "Within one state, one event has exactly one declared next state."}
   ],
   "negative_scenarios": [
     {
@@ -236,6 +389,19 @@
       "state": {"id": "PAY_CANCEL_CONFLICT", "order_status": "PAYMENT_PENDING", "payment_status": "PROCESSING", "labels": ["payment_lock", "cancel_lock", "resource_conflict", "violation"], "purpose": "Product-state monitor for missing serialization", "normal": [], "incidents": [{"problem": "Concurrent owners", "event": "stop", "detection": "Lock ownership invariant", "solution": "Serialize with transaction/row lock", "to": "PAY_CANCEL_CONFLICT", "kind": "stutter"}]},
       "transition": {"from": "PAYMENT_PENDING", "event": "missing_serialization", "to": "PAY_CANCEL_CONFLICT", "action": "BUG"},
       "expected_failed_properties": ["P1", "P7"]
+    },
+    {
+      "id": "BUG-PAID-FAILED-WITHOUT-REFUND",
+      "description": "A paid order loses successful-payment evidence by moving directly to FAILED instead of compensation.",
+      "transition": {"from": "PAID", "event": "silent_post_payment_failure", "to": "FAILED", "action": "BUG: discard successful charge evidence"},
+      "expected_failed_properties": ["P13"]
+    },
+    {
+      "id": "BUG-UNKNOWN-RELEASED",
+      "description": "An unknown gateway outcome is incorrectly made terminal and inventory is released.",
+      "state": {"id": "UNKNOWN_RELEASED", "order_status": "FAILED", "payment_status": "UNKNOWN", "labels": ["failed", "inventory_released", "terminal"], "purpose": "Monitor for unsafe timeout handling", "normal": [], "incidents": [{"problem": "Unknown result was closed", "event": "stop", "detection": "Payment outcome remains UNKNOWN", "solution": "Keep reservation and reconcile", "to": "UNKNOWN_RELEASED", "kind": "stutter"}]},
+      "transition": {"from": "PAYMENT_RETRY", "event": "timeout_treated_as_failure", "to": "UNKNOWN_RELEASED", "action": "BUG: release inventory before authoritative result"},
+      "expected_failed_properties": ["P14"]
     }
   ]
 }

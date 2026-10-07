@@ -257,12 +257,15 @@ def apply_recovery_model() -> None:
         ["refund_total_cents", "paid_cents, refunded_cents", "paid_cents >= 0 and refunded_cents >= 0 and paid_cents + refunded_cents > 2147483647", "paid_cents + refunded_cents"],
     ]
     SHEETS["TestCase"]["rows"].extend([
-        ["TC-16", "REQ-15, REQ-16, NFR-6", "Kiểm chứng model phục hồi đầy đủ", "order_payment_recovery_model.json hợp lệ", "Chạy python security-analysis/verify_recovery_model.py\nĐọc 10 thuộc tính và tập state reachable", "Model đúng có 14 state, 35 transition; P1-P10 PASS và tất cả state reachable", "HIGH"],
+        ["TC-16", "REQ-15, REQ-16, NFR-6", "Kiểm chứng model phục hồi đầy đủ", "order_payment_recovery_model.json hợp lệ", "Chạy python security-analysis/verify_recovery_model.py\nĐối chiếu 7 hợp đồng chức năng, 15 thuộc tính và tập state reachable", "Model đúng có 7 hợp đồng, 15 state, 37 transition; P1-P15 PASS và tất cả state reachable", "HIGH"],
         ["TC-17", "REQ-5, REQ-15", "Phản ví dụ CANCELLED bị thanh toán", "Mutation BUG-CANCELLED-PAID được bật", "Thêm cạnh CANCELLED → PAID_AFTER_CANCELLED\nChạy lại toàn bộ thuộc tính", "P1 và P4 FAIL; witness đi từ CREATED tới CANCELLED rồi PAID_AFTER_CANCELLED", "HIGH"],
         ["TC-18", "REQ-6, REQ-15", "Phản ví dụ payment sai amount", "Mutation BUG-WRONG-AMOUNT được bật", "Bỏ amount guard tại PAYMENT_PROCESSING\nChuyển tới PAID_WRONG_AMOUNT", "P1 FAIL và trả witness tới state amount_mismatch", "HIGH"],
         ["TC-19", "REQ-7, REQ-18", "Phản ví dụ hai payment SUCCESS", "Mutation BUG-DUPLICATE-SUCCESS được bật", "Bỏ idempotency guard tại PAID\nTạo state PAID_TWICE", "P1 FAIL và trả witness tới state two_success_payments", "HIGH"],
         ["TC-20", "REQ-18, NFR-1", "Phản ví dụ payment-cancel conflict", "Mutation BUG-RESOURCE-CONFLICT được bật", "Cho payment và cancel cùng sở hữu resource\nChạy kiểm chứng", "P1 và P7 FAIL với witness tới PAY_CANCEL_CONFLICT", "HIGH"],
         ["TC-21", "REQ-16, REQ-17", "Bounded retry và compensation", "Model đúng, weak fairness được khai báo", "Đi PAYMENT_PROCESSING → PAYMENT_RETRY → PAYMENT_PROCESSING_FINAL\nThử timeout cuối và charged-but-commit-failed", "Không có vòng retry tiến triển vô hạn; nhánh cuối tới FAILED hoặc REFUND_PENDING → REFUNDED", "HIGH"],
+        ["TC-22", "REQ-4, REQ-6", "Kiểm chứng SMT cho tổng tiền và thanh toán", "Z3 có trên PATH", "Chạy python security-analysis/verify_payment_smt.py", "7/7 ca SAT/UNSAT đúng kỳ vọng; có counterexample tràn Int32 và bằng chứng giới hạn tổng tiền", "HIGH"],
+        ["TC-23", "REQ-1, REQ-2, REQ-3, REQ-7, REQ-18", "Kiểm tra threat model Chương 1", "threat_model.json hợp lệ", "Chạy python security-analysis/verify_threat_model.py", "ID và tham chiếu hợp lệ; đủ CIA, 6/6 STRIDE, risk score và liên kết evidence/property", "HIGH"],
+        ["TC-24", "REQ-9, REQ-10, REQ-11, REQ-12, REQ-13, NFR-5", "Static analysis BUGGY/FIXED và alignment", "GCC và cppcheck có trên PATH", "Chạy make -C security-analysis/c-memory static-check", "Scanner bắt đủ 5 lỗi BUGGY, FIXED sạch theo rule; lưu finding cppcheck và layout thực tế", "HIGH"],
     ])
 
 

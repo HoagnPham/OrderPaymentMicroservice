@@ -1,0 +1,70 @@
+{
+  "tool": "Z3 version 5.1.0 - 64 bit",
+  "command": "z3 OrderPaymentMicroservice/Security/PaymentVerification.z3",
+  "logic": "QF_NIA",
+  "integer_model": "monetary values in cents; mathematical integers are unbounded",
+  "cases": [
+    {
+      "id": "TEST1_VALID_PAID",
+      "expected": "sat",
+      "actual": "sat",
+      "passed": true,
+      "details": [
+        "((TotalAmountCents 140000)",
+        "(Payment1Cents 140000)",
+        "(Payment2Cents 0))"
+      ]
+    },
+    {
+      "id": "TEST2_TOTAL_MISMATCH",
+      "expected": "unsat",
+      "actual": "unsat",
+      "passed": true,
+      "details": []
+    },
+    {
+      "id": "TEST3_PAID_UNDERPAYMENT",
+      "expected": "unsat",
+      "actual": "unsat",
+      "passed": true,
+      "details": []
+    },
+    {
+      "id": "TEST4_NEGATIVE_PAYMENT",
+      "expected": "unsat",
+      "actual": "unsat",
+      "passed": true,
+      "details": []
+    },
+    {
+      "id": "TEST5_PAYMENT_EXCEEDS_TOTAL",
+      "expected": "unsat",
+      "actual": "unsat",
+      "passed": true,
+      "details": []
+    },
+    {
+      "id": "TEST6_INT32_SUBTOTAL_OVERFLOW_EXISTS",
+      "expected": "sat",
+      "actual": "sat",
+      "passed": true,
+      "details": [
+        "((Quantity1 10000)",
+        "(UnitPrice1Cents 99999999)",
+        "((* Quantity1 UnitPrice1Cents) 999999990000))"
+      ]
+    },
+    {
+      "id": "TEST7_TOTAL_BOUND_BLOCKS_OVERSIZED_SUBTOTAL",
+      "expected": "unsat",
+      "actual": "unsat",
+      "passed": true,
+      "details": []
+    }
+  ],
+  "passed": true,
+  "limitations": [
+    "The SMT model verifies arithmetic constraints, not the EF Core or gateway implementation.",
+    "TEST6 is an existence counterexample for signed 32-bit arithmetic; production C# uses checked decimal."
+  ]
+}
