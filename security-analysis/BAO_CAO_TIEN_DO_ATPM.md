@@ -1,11 +1,13 @@
 # BÁO CÁO TIẾN ĐỘ DỰ ÁN ORDERPAYMENTMICROSERVICE
 
 **Định hướng: An toàn phần mềm trong quản lý đơn hàng và thanh toán**  
-Ngày cập nhật báo cáo: 24/09/2026
+Ngày cập nhật báo cáo: 07/10/2026
 
 **Bổ sung ngày 06/10/2026:** hoàn thiện model xử lý sự cố và phục hồi cho
 luồng Order-Payment, gồm bounded retry, serialization payment-cancel và
 compensation refund.
+
+**Cập nhật ngày 07/10/2026:** chạy lại solution đạt 84/84 unit test; 5 integration test PostgreSQL đã được phát hiện nhưng bị skip vì Docker không khả dụng trong môi trường kiểm tra. Kiểm tra advisory NuGet trực tuyến không phát hiện package có lỗ hổng đã công bố theo các nguồn đang cấu hình. Repository đồng thời được dọn build output, dependency vendored, file tạm, tài liệu học phần, binary và archive không cần cho khả năng tái lập. Audit lịch sử phát hiện connection string từng chứa mật khẩu PostgreSQL ở commit cũ; mật khẩu phải được đổi và lịch sử phải được làm sạch trước khi public.
 
 Phạm vi: mã nguồn và các kết quả kiểm thử, kiểm chứng hiện có trong repository.
 
@@ -194,16 +196,16 @@ Năm phát hiện ưu tiên đã có biện pháp khắc phục trong source và
 | Hạng mục chưa hoàn thành | Hiện trạng | Khoảng trống cần xử lý |
 |---|---|---|
 | Payment gateway thật | Có `IPaymentGateway` và adapter giả lập idempotent; service xử lý success/decline/unknown/retry/reconcile/refund | Chưa có adapter nhà cung cấp, xác minh callback và integration test sandbox |
-| Integration/E2E với PostgreSQL | Có EF Core, migration, seed và cấu hình PostgreSQL | Chưa có test tự động khởi động API với database sạch và chạy trọn luồng đăng ký → đăng nhập → giỏ → order → payment |
-| Kiểm thử authentication/authorization | Đã có JWT, `[Authorize]`, role và ownership check | Chưa có test HTTP xác nhận 401 khi thiếu/sai token, 403 khi truy cập chéo và quyền Admin trên endpoint quản trị |
-| Đồng thời và idempotency trên database thật | Có transaction `Serializable`, idempotency key và unique index | Unit test đang dùng EF InMemory, chưa tái hiện hai request thanh toán/đặt hàng đồng thời trên PostgreSQL |
-| Vòng đời Order đầy đủ | Đã có PAYMENT_PENDING, PAID, CONFIRMED, COMPLETED, CANCELLED, FAILED, REFUND_PENDING, REFUNDED và inventory RESERVED/RELEASED/CONSUMED | Cần background worker tự reconcile/retry sau restart và integration test database thật |
+| Integration/E2E với PostgreSQL | Đã có 5 test Testcontainers tự khởi động API/database sạch và bao phủ luồng chính | Lần xác minh 07/10 bị skip do Docker không khả dụng; cần chạy lại đủ 5 test và lưu log PASS |
+| Kiểm thử authentication/authorization | Đã có JWT, `[Authorize]`, role, ownership check và integration test cho 401/403 | Test đã được viết nhưng chưa có kết quả chạy trong lần xác minh vì Docker không khả dụng |
+| Đồng thời và idempotency trên database thật | Có transaction `Serializable`, idempotency key, unique index và test PostgreSQL cho payment/cancel cạnh tranh | Hai test concurrency bị skip cùng integration suite; chưa có log PASS từ môi trường hiện tại |
+| Vòng đời Order đầy đủ | Đã có các state chính, inventory RESERVED/RELEASED/CONSUMED và `PaymentRecoveryWorker` tự quét giao dịch stale | Cần kiểm chứng worker qua restart thật và chạy integration suite trên Docker |
 | SMT/Z3 | Có `PaymentVerification.z3` | Chưa lưu lệnh chạy, phiên bản solver, kết quả SAT/UNSAT và diễn giải ràng buộc đối chiếu với code hiện tại |
 | TLA+/BMC | `OrderPayment.tla` và `OrderPayment.cfg` đã được đồng bộ với hai state machine, cùng Kripke/recovery model | Chưa chạy TLC và chưa lưu output/counterexample; model chưa sinh tự động từ implementation |
 | Fuzzing | Source có đánh dấu target cho validator/payment | Chưa có harness, corpus, seed, crash artifact, timeout policy hoặc số liệu coverage của fuzzing |
 | Coverage toàn hệ thống | InputValidator đạt 96,87% branch coverage | Chưa có báo cáo coverage riêng cho Controller, Service, state machine và các nhánh lỗi database |
 | Hardening vận hành | Secret nằm ngoài source, CORS Development có allowlist | Chưa có rate limiting, rotation/revocation JWT, audit log bảo mật, health check, metrics/cảnh báo và cấu hình production được kiểm chứng |
-| Script demo và tài liệu API | Có frontend và script thử API | Cần cập nhật contract/token/idempotency và chạy lại trên database sạch để tạo bằng chứng demo tái lập |
+| Script demo và tài liệu API | Frontend, `test-api.ps1`, contract JWT và idempotency đã được đồng bộ | Cần chạy lại script trên database sạch và lưu bằng chứng demo |
 
 Phần C đã có dynamic analysis bằng sanitizer cho năm lỗi bộ nhớ mô phỏng. Tuy nhiên, bộ C không sử dụng PostgreSQL, gateway, request HTTP hoặc dữ liệu thật. Kết quả 22/22 chỉ là bằng chứng cho các executable và input đã chạy; nó không chứng minh mọi input an toàn và không chứng minh ứng dụng C# đã được kiểm tra an toàn bộ nhớ native. Bộ mô phỏng chưa bao quát race condition, mọi nhánh lỗi cấp phát, alias phức tạp hoặc tài nguyên unmanaged trong .NET.
 
@@ -211,9 +213,9 @@ Không đưa ra phần trăm hoàn thành toàn dự án vì chưa có rubric v�
 
 ## 6. Kế hoạch giai đoạn tiếp theo
 
-1. **Tạo integration test tái lập:** dùng PostgreSQL test riêng hoặc container, áp dụng migration và seed tự động, sau đó chạy luồng đăng ký → đăng nhập → tạo giỏ → tạo đơn → thanh toán. Tiêu chí đạt là test chạy lại được từ database sạch mà không thao tác tay.
-2. **Kiểm chứng quyền truy cập qua HTTP:** kiểm tra token thiếu, hết hạn, sai chữ ký; Customer truy cập tài nguyên của người khác; Admin truy cập endpoint quản trị. Tiêu chí đạt là phân biệt đúng 401, 403, 404 và không rò rỉ dữ liệu nhạy cảm.
-3. **Hoàn thiện vòng đời Order:** thêm use case xác nhận, hoàn thành, thất bại và quy tắc hoàn kho; đồng bộ `OrderStateMachine`, model Kripke, API và test. Tiêu chí đạt là mọi transition hợp lệ có đường nghiệp vụ thực thi và mọi transition cấm có test từ chối.
+1. **Chạy và lưu bằng chứng integration test:** bật Docker, chạy đủ 5 test Testcontainers từ database sạch và lưu log xác nhận luồng chính, authorization và concurrency đều PASS.
+2. **Mở rộng kiểm chứng quyền truy cập:** bổ sung token hết hạn/sai chữ ký và xác nhận phản hồi 401, 403, 404 không làm rò rỉ dữ liệu nhạy cảm.
+3. **Kiểm chứng phục hồi sau restart:** chạy `PaymentRecoveryWorker` với payment/refund stale trên PostgreSQL thật, restart API và xác nhận retry/reconcile giữ đúng idempotency.
 4. **Tích hợp payment gateway ở môi trường thử nghiệm:** xác minh chữ ký webhook/callback, đối chiếu order/amount/currency, xử lý timeout và kết quả FAILED, lưu transaction code thật. Tiêu chí đạt là Order chỉ chuyển PAID sau bằng chứng thành công hợp lệ từ gateway.
 5. **Kiểm thử đồng thời trên PostgreSQL:** gửi nhiều request cùng idempotency key và nhiều request khác key cho một Order; kiểm tra unique index, transaction và tồn kho. Tiêu chí đạt là chỉ có một Payment SUCCESS, không bán âm kho và retry trả lại cùng kết quả.
 6. **Hoàn thiện bằng chứng hình thức:** chạy Z3 cho các ràng buộc tiền, bổ sung TLC config cho TLA+, lưu version/lệnh/kết quả và đồng bộ đặc tả với source. Tiêu chí đạt là có output tái lập cùng diễn giải SAT/UNSAT hoặc counterexample.
@@ -515,8 +517,11 @@ LeakSanitizer có thể báo không hoạt động dưới `ptrace`, debugger ho
 | Parser coverage sai chữ hoa/thường | `True` khác `true`, làm mất danh sách nhánh chưa phủ | Chuẩn hóa `.lower()`; nhận diện đúng dòng 101 |
 | Tổng tiền sai được chấp nhận | Nhánh tolerance từng rỗng | Đã sửa validator và đổi test thành yêu cầu từ chối mismatch |
 | Đơn hủy vẫn thanh toán được | PaymentService từng thiếu guard trạng thái nguồn | Đã thêm OrderStateMachine/guard và test `CancelledOrderCannotBePaid` |
-| Quyền truy cập chưa đầy đủ | API trước đây thiếu authentication/ownership | Đã thêm JWT, `[Authorize]` và ownership check; còn thiếu integration test HTTP |
+| Quyền truy cập chưa đầy đủ | API trước đây thiếu authentication/ownership | Đã thêm JWT, `[Authorize]`, ownership check và integration test HTTP; lần xác minh 07/10 chưa chạy được test vì Docker không khả dụng |
 | LeakSanitizer bị giới hạn bởi ptrace/sandbox | Báo `LeakSanitizer has encountered a fatal error` thay vì phân tích leak | Chạy bộ test từ terminal bình thường ngoài debugger/sandbox; xác nhận 22/22 PASS |
+| Integration test bị skip | 5 test Testcontainers yêu cầu Docker nhưng Docker không khả dụng trong lần chạy 07/10/2026 | Unit test vẫn đạt 84/84; chưa ghi nhận integration PASS cho lần xác minh này |
+| Secret trong lịch sử Git | Connection string ở commit cũ từng chứa mật khẩu PostgreSQL dù HEAD hiện để trống | Phải rotate mật khẩu và rewrite history trước khi public; chỉ xóa file hiện tại là chưa đủ |
+| Repository chứa artefact không cần thiết | `tmp/node_modules`, build output, PDF/slide, EXE và ZIP/RAR làm repo nặng và khó audit | Đã loại khỏi working tree; `.gitignore` được mở rộng, còn cần rewrite history để thu hồi blob cũ |
 
 Tôi không ghi nhận các rủi ro dự kiến như race condition là lỗi đã tái hiện nếu chưa có kết quả kiểm thử đồng thời. Tương tự, chưa tuyên bố TLA+/Z3 hoặc fuzzing đã chạy thành công khi chưa có minh chứng. Phần dynamic analysis đã hoàn thành trong phạm vi năm lỗi bộ nhớ được chủ động đưa vào mô hình C.
 
@@ -559,7 +564,7 @@ dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
 Kết quả mong đợi:
 
 ```text
-Passed: 83, Failed: 0, Skipped: 0, Total: 83
+Passed: 84, Failed: 0, Skipped: 0, Total: 84
 ```
 
 Khi trình bày, giải thích rằng 34 ca thuộc InputValidator; các ca còn lại kiểm tra UserService, OrderService, PaymentService, hai state machine và các đường phục hồi/compensation.

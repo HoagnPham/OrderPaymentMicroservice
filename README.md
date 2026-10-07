@@ -15,7 +15,7 @@ Các mục tiêu gốc được mô tả tại [README của source](OrderPaymen
 
 ```text
 OrderPaymentMicroservice/
-├── ATPM/                         Tài liệu, mã mẫu và các lab tham chiếu
+├── ATPM/                         Hai module lab tối thiểu dùng bởi pipeline phân tích
 ├── OrderPaymentMicroservice/     Source ASP.NET Core, REST API và giao diện demo
 ├── OrderPaymentMicroservice.Tests/ Unit test xUnit và cấu hình Coverlet
 ├── OrderPaymentMicroservice.IntegrationTests/ HTTP E2E test với PostgreSQL container
@@ -26,12 +26,12 @@ OrderPaymentMicroservice/
 
 ### `ATPM/`
 
-Chứa nội dung tham chiếu của học phần và công cụ các lab. Phần triển khai của đề tài đang dùng trực tiếp:
+Chỉ giữ hai module source tối thiểu mà pipeline phân tích đang dùng trực tiếp:
 
 - `lab1/.../python/kripke_model.py` để kiểm tra model Kripke.
 - `lab3_secure_memory/python/risk_assessor.py` để tính CVSS-lite.
 
-Đây là nguồn tham chiếu nên không trộn kết quả riêng của dự án vào dataset gốc.
+PDF/slide, ảnh chụp, EXE, ZIP/RAR, toolkit và các lab không được pipeline sử dụng đã được loại khỏi repository. Đây là nguồn tham chiếu nên không trộn kết quả riêng của dự án vào dataset gốc.
 
 ### `OrderPaymentMicroservice/`
 
@@ -292,7 +292,7 @@ Sau đó:
 dotnet run --project OrderPaymentMicroservice/OrderPaymentMicroservice.csproj
 ```
 
-Không dùng tài khoản/secret mẫu cho môi trường thật. `test-api.ps1` cần được sửa contract trước khi dùng để đánh giá demo.
+Không dùng tài khoản/secret mẫu cho môi trường thật. `test-api.ps1` đã được cập nhật theo JWT, DTO và idempotency hiện tại; vẫn chỉ dùng cho môi trường demo với database riêng.
 
 ## 8. Tài liệu và bằng chứng
 
@@ -308,8 +308,10 @@ Không dùng tài khoản/secret mẫu cho môi trường thật. `test-api.ps1`
 
 ## 9. Quy ước repository và dọn dẹp
 
-Các thư mục `bin/`, `obj/`, `TestResults/`, `.vs/`, `__pycache__/` và file `*.pyc` là sản phẩm sinh tự động, không phải source. Chúng đã được thêm vào `.gitignore`; các bản đã từng được commit nên được xóa khỏi Git và có thể tái tạo bằng build/test.
+Các thư mục `bin/`, `obj/`, `TestResults/`, `.vs/`, `.pytest_cache/`, `__pycache__/`, `tmp/`, `.spreadsheet-work/`, `node_modules/` và file `*.pyc` là sản phẩm sinh tự động, không phải source. Chúng được chặn trong `.gitignore` và có thể tái tạo bằng build/test hoặc công cụ tương ứng.
 
 Các file kết quả JSON/Cobertura trong `security-analysis/results/` được giữ lại vì là bằng chứng thực nghiệm của BTL. Hai file trung gian `*.lab1.json` không được giữ; script tích hợp tự xóa sau khi checker chạy.
 
-Trong lần dọn ngày 19/09/2026, một số binary dưới `OrderPaymentMicroservice/bin/x64` đang bị tiến trình khác khóa nên chưa xóa được. Không dừng tiến trình đang chạy để tránh làm gián đoạn công việc; có thể xóa phần còn lại sau khi đóng API/Visual Studio.
+Trong lần dọn ngày 07/10/2026, repository đã loại build output, dependency vendored, file tạm, PDF/slide, ảnh chụp, công cụ thực thi và archive không cần cho khả năng tái lập. Hai module Python tham chiếu trong `ATPM/` được giữ vì `security-analysis/run_analysis.py` vẫn gọi trực tiếp.
+
+Việc xóa ở working tree không loại dữ liệu khỏi các commit cũ. Trước khi chuyển repository sang public cần đổi mật khẩu PostgreSQL từng xuất hiện trong lịch sử và rewrite history để loại secret cùng các blob lớn.

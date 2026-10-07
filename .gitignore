@@ -1,9 +1,34 @@
-# New build/test outputs; already tracked outputs remain untouched.
+# Build and test outputs
 **/bin/
 **/obj/
 **/__pycache__/
 **/TestResults/
+.pytest_cache/
+*.pyc
+
+# Local working directories and vendored dependencies
+tmp/
+.spreadsheet-work/
+**/node_modules/
+
+# Native-analysis build products
+security-analysis/c-memory/build/
+security-analysis/c-memory/modules/demo
+
+# Local IDE and user settings
 .vs/
 .vscode/
 *.user
 *.suo
+
+# Local secrets and certificates
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+appsettings.*.local.json
+
+# Removed course tools may remain locked locally while running.
+ATPM/**/*.exe

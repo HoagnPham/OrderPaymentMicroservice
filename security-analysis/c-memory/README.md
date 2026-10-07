@@ -1,6 +1,6 @@
 # Mô phỏng lỗi bộ nhớ của OrderPaymentMicroservice bằng C
 
-Bộ thực hành lấy ngữ cảnh User, Product, Cart, Order và Payment của dự án để mô phỏng quản lý bộ nhớ thủ công. Cách tổ chức lấy ý tưởng từ `ATPM/lab3_secure_memory` và các ví dụ `ATPM/Soft-tookit/softsec-toolkit/ch2_memsafe`.
+Bộ thực hành lấy ngữ cảnh User, Product, Cart, Order và Payment của dự án để mô phỏng quản lý bộ nhớ thủ công. Cách tổ chức kế thừa ý tưởng ownership/lifetime từ lab 3; toàn bộ source cần chạy đã được đặt trong thư mục này để không phụ thuộc toolkit hoặc binary bên ngoài.
 
 Đây là lỗi **cố ý đưa vào mô hình C**, không phải bản dịch đầy đủ của service và không chứng minh ứng dụng C# mắc các lỗi tương ứng. C# dùng garbage collector; `malloc/free` trong bộ này dùng để học ownership, lifetime và kiểm chứng động. Không cần PostgreSQL, .NET hoặc dữ liệu thật.
 
