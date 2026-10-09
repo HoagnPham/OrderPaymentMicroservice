@@ -1,0 +1,29 @@
+{
+  "passed": true,
+  "workbook": "OrderPaymentMicroservice_Security_Spec.xlsx",
+  "pipeline_json": "ATPM/specs/specs/order_payment_microservice_spec.json",
+  "sheet_count": 10,
+  "requirements": 18,
+  "states": 15,
+  "transitions": 32,
+  "reachable_states": 15,
+  "ctl": {
+    "AG(no_invalid_transition)": true,
+    "AG(no_resource_conflict)": true,
+    "EF(payment_processing)": true,
+    "EF(payment_success)": true,
+    "EF(refund_pending)": true,
+    "EF(refunded)": true,
+    "EF(terminal)": true
+  },
+  "mutual_exclusion": {
+    "atoms": [
+      "payment_pending",
+      "payment_success"
+    ],
+    "holds": true
+  },
+  "generated_functions": 7,
+  "arithmetic_checks": 6,
+  "test_cases": 28
+}

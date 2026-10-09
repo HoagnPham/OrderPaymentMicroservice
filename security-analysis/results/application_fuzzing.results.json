@@ -1,0 +1,43 @@
+{
+  "passed": true,
+  "seed": 20261009,
+  "iterations_per_random_campaign": 25000,
+  "corpus": "OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json",
+  "targets": [
+    "InputValidator",
+    "PaymentValidator",
+    "OrderStateMachine",
+    "PaymentStateMachine"
+  ],
+  "crash_policy": "ArgumentException is a controlled rejection; timeout, any other exception, invariant mismatch or test failure is a crash.",
+  "timeout_seconds": 120,
+  "timed_out": false,
+  "duration_seconds": 2.964,
+  "tests": {
+    "passed": 3,
+    "failed": 0,
+    "total": 3
+  },
+  "coverage": {
+    "line_percent": 90.99,
+    "branch_percent": 99.07,
+    "file": "security-analysis/results/application-fuzzing-coverage.cobertura.xml"
+  },
+  "branch_coverage_threshold_percent": 90.0,
+  "exit_code": 0,
+  "command": [
+    "dotnet",
+    "test",
+    "/home/phamhoang/OrderPaymentMicroservice/OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj",
+    "--no-restore",
+    "--nologo",
+    "--filter",
+    "FullyQualifiedName~SecurityFuzzingTests",
+    "--logger",
+    "console;verbosity=minimal",
+    "/p:CollectCoverage=true",
+    "/p:CoverletOutput=/home/phamhoang/OrderPaymentMicroservice/security-analysis/results/application-fuzzing-coverage",
+    "/p:CoverletOutputFormat=cobertura",
+    "/p:Include=[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.InputValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.OrderStateMachine%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentStateMachine"
+  ]
+}

@@ -8,12 +8,8 @@ namespace OrderPaymentMicroservice.IntegrationTests;
 
 public sealed class PostgresApiFixture : IAsyncLifetime
 {
-    private readonly PostgreSqlContainer _database = new PostgreSqlBuilder("postgres:17-alpine")
-        .WithDatabase("order_payment_tests")
-        .WithUsername("postgres")
-        .WithPassword("postgres-test-password")
-        .Build();
-
+    private PostgreSqlContainer? _container;
+    private LocalPostgresServer? _localDatabase;
     private WebApplicationFactory<Program>? _factory;
 
     public IServiceProvider Services => _factory?.Services
@@ -21,16 +17,38 @@ public sealed class PostgresApiFixture : IAsyncLifetime
 
     public async Task InitializeAsync()
     {
-        await _database.StartAsync();
+        string connectionString;
+        if (DockerFactAttribute.IsDockerAvailableForTests)
+        {
+            _container = new PostgreSqlBuilder("postgres:17-alpine")
+                .WithDatabase("order_payment_tests")
+                .WithUsername("postgres")
+                .WithPassword("postgres-test-password")
+                .Build();
+            await _container.StartAsync();
+            connectionString = _container.GetConnectionString();
+        }
+        else
+        {
+            _localDatabase = await LocalPostgresServer.StartAsync();
+            connectionString = _localDatabase.ConnectionString;
+        }
 
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
+            // WebApplication.CreateBuilder reads these values before the later
+            // ConfigureAppConfiguration callback is applied by the test host.
+            builder.UseSetting("ConnectionStrings:DefaultConnection", connectionString);
+            builder.UseSetting("Jwt:Key", "integration-test-key-at-least-32-characters-long");
+            builder.UseSetting("Jwt:Issuer", "OrderPaymentIntegrationTests");
+            builder.UseSetting("Jwt:Audience", "OrderPaymentIntegrationTests");
+            builder.UseSetting("PaymentRecovery:Enabled", "false");
             builder.ConfigureAppConfiguration((_, configuration) =>
             {
                 configuration.AddInMemoryCollection(new Dictionary<string, string?>
                 {
-                    ["ConnectionStrings:DefaultConnection"] = _database.GetConnectionString(),
+                    ["ConnectionStrings:DefaultConnection"] = connectionString,
                     ["Jwt:Key"] = "integration-test-key-at-least-32-characters-long",
                     ["Jwt:Issuer"] = "OrderPaymentIntegrationTests",
                     ["Jwt:Audience"] = "OrderPaymentIntegrationTests",
@@ -57,7 +75,10 @@ public sealed class PostgresApiFixture : IAsyncLifetime
     {
         if (_factory != null)
             await _factory.DisposeAsync();
-        await _database.DisposeAsync();
+        if (_container != null)
+            await _container.DisposeAsync();
+        if (_localDatabase != null)
+            await _localDatabase.DisposeAsync();
     }
 }
 

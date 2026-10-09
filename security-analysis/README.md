@@ -7,7 +7,7 @@
 - Model BUGGY: **P1 FAIL**, counterexample `CREATED → CANCELLED → PAID_AFTER_CANCELLED` (trạng thái nghiệp vụ PAID).
 - Model phục hồi Order-Payment: **15/15 PASS**, 15 trạng thái, 37 chuyển tiếp và 7 hợp đồng chức năng; metadata aggregate được kiểm tra consistency.
 - Sáu mutation về hồi sinh đơn hủy, sai amount, thanh toán trùng, xung đột payment-cancel, bỏ qua refund sau PAID và đóng sai kết quả UNKNOWN đều bị phát hiện kèm witness.
-- xUnit: **84 unit PASS, 0 FAIL, 0 SKIP**; 5 integration test bị SKIP do thiếu Docker.
+- xUnit: **87 unit PASS, 0 FAIL, 0 SKIP**; PostgreSQL integration **5/5 PASS** qua local fallback khi Docker không có.
 - Coverlet toàn lớp InputValidator: **31/32 nhánh = 96,875%** (bảng CLI hiển thị 96,87%).
 - `ValidateCreateOrderRequest()`: **100% branch coverage**, **100% line coverage**.
 - Toàn lớp: line coverage **84,31%**; đây không phải chỉ số branch coverage.
@@ -15,6 +15,9 @@
 - Static analysis C: **PASS**, scanner bắt đủ 5 BUGGY và FIXED sạch trong phạm vi rule.
 - ASan/UBSan/LSan: **22/22 PASS** ngoài sandbox/debugger.
 - SMT/Z3 5.1.0: **7/7 SAT/UNSAT đúng kỳ vọng**.
+- Application fuzzing: **3/3 PASS**, 50.000 iteration validator/state transition, branch coverage **99,07%**.
+- TLC: **không phát hiện lỗi**, 35 state sinh, 20 state phân biệt, độ sâu 9.
+- Đặc tả ATPM: đúng **10 sheet**, 15 state, 7 CTL, 28 test case; **6/6 test đặc tả** và toàn suite ATPM **27/27 PASS**.
 
 ## Chạy lại
 
@@ -26,6 +29,11 @@ dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
 python security-analysis/run_analysis.py
 make -C security-analysis/c-memory static-check
 make -C security-analysis/c-memory test
+python security-analysis/run_fuzzing.py
+python security-analysis/run_tlc.py --jar /path/to/tla2tools.jar
+python security-analysis/create_order_payment_spec.py
+python security-analysis/verify_teacher_spec.py
+pytest -q ATPM/atpm_project/python/tests/test_order_payment_spec.py
 ```
 
 Có thể chạy riêng model phục hồi bằng:
@@ -57,7 +65,7 @@ tham chiếu; kết quả lưu tại `results/threat_model_results.json`.
 Các threat còn mở được giữ rõ ràng thay vì coi control trong source là bằng
 chứng runtime: repudiation/audit trail (T3), DoS/rate limit (T5), xác thực
 gateway thật (T8); quản lý secret (T9) mới giảm thiểu một phần. Các control
-authentication/ownership/role và transaction vẫn cần HTTP/PostgreSQL E2E.
+authentication/ownership/role và transaction đã được đối chiếu thêm bằng HTTP/PostgreSQL E2E; gateway thật vẫn nằm ngoài model.
 
 Liên kết hình thức quan trọng: counterexample
 `CREATED → CANCELLED → PAID_AFTER_CANCELLED` là attack trace của T7/VULN-003;
@@ -163,9 +171,9 @@ Các điểm bằng nhau giữ thứ tự dataset, không có khác biệt đi�
 
 Đây là phát hiện tại baseline ban đầu. Source hiện có JWT, `[Authorize]` và đối chiếu `cart.UserId` với principal tại `CartController`; ID trên route không còn tự được coi là bằng chứng quyền sở hữu.
 
-Điểm 8,1 HIGH mô tả rủi ro tại thời điểm phát hiện, không phải residual risk sau sửa. HTTP integration test 401/403 đã có nhưng lần xác minh hiện tại bị SKIP do thiếu Docker, nên phát hiện chưa được đóng ở mức hệ thống chạy thật.
+Điểm 8,1 HIGH mô tả rủi ro tại thời điểm phát hiện, không phải residual risk sau sửa. HTTP integration test 401/403 đã PASS trên PostgreSQL cục bộ trong lần xác minh 09/10/2026, vì vậy control ownership đã có bằng chứng runtime trong test host.
 
-Source hiện đã có authentication, ownership check, server-side pricing, mismatch rejection, hai state machine, payment amount/idempotency, bounded retry, reconciliation và refund. Phần còn thiếu là kiểm chứng lại qua HTTP/PostgreSQL và adapter gateway thật.
+Source hiện đã có authentication, ownership check, server-side pricing, mismatch rejection, hai state machine, payment amount/idempotency, bounded retry, reconciliation và refund. Phần còn thiếu đáng kể là adapter gateway thật và hardening production.
 
 ## Lưu ý build
 

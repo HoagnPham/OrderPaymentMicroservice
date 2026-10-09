@@ -18,7 +18,7 @@ OrderPaymentMicroservice/
 ├── ATPM/                         Tài liệu/lab tham chiếu; hai module được pipeline import
 ├── OrderPaymentMicroservice/     Source ASP.NET Core, REST API và giao diện demo
 ├── OrderPaymentMicroservice.Tests/ Unit test xUnit và cấu hình Coverlet
-├── OrderPaymentMicroservice.IntegrationTests/ HTTP E2E test với PostgreSQL container
+├── OrderPaymentMicroservice.IntegrationTests/ HTTP E2E test với PostgreSQL container/local
 ├── security-analysis/            Model, dataset, script và kết quả áp dụng ATPM
 ├── OrderPaymentMicroservice.slnx Solution .NET
 └── test-api.ps1                  Script E2E thủ công có JWT và idempotency
@@ -39,7 +39,7 @@ Source code ASP.NET Core trên .NET 10, Entity Framework Core và PostgreSQL. C�
 
 ### `OrderPaymentMicroservice.Tests/`
 
-Project xUnit hiện có 84 unit test, trong đó 34 trường hợp tập trung vào InputValidator; phần còn lại kiểm tra User, Order, hai state machine, Payment, retry/reconciliation, refund, inventory compensation và race payment–cancel. Project integration test bổ sung 5 luồng HTTP chạy trên PostgreSQL container thật.
+Project xUnit hiện có 87 unit test, trong đó 34 trường hợp tập trung vào InputValidator và 3 fuzz campaign xác định; phần còn lại kiểm tra User, Order, hai state machine, Payment, retry/reconciliation, refund, inventory compensation và race payment–cancel. Project integration test bổ sung 5 luồng HTTP chạy trên PostgreSQL thật qua Docker hoặc cluster cục bộ tạm thời.
 
 ### `security-analysis/`
 
@@ -59,7 +59,7 @@ Chứa phần áp dụng kiến thức lab vào đề tài:
 | Hạng mục | Hiện trạng | Nhận xét |
 |---|---|---|
 | REST API | Đã có Controller cho User, Product, Cart, Order, Payment | Có JWT/role/ownership và integration test 401/403 |
-| Dữ liệu | Có DbContext, PostgreSQL, migration và seed | Có bộ test tái lập bằng PostgreSQL Testcontainer; cần Docker để chạy |
+| Dữ liệu | Có DbContext, PostgreSQL, migration và seed | Test tự dùng Testcontainer khi có Docker, nếu không dùng PostgreSQL binaries cục bộ |
 | Order | Có tạo, hủy, xác nhận, hoàn tất, thất bại và compensation/refund | Có test PostgreSQL cho hai payment request cạnh tranh |
 | Payment | Có processing, success, failed, unknown, bounded retry, reconciliation và refund | Adapter mặc định vẫn là FakePaymentGateway |
 | Cart/Product/User | Có các chức năng hỗ trợ demo | Đã có ownership check và test HTTP xuyên suốt |
@@ -135,13 +135,13 @@ Kết quả chứng minh công cụ phát hiện được lỗi đã mô hình h
 
 ### 4.3. Unit test và coverage
 
-Đã xây dựng 34 test xUnit riêng cho InputValidator, gồm null/rỗng, ID không dương, biên TotalAmount/Quantity/UnitPrice, nhiều item, tolerance và decimal.MaxValue. Toàn solution hiện có 84 unit test và 5 integration test PostgreSQL, bổ sung test transition Order/Payment, timeout/unknown, retry giới hạn, crash reconciliation, refund, hoàn tồn kho, authorization và cạnh tranh payment/cancel.
+Đã xây dựng 34 test xUnit riêng cho InputValidator, gồm null/rỗng, ID không dương, biên TotalAmount/Quantity/UnitPrice, nhiều item, tolerance và decimal.MaxValue. Toàn solution hiện có 87 unit test và 5 integration test PostgreSQL, bổ sung fuzzing validator/state machine, test transition Order/Payment, timeout/unknown, retry giới hạn, crash reconciliation, refund, hoàn tồn kho, authorization và cạnh tranh payment/cancel.
 
-Kết quả chạy lại ngày **08/10/2026**:
+Kết quả chạy lại ngày **09/10/2026**:
 
 ```text
-Unit: Passed 84, Failed 0, Skipped 0
-Integration: Passed 0, Failed 0, Skipped 5 (Docker unavailable)
+Unit: Passed 87, Failed 0, Skipped 0
+Integration: Passed 5, Failed 0, Skipped 0 (PostgreSQL local fallback)
 ```
 
 Coverage đã lưu:
@@ -178,29 +178,27 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 |---|---|---|
 | Hệ thống Order & Payment chạy được | **Một phần** | Có lifecycle, test mức service và bộ E2E PostgreSQL; gateway mặc định còn mô phỏng |
 | REST API tích hợp shop | **Một phần** | Có JWT/role/ownership và HTTP integration test; script đã đồng bộ contract nhưng chưa có transcript demo hiện hành |
-| Database hoạt động | **Có bộ kiểm thử tái lập** | Testcontainers tạo PostgreSQL sạch, apply migration và seed; cần chạy khi Docker hoạt động để lưu kết quả |
+| Database hoạt động | **Đạt trong integration suite** | Tạo PostgreSQL sạch, apply migration/seed và chạy 5/5 test qua Docker hoặc local fallback |
 | Demo hệ thống | **Một phần** | Có frontend và script; chưa có kết quả demo E2E hiện hành |
 | Model và thuộc tính | **Đạt trong phạm vi model** | Kripke đúng + BUGGY + bốn kết quả kiểm chứng |
 | Bằng chứng kiểm thử | **Đạt cho InputValidator** | 34 test, Cobertura, branch coverage > 90% |
 | Phát hiện và phân tích lỗi | **Đạt giai đoạn phát hiện** | Năm vulnerability, counterexample, xếp hạng CVSS-lite |
 | SMT/Z3 | **Đạt trong phạm vi số học** | QF_NIA, Z3 5.1.0, 7/7 truy vấn đúng kỳ vọng và có JSON evidence |
-| TLA+/BMC | **Chưa có bằng chứng hoàn thành** | Có `OrderPayment.tla` và `.cfg`, nhưng chưa có output TLC/BMC; Kripke checker không thay thế bằng chứng này |
-| Fuzzing/dynamic testing | **Chưa hoàn thành** | Chưa có harness, corpus, log crash/coverage hoặc kết quả thực nghiệm |
+| TLA+/TLC | **Đạt trong phạm vi model** | TLC: 35 state sinh, 20 state phân biệt, depth 9, không phát hiện lỗi safety/liveness |
+| Fuzzing/dynamic testing | **Đạt cho target đã chọn** | 3/3 campaign, seed corpus cố định, 50.000 iteration, timeout/crash policy, branch 99,07% |
 | Phân tích an toàn bộ nhớ/phương án phù hợp | **Đạt trên mô hình C học tập** | Static scanner phân biệt 5 BUGGY/FIXED, có cppcheck/layout evidence và sanitizer 22/22; không suy rộng sang C# |
-| Sửa lỗi và kiểm chứng lại | **Đạt ở source/unit test, đã có harness tích hợp** | Năm phát hiện ban đầu đã có guard; integration test PostgreSQL cần Docker để thực thi |
+| Sửa lỗi và kiểm chứng lại | **Đạt trong suite hiện tại** | Guard đã có; 87 unit và 5 PostgreSQL integration test đều PASS |
 | Báo cáo kỹ thuật | **Đang hoàn thiện** | Đã có báo cáo tiến độ và tài liệu chi tiết; cần cập nhật sau sửa lỗi |
 
-**Kết luận:** Chương 1, Chương 2 và SMT đã có artifact cùng bằng chứng tái lập. Toàn bộ BTL end-to-end vẫn chưa hoàn tất vì còn thiếu TLC/BMC, fuzzing và log integration/demo chạy thật.
+**Kết luận:** Bốn chương đều đã có artifact và bằng chứng tái lập, gồm TLC, fuzzing và PostgreSQL integration. Hệ thống vẫn chưa được coi là production-ready vì gateway thật, hardening vận hành và demo triển khai ngoài test host còn nằm ngoài phạm vi đã xác minh.
 
 ## 6. Các lỗi còn tồn tại và thứ tự xử lý
 
-1. Bật Docker và chạy 5 integration test PostgreSQL để lưu bằng chứng runtime.
-2. Thay `FakePaymentGateway` bằng adapter sandbox/production có xác minh callback; giữ nguyên hợp đồng reconciliation theo idempotency key.
-3. Bổ sung transactional outbox cho side effect; background worker reconcile state bị kẹt đã có.
-4. Chạy TLC với `OrderPayment.cfg`, lưu output/counterexample và đối chiếu với state machine C#.
-5. Bổ sung fuzz harness/corpus cho validator và chuỗi transition.
-6. Chạy và lưu transcript `test-api.ps1` trên môi trường demo PostgreSQL sạch.
-7. Bổ sung rate limiting, audit log, health check và metrics cho các state bị kẹt.
+1. Thay `FakePaymentGateway` bằng adapter sandbox/production có xác minh callback; giữ nguyên hợp đồng reconciliation theo idempotency key.
+2. Bổ sung transactional outbox cho side effect; background worker reconcile state bị kẹt đã có.
+3. Chạy và lưu transcript `test-api.ps1` trên môi trường demo PostgreSQL sạch.
+4. Bổ sung rate limiting, audit log, health check và metrics cho các state bị kẹt.
+5. Mở rộng fuzz/integration sang lỗi mạng, restart process và gateway sandbox.
 
 ## 7. Cách chạy
 
@@ -208,7 +206,7 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 
 - .NET 10 SDK.
 - Python 3.10 trở lên.
-- PostgreSQL và connection string phù hợp nếu chạy API; Docker Desktop nếu chạy integration test.
+- PostgreSQL và connection string phù hợp nếu chạy API. Integration test dùng Docker nếu có, nếu không tự dùng PostgreSQL binaries cục bộ.
 - Kết nối NuGet trong lần restore đầu.
 
 ### Build và test
@@ -219,7 +217,7 @@ dotnet build OrderPaymentMicroservice.slnx
 dotnet test OrderPaymentMicroservice.slnx
 ```
 
-Khi Docker daemon không khả dụng, 5 integration test tự động `Skip`; 84 unit test vẫn chạy bình thường. Khi Docker đang chạy, Testcontainers tạo PostgreSQL riêng, apply migration, seed dữ liệu và hủy container sau khi test; không sử dụng database phát triển.
+Khi Docker khả dụng, Testcontainers tạo PostgreSQL riêng. Nếu Docker không có nhưng máy đã cài PostgreSQL binaries, test tạo cluster tạm trong thư mục hệ thống, apply migration/seed rồi dừng và xóa cluster sau khi chạy; không sử dụng database phát triển.
 
 OpenAPI ở môi trường Development được cung cấp tại `/openapi/v1.json`.
 
@@ -233,9 +231,14 @@ dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj
 
 ```powershell
 python security-analysis/run_analysis.py
+python security-analysis/run_fuzzing.py
+python security-analysis/run_tlc.py --jar /path/to/tla2tools.jar
+python security-analysis/create_order_payment_spec.py
+python security-analysis/verify_teacher_spec.py
+pytest -q ATPM/atpm_project/python/tests/test_order_payment_spec.py
 ```
 
-Script chạy threat model, model đúng/BUGGY, recovery model, risk assessment, SMT/Z3 và đọc báo cáo coverage hiện có. Static/dynamic analysis C chạy riêng bằng `make -C security-analysis/c-memory static-check` và `make -C security-analysis/c-memory test`. Muốn chủ động tạo lại dataset/model từ mã sinh:
+Các script chạy threat model, model đúng/BUGGY, recovery model, risk assessment, SMT/Z3, fuzzing, TLC và kiểm tra workbook theo đúng schema ATPM của giảng viên. Static/dynamic analysis C chạy riêng bằng `make -C security-analysis/c-memory static-check` và `make -C security-analysis/c-memory test`. Muốn chủ động tạo lại dataset/model từ mã sinh:
 
 ```powershell
 python security-analysis/create_datasets.py

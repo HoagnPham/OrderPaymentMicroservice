@@ -3,6 +3,9 @@
 **/obj/
 **/__pycache__/
 **/TestResults/
+**/Security/states/
+**/Security/*_TTrace_*.bin
+**/Security/*_TTrace_*.tla
 .pytest_cache/
 *.pyc
 

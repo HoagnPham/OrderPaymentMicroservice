@@ -1,0 +1,38 @@
+{
+  "passed": true,
+  "tool": "TLC2 Version 2026.10.06.014338 (rev: 94d0c50)",
+  "jar_sha256": "7beec0f04818732a62fa193731711a99aa4f11279499b2360a7d156c519ea78d",
+  "spec": "OrderPaymentMicroservice/Security/OrderPayment.tla",
+  "spec_sha256": "0ac6246131d85a3eb09b83623a613b4711f52cea62f3e76be5f1663f1ad50df9",
+  "config": "OrderPaymentMicroservice/Security/OrderPayment.cfg",
+  "config_sha256": "bcc4efcfa56df799153ca14c393d6690e0d4cdb7c257bbded1543b1013bfa3a9",
+  "workers": 1,
+  "timeout_seconds": 120,
+  "duration_seconds": 0.929,
+  "states_generated": 35,
+  "distinct_states": 20,
+  "graph_depth": 9,
+  "invariants": [
+    "TypeOK",
+    "PaidStatesHavePaymentEvidence",
+    "CancelledHasNoSuccessfulCharge",
+    "FailedHasNoSuccessfulCharge",
+    "InventoryLifecycleIsConsistent"
+  ],
+  "temporal_properties": [
+    "Termination"
+  ],
+  "exit_code": 0,
+  "log": "security-analysis/results/tlc/OrderPayment.tlc.log",
+  "command": [
+    "java",
+    "-XX:+UseParallelGC",
+    "-jar",
+    "/tmp/tla2tools.jar",
+    "-config",
+    "OrderPayment.cfg",
+    "-workers",
+    "1",
+    "OrderPayment.tla"
+  ]
+}

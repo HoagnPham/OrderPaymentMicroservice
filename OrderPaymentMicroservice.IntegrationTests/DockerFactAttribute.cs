@@ -3,16 +3,18 @@ using Xunit;
 
 namespace OrderPaymentMicroservice.IntegrationTests;
 
-/// <summary>Skips PostgreSQL container tests when the Docker daemon is unavailable.</summary>
+/// <summary>Skips PostgreSQL tests only when neither Docker nor local binaries are available.</summary>
 public sealed class DockerFactAttribute : FactAttribute
 {
     private static readonly Lazy<bool> DockerAvailable = new(IsDockerAvailable);
 
     public DockerFactAttribute()
     {
-        if (!DockerAvailable.Value)
-            Skip = "Docker daemon is unavailable; start Docker Desktop to run PostgreSQL integration tests.";
+        if (!DockerAvailable.Value && !LocalPostgresServer.IsAvailable)
+            Skip = "Neither Docker nor a local PostgreSQL server binary is available.";
     }
+
+    internal static bool IsDockerAvailableForTests => DockerAvailable.Value;
 
     private static bool IsDockerAvailable()
     {

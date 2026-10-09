@@ -1,0 +1,58 @@
+[
+  {
+    "name": "valid-minimum",
+    "expectedValid": true,
+    "customerId": 1,
+    "totalAmount": 0.01,
+    "items": [{ "productId": 1, "quantity": 1, "unitPrice": 0.01 }]
+  },
+  {
+    "name": "valid-maximum-single-item",
+    "expectedValid": true,
+    "customerId": 2147483647,
+    "totalAmount": 999999.99,
+    "items": [{ "productId": 2147483647, "quantity": 1, "unitPrice": 999999.99 }]
+  },
+  {
+    "name": "invalid-zero-customer",
+    "expectedValid": false,
+    "customerId": 0,
+    "totalAmount": 1.00,
+    "items": [{ "productId": 1, "quantity": 1, "unitPrice": 1.00 }]
+  },
+  {
+    "name": "invalid-empty-items",
+    "expectedValid": false,
+    "customerId": 1,
+    "totalAmount": 1.00,
+    "items": []
+  },
+  {
+    "name": "invalid-quantity-over-limit",
+    "expectedValid": false,
+    "customerId": 1,
+    "totalAmount": 10001.00,
+    "items": [{ "productId": 1, "quantity": 10001, "unitPrice": 1.00 }]
+  },
+  {
+    "name": "invalid-price-below-minimum",
+    "expectedValid": false,
+    "customerId": 1,
+    "totalAmount": 0.01,
+    "items": [{ "productId": 1, "quantity": 1, "unitPrice": 0.001 }]
+  },
+  {
+    "name": "invalid-total-mismatch",
+    "expectedValid": false,
+    "customerId": 1,
+    "totalAmount": 10.00,
+    "items": [{ "productId": 1, "quantity": 2, "unitPrice": 9.00 }]
+  },
+  {
+    "name": "invalid-subtotal-over-order-limit",
+    "expectedValid": false,
+    "customerId": 1,
+    "totalAmount": 999999.99,
+    "items": [{ "productId": 1, "quantity": 10000, "unitPrice": 999999.99 }]
+  }
+]

@@ -130,6 +130,10 @@ RefundSucceeded ==
     /\ inventoryStatus' = "RELEASED"
     /\ UNCHANGED attemptCount
 
+TerminalStutter ==
+    /\ orderStatus \in TerminalOrderStatuses
+    /\ UNCHANGED vars
+
 Next ==
     \/ Validate
     \/ PersistOrder
@@ -145,6 +149,7 @@ Next ==
     \/ CompleteOrder
     \/ StartRefund
     \/ RefundSucceeded
+    \/ TerminalStutter
 
 TypeOK ==
     /\ orderStatus \in OrderStatuses
