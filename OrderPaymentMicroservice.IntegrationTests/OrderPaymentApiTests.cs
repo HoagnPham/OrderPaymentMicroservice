@@ -94,6 +94,26 @@ public sealed class OrderPaymentApiTests(PostgresApiFixture fixture)
         var order = await CreateOrderAsync(firstClient, product, 1);
         var forbiddenOrder = await secondClient.GetAsync($"api/orders/{order.Id}");
         Assert.Equal(HttpStatusCode.Forbidden, forbiddenOrder.StatusCode);
+
+        var payment = await CreateSuccessfulPaymentAsync(firstClient, order);
+        Assert.Equal(HttpStatusCode.Forbidden, (await secondClient.GetAsync($"api/payments/{payment.Id}")).StatusCode);
+        foreach (var action in new[] { "retry", "reconcile" })
+            Assert.Equal(HttpStatusCode.Forbidden,
+                (await secondClient.PostAsync($"api/payments/{payment.Id}/{action}", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden, (await firstClient.GetAsync("api/orders")).StatusCode);
+        foreach (var action in new[] { "confirm", "complete" })
+            Assert.Equal(HttpStatusCode.Forbidden,
+                (await firstClient.PostAsync($"api/orders/{order.Id}/{action}", null)).StatusCode);
+        foreach (var action in new[] { "refund", "refund/retry" })
+            Assert.Equal(HttpStatusCode.Forbidden,
+                (await firstClient.PostAsync($"api/payments/{payment.Id}/{action}", null)).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await firstClient.PostAsJsonAsync("api/products", new CreateProductRequest
+                { Name = "Forbidden", Price = 25m, Stock = 1 })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await firstClient.PutAsJsonAsync($"api/products/{product.Id}", new UpdateProductRequest { Stock = 0 })).StatusCode);
+        Assert.Equal(HttpStatusCode.Forbidden,
+            (await firstClient.DeleteAsync($"api/products/{product.Id}")).StatusCode);
     }
 
     [DockerFact]

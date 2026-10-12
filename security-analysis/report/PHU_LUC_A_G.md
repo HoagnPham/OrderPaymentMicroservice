@@ -57,6 +57,48 @@ thay thế trực tiếp state Order.
 
 SEC-STOCK-01, SEC-CART-01/02 và SEC-INPUT-01 trong traceability là yêu cầu bổ sung của đợt sửa lỗi, không thay số ID REQ gốc.
 
+### A.3. Ma trận endpoint/quyền
+
+| Method/route | Anonymous | Customer | Admin | Điều kiện |
+| --- | --- | --- | --- | --- |
+| POST users/register, users/login | Cho phép | Cho phép | Cho phép | DTO/service validation |
+| GET products, category, id | Cho phép | Cho phép | Cho phép | Active product |
+| POST/PUT/DELETE products | 401 | 403 | Cho phép | Validation và state data |
+| GET/PUT users/id | 401 | Owner | Cho phép | Claim→route user |
+| GET cart/user/id; POST add | 401 | Owner | Cho phép | Quantity/product guard |
+| PUT/DELETE cart/id/item/id; DELETE clear | 401 | Owner | Cho phép | Cart.UserId; CartItem.CartId |
+| POST orders | 401 | Cho phép | Cho phép | CustomerId từ subject; server price/stock |
+| GET orders | 401 | 403 | Cho phép | Global listing |
+| GET orders/mine; GET id; POST cancel | 401 | Owner | Theo policy endpoint | mine luôn dùng subject; cancel có payment guard |
+| POST orders/id/confirm, complete | 401 | 403 | Cho phép | Paid evidence và state nguồn |
+| POST payments; GET id; POST retry, reconcile | 401 | Owner | Cho phép | Order owner; amount/key/state guard |
+| POST payments/id/refund, refund/retry | 401 | 403 | Cho phép | Refund key và trạng thái hợp lệ |
+
+“Cho phép” là qua lớp quyền, không cam kết nghiệp vụ trả 2xx. Test hiện kiểm một
+phần các đường trong bảng; không dùng bảng chính sách source thay danh sách test.
+
+### A.4. Asset, boundary và qualified property references
+
+| Threat | Asset | Boundary | Model-qualified properties | Control status |
+| --- | --- | --- | --- | --- |
+| T1 | A1, A2, A3 | TB1 | Ngoài model lifecycle | VERIFIED_IN_TEST_SCOPE |
+| T2 | A2, A3, A4 | TB1 | base:P3, base:P4, recovery:P2, recovery:P6, recovery:P11 | MITIGATED |
+| T3 | A3, A6 | TB1 | Ngoài model lifecycle | OPEN |
+| T4 | A1, A2, A3 | TB1 | Ngoài model lifecycle | VERIFIED_IN_TEST_SCOPE |
+| T5 | A3, A4 | TB1 | recovery:P10, recovery:P14 | OPEN |
+| T6 | A2, A3, A5 | TB1 | Ngoài model lifecycle | VERIFIED_IN_TEST_SCOPE |
+| T7 | A2, A3, A4 | TB2 | base:P1, recovery:P1, recovery:P4, recovery:P7, recovery:P11, recovery:P12, recovery:P13, recovery:P14, recovery:P15 | VERIFIED_IN_TEST_SCOPE |
+| T8 | A3 | TB3 | base:P3, recovery:P2, recovery:P13, recovery:P14 | OPEN_FOR_REAL_GATEWAY |
+| T9 | A5 | TB4 | Ngoài model lifecycle | PARTIALLY_MITIGATED |
+
+### A.5. Chính sách data ownership
+
+UserId/CustomerId trong request không tự cấp quyền. PriceAtAdd là snapshot của Cart;
+Order dùng Product.Price hiện tại. Payment.Amount bind với Order.TotalAmount.
+InventoryStatus biểu diễn reservation cùng stock đã giảm; không có bảng reservation
+riêng. Hash/authenticity của gateway response chưa được mock chứng minh.
+
+
 ## Phụ lục B — Model và thuộc tính
 
 ### B.1. Giả định
@@ -154,6 +196,315 @@ Model cơ sở có witness CREATED → CANCELLED → PAID_AFTER_CANCELLED. Sáu 
 
 37 event → 32 cặp state; hai tập cạnh sau phép chiếu bằng nhau. Property workbook có ngữ nghĩa riêng; EF(terminal) chỉ chứng minh tồn tại đường tới terminal.
 
+### B.6. Chi tiết hợp đồng F1–F7
+
+#### F1_CREATE_ORDER
+
+Validate trusted server data and persist the order atomically before payment is allowed.
+
+Precondition: The request is new and no payment exists.
+
+| State | Event | Đích |
+| --- | --- | --- |
+| CREATED | validation_ok | VALIDATED |
+| CREATED | validation_rejected | PRE_PAYMENT_REJECTED |
+| CREATED | validation_storage_error | PRE_PAYMENT_REJECTED |
+| VALIDATED | order_persisted | PAYMENT_PENDING |
+| VALIDATED | amount_invariant_failed | PRE_PAYMENT_REJECTED |
+| VALIDATED | order_commit_failed | PRE_PAYMENT_REJECTED |
+
+- Client-supplied prices never become the authoritative amount.
+- A persistence failure cannot leave an order payable with a partial inventory update.
+
+#### F2_ACCEPT_PAYMENT_OR_CANCEL
+
+Choose exactly one legal decision while the order is payable: start payment, cancel, or reject a duplicate/invalid request.
+
+Precondition: Order is PAYMENT_PENDING, amount was verified and inventory is reserved.
+
+| State | Event | Đích |
+| --- | --- | --- |
+| PAYMENT_PENDING | payment_request_accepted | PAYMENT_PROCESSING |
+| PAYMENT_PENDING | cancel_requested | CANCELLED |
+| PAYMENT_PENDING | duplicate_pending_request | PAYMENT_PENDING |
+| PAYMENT_PENDING | payment_amount_rejected | PAYMENT_PENDING |
+
+- Payment and cancellation decisions are serialized.
+- A rejected or duplicate request cannot create another logical payment.
+
+#### F3_EXECUTE_AND_RECONCILE_PAYMENT
+
+Resolve the gateway outcome with bounded retry and one idempotency key without interpreting timeout as decline.
+
+Precondition: The order is payable and no successful payment has been committed.
+
+| State | Event | Đích |
+| --- | --- | --- |
+| PAYMENT_PROCESSING | gateway_success_and_commit | PAID |
+| PAYMENT_PROCESSING | gateway_transient_failure | PAYMENT_RETRY |
+| PAYMENT_PROCESSING | gateway_declined | FAILED |
+| PAYMENT_PROCESSING | charged_but_commit_failed | PAYMENT_RETRY |
+| PAYMENT_PROCESSING | concurrent_cancel_loses_lock | PAYMENT_PROCESSING |
+| PAYMENT_RETRY | retry_budget_available | PAYMENT_PROCESSING_FINAL |
+| PAYMENT_RETRY | retry_exhausted_unknown | PAYMENT_RETRY |
+| PAYMENT_RETRY | cancel_during_retry | CANCELLED |
+| PAYMENT_PROCESSING_FINAL | final_gateway_success_and_commit | PAID |
+| PAYMENT_PROCESSING_FINAL | final_payment_declined | FAILED |
+| PAYMENT_PROCESSING_FINAL | final_payment_unknown | PAYMENT_RETRY |
+| PAYMENT_PROCESSING_FINAL | final_charged_but_commit_failed | PAYMENT_RETRY |
+
+- Only an authenticated definitive decline may end the payment flow as FAILED.
+- An UNKNOWN outcome keeps inventory reserved and is reconciled with the same idempotency key.
+- A successful charge is committed at most once.
+
+#### F4_CONFIRM_OR_COMPENSATE
+
+Confirm a paid order or start compensation when confirmation cannot succeed.
+
+Precondition: Successful payment evidence exists.
+
+| State | Event | Đích |
+| --- | --- | --- |
+| PAID | confirmation_ok | CONFIRMED |
+| PAID | duplicate_success | PAID |
+| PAID | confirmation_transient_failure | CONFIRMATION_RETRY |
+| PAID | fulfillment_unrecoverable | REFUND_PENDING |
+| CONFIRMATION_RETRY | confirmation_retry_ok | CONFIRMED |
+| CONFIRMATION_RETRY | confirmation_retry_exhausted | REFUND_PENDING |
+
+- Confirmation retry never charges the customer again.
+- A paid order that cannot be confirmed enters compensation instead of FAILED.
+
+#### F5_COMPLETE_OR_COMPENSATE
+
+Complete delivery or compensate a paid order that can no longer be fulfilled.
+
+Precondition: Order is CONFIRMED and successful payment evidence is retained.
+
+| State | Event | Đích |
+| --- | --- | --- |
+| CONFIRMED | delivery_completed | COMPLETED |
+| CONFIRMED | confirmed_fulfillment_failed | REFUND_PENDING |
+
+- Completion preserves successful payment evidence.
+- Post-payment fulfillment failure always starts refund compensation.
+
+#### F6_REFUND
+
+Finish compensation idempotently and release inventory only with durable refund evidence.
+
+Precondition: A successful charge exists and the order is REFUND_PENDING.
+
+| State | Event | Đích |
+| --- | --- | --- |
+| REFUND_PENDING | refund_success | REFUNDED |
+| REFUND_PENDING | refund_retry | REFUND_PENDING |
+
+- Refund retry uses the same refund idempotency key.
+- A timeout cannot be treated as proof that no refund occurred.
+
+#### F7_PROTECT_TERMINAL_STATE
+
+Reject late mutation and return the stored result without reviving a terminal aggregate.
+
+Precondition: Order is already terminal.
+
+| State | Event | Đích |
+| --- | --- | --- |
+| COMPLETED | completed_late_event | COMPLETED |
+| CANCELLED | cancelled_late_payment | CANCELLED |
+| PRE_PAYMENT_REJECTED | rejected_late_retry | PRE_PAYMENT_REJECTED |
+| FAILED | failed_late_retry | FAILED |
+| REFUNDED | duplicate_refund | REFUNDED |
+
+- No terminal state is revived by a late request or callback.
+- Repeated terminal operations are idempotent and auditable.
+
+### B.7. Counterexample recovery và property namespace
+
+#### BUG-CANCELLED-PAID
+
+Expected FAIL: P1, P4; actual FAIL: P1, P10, P11, P12, P4.
+
+```json
+{
+  "P1": [
+    {
+      "state": "PAID_AFTER_CANCELLED",
+      "witness": [
+        "CREATED",
+        "VALIDATED",
+        "PAYMENT_PENDING",
+        "CANCELLED",
+        "PAID_AFTER_CANCELLED"
+      ]
+    }
+  ],
+  "P4": [
+    {
+      "state": "PAID_AFTER_CANCELLED",
+      "witness": [
+        "CREATED",
+        "VALIDATED",
+        "PAYMENT_PENDING",
+        "CANCELLED",
+        "PAID_AFTER_CANCELLED"
+      ]
+    }
+  ]
+}
+```
+
+#### BUG-WRONG-AMOUNT
+
+Expected FAIL: P1; actual FAIL: P1, P10, P11.
+
+```json
+{
+  "P1": [
+    {
+      "state": "PAID_WRONG_AMOUNT",
+      "witness": [
+        "CREATED",
+        "VALIDATED",
+        "PAYMENT_PENDING",
+        "PAYMENT_PROCESSING",
+        "PAID_WRONG_AMOUNT"
+      ]
+    }
+  ]
+}
+```
+
+#### BUG-DUPLICATE-SUCCESS
+
+Expected FAIL: P1; actual FAIL: P1, P10, P11.
+
+```json
+{
+  "P1": [
+    {
+      "state": "PAID_TWICE",
+      "witness": [
+        "CREATED",
+        "VALIDATED",
+        "PAYMENT_PENDING",
+        "PAYMENT_PROCESSING",
+        "PAID",
+        "PAID_TWICE"
+      ]
+    }
+  ]
+}
+```
+
+#### BUG-RESOURCE-CONFLICT
+
+Expected FAIL: P1, P7; actual FAIL: P1, P10, P11, P7.
+
+```json
+{
+  "P1": [
+    {
+      "state": "PAY_CANCEL_CONFLICT",
+      "witness": [
+        "CREATED",
+        "VALIDATED",
+        "PAYMENT_PENDING",
+        "PAY_CANCEL_CONFLICT"
+      ]
+    }
+  ],
+  "P7": [
+    {
+      "state": "PAY_CANCEL_CONFLICT",
+      "witness": [
+        "CREATED",
+        "VALIDATED",
+        "PAYMENT_PENDING",
+        "PAY_CANCEL_CONFLICT"
+      ]
+    }
+  ]
+}
+```
+
+#### BUG-PAID-FAILED-WITHOUT-REFUND
+
+Expected FAIL: P13; actual FAIL: P11, P13.
+
+```json
+{
+  "P13": [
+    {
+      "state": "PAID",
+      "event": "silent_post_payment_failure",
+      "target": "FAILED",
+      "reason": "successful payment evidence was lost without compensation"
+    }
+  ]
+}
+```
+
+#### BUG-UNKNOWN-RELEASED
+
+Expected FAIL: P14; actual FAIL: P11, P14.
+
+```json
+{
+  "P14": [
+    {
+      "state": "UNKNOWN_RELEASED",
+      "witness": [
+        "CREATED",
+        "VALIDATED",
+        "PAYMENT_PENDING",
+        "PAYMENT_PROCESSING",
+        "PAYMENT_RETRY",
+        "UNKNOWN_RELEASED"
+      ],
+      "reason": "UNKNOWN outcome is terminal, released, or incorrectly marked successful"
+    }
+  ]
+}
+```
+
+### B.8. Audit liveness
+
+| Raw AG AF | Progress-only AG AF | Audit PASS |
+| --- | --- | --- |
+| False | True | True |
+
+Lasso là prefix hữu hạn nối cycle lặp vô hạn; cycle không chứa terminal.
+
+```json
+{
+  "prefix": [
+    "CREATED",
+    "VALIDATED",
+    "PAYMENT_PENDING",
+    "PAYMENT_PROCESSING",
+    "PAYMENT_RETRY"
+  ],
+  "loop": [
+    "PAYMENT_RETRY",
+    "PAYMENT_RETRY"
+  ],
+  "event": "retry_exhausted_unknown",
+  "interpretation": "Repeat the loop forever; terminal is never reached."
+}
+```
+
+Các cạnh được checker loại dù thay đổi state:
+
+| Nguồn | Event | Đích | Kind |
+| --- | --- | --- | --- |
+| PAYMENT_PROCESSING_FINAL | final_payment_unknown | PAYMENT_RETRY | stutter |
+| PAYMENT_PROCESSING_FINAL | final_charged_but_commit_failed | PAYMENT_RETRY | stutter |
+
+Fixed-point rounds của cả graph nằm trong [liveness audit](../results/liveness_audit.results.json). Policy lọc cạnh không tự chứng minh fair-CTL.
+
+
 ## Phụ lục C — Static và bộ nhớ
 
 ### C.1. CWE và phạm vi
@@ -168,7 +519,7 @@ Model cơ sở có witness CREATED → CANCELLED → PAID_AFTER_CANCELLED. Sáu 
 
 GCC/cppcheck version, finding và layout: ../c-memory/evidence/static-analysis.json. Pattern rules là scanner riêng; cppcheck có false negative được ghi rõ trong ../c-memory/README.md. Không tuyên bố Clang-Tidy/Clang Analyzer đã chạy.
 
-### C.2. Toàn bộ case sanitizer (evidence lịch sử)
+### C.2. Toàn bộ case sanitizer (lần chạy ngoài sandbox mới nhất)
 
 | Case | Test PASS | Exit code | Diagnostic mong đợi |
 | --- | --- | --- | --- |
@@ -194,6 +545,226 @@ GCC/cppcheck version, finding và layout: ../c-memory/evidence/static-analysis.j
 | user_fixed_length_32 | True | 0 | clean sanitizer run |
 | user_fixed_length_128 | True | 0 | clean sanitizer run |
 | user_buggy_valid | True | 0 | clean sanitizer run |
+
+### C.3. Compiler, configuration và ground truth
+
+| Module | Scanner BUGGY | Scanner FIXED | Cppcheck trực tiếp memory finding BUGGY |
+| --- | --- | --- | --- |
+| order | owned-allocation-leak | Không có | Không báo loại lỗi kỳ vọng |
+| payment | double-free | Không có | Không báo loại lỗi kỳ vọng |
+| cart | use-after-free | Không có | Không báo loại lỗi kỳ vọng |
+| product | unbounded-string-copy | Không có | Không báo loại lỗi kỳ vọng |
+| user | unbounded-string-copy | Không có | bufferAccessOutOfBounds |
+
+Cppcheck return_code=0 không đồng nghĩa không finding; XML vẫn có error/style. BUGGY và FIXED được chạy theo cấu hình preprocessor riêng.
+
+### C.4. Source minh họa ownership/lifetime
+
+#### order.c
+
+```c
+/* OrderService: cancel an order and release its owned OrderItems.
+ * CWE-401: freeing the parent does not free its child allocation in C. */
+#include "demo.h"
+typedef struct { int product_id, quantity; long unit_price; } OrderItem;
+typedef struct { int id; size_t count; OrderItem *items; } Order;
+static void cancel_order(void) {
+    Order *order = allocate(sizeof(*order));
+    order->id = 1;
+    order->count = 3;
+    order->items = allocate(order->count * sizeof(*order->items));
+    for (size_t i = 0; i < order->count; ++i)
+        order->items[i] = (OrderItem){(int)i + 1, 2, 45000};
+    printf("Cancel order %d: %zu items\n", order->id, order->count);
+#ifdef FIXED
+    free(order->items);
+#endif
+    free(order);
+}
+int main(void) {
+    for (int i = 0; i < 5; ++i) cancel_order();
+    return 0;
+}
+```
+
+#### payment.c
+
+```c
+/* PaymentService: gateway failure followed by common cleanup.
+ * CWE-415: two cleanup paths both believe they own TransactionCode. */
+#include "demo.h"
+typedef struct { int order_id; char *transaction_code; } Payment;
+int main(void) {
+    Payment payment = {1, allocate(32)};
+    snprintf(payment.transaction_code, 32, "%s", "TX-DEMO-001");
+    puts("Gateway failure: release transaction code");
+    free(payment.transaction_code);
+#ifdef FIXED
+    payment.transaction_code = NULL;
+#endif
+    free(payment.transaction_code); /* BUG: common cleanup frees it again. */
+    return 0;
+}
+```
+
+#### cart.c
+
+```c
+/* CartService.RemoveItemFromCartAsync modeled as a C linked list.
+ * CWE-416: audit logging reads the deleted item after free. */
+#include "demo.h"
+typedef struct CartItem { int product_id, quantity; struct CartItem *next; } CartItem;
+int main(void) {
+    CartItem *head = allocate(sizeof(*head));
+    *head = (CartItem){101, 2, NULL};
+    CartItem *removed = head;
+    head = removed->next;
+#ifdef FIXED
+    int product_id = removed->product_id;
+    free(removed);
+    removed = NULL;
+    printf("Removed product %d\n", product_id);
+#else
+    free(removed);
+    printf("Removed product %d\n", removed->product_id); /* BUG */
+#endif
+    return head != NULL;
+}
+```
+
+#### product.c
+
+```c
+/* ProductService: import a product name into a fixed heap buffer.
+ * CWE-122: unchecked copy crosses the allocation boundary. */
+#include "demo.h"
+#define NAME_CAPACITY 32
+typedef struct { int id; char *name; } Product;
+int main(int argc, char **argv) {
+    const char *input = argc > 1 ? argv[1] :
+        "Product-name-that-is-much-longer-than-the-allocated-buffer";
+    Product product = {101, allocate(NAME_CAPACITY)};
+#ifdef FIXED
+    if (strlen(input) >= NAME_CAPACITY) {
+        puts("REJECTED: product name too long");
+        free(product.name);
+        return 0;
+    }
+#endif
+    strcpy(product.name, input);
+    printf("Product %d: %s\n", product.id, product.name);
+    free(product.name);
+    return 0;
+}
+```
+
+#### user.c
+
+```c
+/* UserService: copy a registration email into a local buffer.
+ * CWE-121: stack buffer overflow. This is not a full email validator. */
+#include "demo.h"
+#define EMAIL_CAPACITY 32
+static void register_user(const char *input) {
+    char email[EMAIL_CAPACITY];
+#ifdef FIXED
+    if (strlen(input) >= sizeof(email)) {
+        puts("REJECTED: email too long");
+        return;
+    }
+#endif
+    strcpy(email, input);
+    printf("Registered email: %s\n", email);
+}
+int main(int argc, char **argv) {
+    register_user(argc > 1 ? argv[1] :
+        "very-long-email-address-over-32-characters@example.test");
+    return 0;
+}
+```
+
+### C.5. Diagnostic thực thi
+
+#### order_buggy
+
+```text
+==12365==ERROR: LeakSanitizer: detected memory leaks
+Direct leak of 240 byte(s) in 5 object(s) allocated from:
+    #0 0x758c382fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0x40136d in allocate modules/demo.h:8
+SUMMARY: AddressSanitizer: 240 byte(s) leaked in 5 allocation(s).
+```
+
+#### payment_buggy
+
+```text
+==12369==ERROR: AddressSanitizer: attempting double-free on 0x503000000040 in thread T0:
+    #0 0x79d8194fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x40142e in main modules/payment.c:13
+    #0 0x79d8194fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x401421 in main modules/payment.c:9
+    #0 0x79d8194fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0x4012ed in allocate modules/demo.h:8
+SUMMARY: AddressSanitizer: double-free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52 in free
+```
+
+#### cart_buggy
+
+```text
+==12372==ERROR: AddressSanitizer: heap-use-after-free on address 0x502000000010 at pc 0x00000040160c bp 0x7ffc9a2142d0 sp 0x7ffc9a2142c0
+    #0 0x40160b in main modules/cart.c:17
+    #1 0x71bdc122a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #0 0x71bdc1efc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x4015b9 in main modules/cart.c:16
+    #0 0x71bdc1efd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0x40134d in allocate modules/demo.h:8
+SUMMARY: AddressSanitizer: heap-use-after-free modules/cart.c:17 in main
+```
+
+#### product_buggy
+
+```text
+==12375==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x503000000060 at pc 0x7afc870a7923 bp 0x7ffd70400d80 sp 0x7ffd70400528
+    #0 0x7afc870a7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
+    #1 0x4014ee in main modules/product.c:17
+    #0 0x7afc870fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #1 0x40132d in allocate modules/demo.h:8
+SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563 in strcpy
+```
+
+#### user_buggy
+
+```text
+==12383==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x79ae21800040 at pc 0x79ae248a7923 bp 0x7ffe2c669eb0 sp 0x7ffe2c669658
+    #0 0x79ae248a7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
+    #1 0x401375 in register_user modules/user.c:13
+    #0 0x4012c5 in register_user modules/user.c:5
+SUMMARY: AddressSanitizer: stack-buffer-overflow ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563 in strcpy
+```
+
+### C.6. ABI và provenance
+
+| Struct | sizeof | _Alignof | Môi trường |
+| --- | --- | --- | --- |
+| CartItem | 16 | 8 | Linux-7.0.0-34-generic-x86_64-with-glibc2.39 |
+| OrderItem | 16 | 8 | Linux-7.0.0-34-generic-x86_64-with-glibc2.39 |
+| Order | 24 | 8 | Linux-7.0.0-34-generic-x86_64-with-glibc2.39 |
+| Payment | 16 | 8 | Linux-7.0.0-34-generic-x86_64-with-glibc2.39 |
+| Product | 16 | 8 | Linux-7.0.0-34-generic-x86_64-with-glibc2.39 |
+
+Offsets đo được: {"Order.items": 16, "Payment.transaction_code": 8, "Product.name": 8}.
+
+Metadata source/binary/environment: [chapter4 run](../results/chapter4_run.results.json). Không có timestamp start/finish chính xác; make dùng binary hiện có nếu còn mới hơn source.
+
+### C.7. Tái lập chỉ bằng project
+
+```bash
+make -C security-analysis/c-memory static-check
+make -C security-analysis/c-memory test
+```
+
+Không chạy make clean nếu muốn giữ raw log để đọc. Khi sandbox làm LSan thất bại, giữ failure riêng và chạy trong môi trường được phép; không tắt detect_leaks để đạt PASS.
+
 
 ## Phụ lục D — SMT và biên
 
@@ -246,127 +817,127 @@ Corpus: ../../OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json. Ora
 
 | Case | Outcome | Duration |
 | --- | --- | --- |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidCustomer(id: -1) | Passed | 00:00:00.0008245 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidCustomer(id: -2147483648) | Passed | 00:00:00.0002021 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidCustomer(id: 0) | Passed | 00:00:00.0000106 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidPrice(price: "-0.01") | Passed | 00:00:00.0001493 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidPrice(price: "1000000") | Passed | 00:00:00.0000142 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidPrice(price: "79228162514264337593543950335") | Passed | 00:00:00.0007829 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidProduct(id: -1) | Passed | 00:00:00.0001704 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidProduct(id: 0) | Passed | 00:00:00.0012558 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: -1) | Passed | 00:00:00.0000054 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: 0) | Passed | 00:00:00.0000118 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: 10001) | Passed | 00:00:00.0001919 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: 2147483647) | Passed | 00:00:00.0002040 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "-1") | Passed | 00:00:00.0004058 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "0") | Passed | 00:00:00.0002607 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "0.009") | Passed | 00:00:00.0000063 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "1000000") | Passed | 00:00:00.0000050 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "79228162514264337593543950335") | Passed | 00:00:00.0000193 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.ItemSubtotalAboveMaximumOrderTotalIsRejected | Passed | 00:00:00.0006981 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "0.01", price: "999999.99") | Passed | 00:00:00.0002810 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "10", price: "0") | Passed | 00:00:00.0000054 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "10", price: "0.001") | Passed | 00:00:00.0000108 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "10.011", price: "10") | Passed | 00:00:00.0000117 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "9.989", price: "10") | Passed | 00:00:00.0007917 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.MissingItems(isNull: False) | Passed | 00:00:00.0001618 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.MissingItems(isNull: True) | Passed | 00:00:00.0009050 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.MultipleItems | Passed | 00:00:00.0007269 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.NullItem | Passed | 00:00:00.0009193 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.NullRequest | Passed | 00:00:00.0006704 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "0.01", quantity: 1, price: "0.01") | Passed | 00:00:00.0000012 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "10", quantity: 1, price: "10") | Passed | 00:00:00.0001828 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "10.01", quantity: 1, price: "10") | Passed | 00:00:00.0001881 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "100", quantity: 10000, price: "0.01") | Passed | 00:00:00.0000053 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "9.99", quantity: 1, price: "10") | Passed | 00:00:00.0000013 |
-| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "999999.99", quantity: 1, price: "999999.99") | Passed | 00:00:00.0000016 |
-| OrderPaymentMicroservice.Tests.OrderServiceTests.CancellingPendingOrderReleasesReservedInventoryExactlyOnce | Passed | 00:00:00.3262492 |
-| OrderPaymentMicroservice.Tests.OrderServiceTests.ClientCannotCreateOrderUsingTamperedPrice | Passed | 00:00:00.0021000 |
-| OrderPaymentMicroservice.Tests.OrderServiceTests.ConcurrentOrdersCannotBothUseTheSameStaleStockVersion | Passed | 00:00:00.0443774 |
-| OrderPaymentMicroservice.Tests.OrderServiceTests.OrderUsesServerPriceAndDecrementsStock | Passed | 00:00:00.0026256 |
-| OrderPaymentMicroservice.Tests.OrderServiceTests.OrderWithoutSuccessfulPaymentCannotBeConfirmed | Passed | 00:00:02.6616816 |
-| OrderPaymentMicroservice.Tests.OrderServiceTests.PaidOrderMustBeConfirmedBeforeCompletion | Passed | 00:00:00.0068150 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.CancelledOrderCannotBeRevivedByPayment | Passed | 00:00:00.0016541 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidCustomer(id: -1) | Passed | 00:00:00.0002665 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidCustomer(id: -2147483648) | Passed | 00:00:00.0005442 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidCustomer(id: 0) | Passed | 00:00:00.0000805 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidPrice(price: "-0.01") | Passed | 00:00:00.0003271 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidPrice(price: "1000000") | Passed | 00:00:00.0000705 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidPrice(price: "79228162514264337593543950335") | Passed | 00:00:00.0006975 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidProduct(id: -1) | Passed | 00:00:00.0006172 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidProduct(id: 0) | Passed | 00:00:00.0007867 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: -1) | Passed | 00:00:00.0000183 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: 0) | Passed | 00:00:00.0000283 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: 10001) | Passed | 00:00:00.0005664 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: 2147483647) | Passed | 00:00:00.0066734 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "-1") | Passed | 00:00:00.0005721 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "0") | Passed | 00:00:00.0001959 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "0.009") | Passed | 00:00:00.0000086 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "1000000") | Passed | 00:00:00.0000081 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: "79228162514264337593543950335") | Passed | 00:00:00.0000257 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.ItemSubtotalAboveMaximumOrderTotalIsRejected | Passed | 00:00:00.0003192 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "0.01", price: "999999.99") | Passed | 00:00:00.0004821 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "10", price: "0") | Passed | 00:00:00.0000082 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "10", price: "0.001") | Passed | 00:00:00.0000090 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "10.011", price: "10") | Passed | 00:00:00.0000165 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: "9.989", price: "10") | Passed | 00:00:00.0046386 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.MissingItems(isNull: False) | Passed | 00:00:00.0006956 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.MissingItems(isNull: True) | Passed | 00:00:00.0038548 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.MultipleItems | Passed | 00:00:00.0001396 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.NullItem | Passed | 00:00:00.0017762 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.NullRequest | Passed | 00:00:00.0004269 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "0.01", quantity: 1, price: "0.01") | Passed | 00:00:00.0000010 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "10", quantity: 1, price: "10") | Passed | 00:00:00.0015361 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "10.01", quantity: 1, price: "10") | Passed | 00:00:00.0002636 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "100", quantity: 10000, price: "0.01") | Passed | 00:00:00.0000070 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "9.99", quantity: 1, price: "10") | Passed | 00:00:00.0000018 |
+| OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: "999999.99", quantity: 1, price: "999999.99") | Passed | 00:00:00.0000015 |
+| OrderPaymentMicroservice.Tests.OrderServiceTests.CancellingPendingOrderReleasesReservedInventoryExactlyOnce | Passed | 00:00:00.2365359 |
+| OrderPaymentMicroservice.Tests.OrderServiceTests.ClientCannotCreateOrderUsingTamperedPrice | Passed | 00:00:00.0046549 |
+| OrderPaymentMicroservice.Tests.OrderServiceTests.ConcurrentOrdersCannotBothUseTheSameStaleStockVersion | Passed | 00:00:00.0470219 |
+| OrderPaymentMicroservice.Tests.OrderServiceTests.OrderUsesServerPriceAndDecrementsStock | Passed | 00:00:00.0313904 |
+| OrderPaymentMicroservice.Tests.OrderServiceTests.OrderWithoutSuccessfulPaymentCannotBeConfirmed | Passed | 00:00:00.8376530 |
+| OrderPaymentMicroservice.Tests.OrderServiceTests.PaidOrderMustBeConfirmedBeforeCompletion | Passed | 00:00:00.0067386 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.CancelledOrderCannotBeRevivedByPayment | Passed | 00:00:00.0023592 |
 | OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: CONFIRMED, to: COMPLETED) | Passed | 00:00:00.0000004 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: CONFIRMED, to: REFUND_PENDING) | Passed | 00:00:00.0000005 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: CREATED, to: VALIDATED) | Passed | 00:00:00.0000005 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: CONFIRMED, to: REFUND_PENDING) | Passed | 00:00:00.0000004 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: CREATED, to: VALIDATED) | Passed | 00:00:00.0000004 |
 | OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: PAID, to: CONFIRMED) | Passed | 00:00:00.0000005 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: PAID, to: REFUND_PENDING) | Passed | 00:00:00.0000025 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: PAYMENT_PENDING, to: PAID) | Passed | 00:00:00.0000514 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: REFUND_PENDING, to: REFUNDED) | Passed | 00:00:00.0000006 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: VALIDATED, to: PAYMENT_PENDING) | Passed | 00:00:00.0001343 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: CANCELLED) | Passed | 00:00:00.0001041 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: COMPLETED) | Passed | 00:00:00.0001427 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: FAILED) | Passed | 00:00:00.0000034 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: REFUNDED) | Passed | 00:00:00.0000009 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: CANCELLED, to: PAID) | Passed | 00:00:00.0000005 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: COMPLETED, to: CANCELLED) | Passed | 00:00:00.0000007 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: CREATED, to: PAID) | Passed | 00:00:00.0000030 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: FAILED, to: PAYMENT_PENDING) | Passed | 00:00:00.0000530 |
-| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: PAID, to: PAYMENT_PENDING) | Passed | 00:00:00.0001461 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: PAID, to: REFUND_PENDING) | Passed | 00:00:00.0000026 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: PAYMENT_PENDING, to: PAID) | Passed | 00:00:00.0000441 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: REFUND_PENDING, to: REFUNDED) | Passed | 00:00:00.0000007 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: VALIDATED, to: PAYMENT_PENDING) | Passed | 00:00:00.0001213 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: CANCELLED) | Passed | 00:00:00.0000901 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: COMPLETED) | Passed | 00:00:00.0001756 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: FAILED) | Passed | 00:00:00.0000043 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: REFUNDED) | Passed | 00:00:00.0000008 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: CANCELLED, to: PAID) | Passed | 00:00:00.0000004 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: COMPLETED, to: CANCELLED) | Passed | 00:00:00.0000006 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: CREATED, to: PAID) | Passed | 00:00:00.0000028 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: FAILED, to: PAYMENT_PENDING) | Passed | 00:00:00.0000529 |
+| OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: PAID, to: PAYMENT_PENDING) | Passed | 00:00:00.0001403 |
 | OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: REFUNDED, to: PAID) | Passed | 00:00:00.0000005 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.CancellationCannotWinAfterPaymentEnteredProcessing | Passed | 00:00:00.6778175 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.CancelledOrderCannotBePaid | Passed | 00:00:00.0038904 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.DeclineFailsOrderAndReleasesInventory | Passed | 00:00:00.0023913 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.ExhaustedUnknownPaymentRemainsReservedUntilOutcomeIsKnown | Passed | 00:00:00.0050649 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.PaymentAmountMustEqualOrderTotal | Passed | 00:00:00.0037335 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.ReconciliationRecoversPaymentLeftProcessingByProcessCrash | Passed | 00:00:00.0020910 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.RefundReconciliationRecoversAfterProcessCrashWithoutIssuingAnotherRefund | Passed | 00:00:00.0062283 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.RetryingSameIdempotencyKeyReturnsOriginalPayment | Passed | 00:00:00.0017075 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.SuccessfulGatewayResultMovesPaymentAndOrderAtomically | Passed | 00:00:00.0015183 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.SuccessfulRefundCompensatesOrderAndReleasesInventory | Passed | 00:00:00.0155204 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.TimeoutBecomesUnknownAndRetryUsesSameLogicalPayment | Passed | 00:00:00.0209871 |
-| OrderPaymentMicroservice.Tests.PaymentServiceTests.UnknownRefundStaysPendingUntilSameRefundIsRetried | Passed | 00:00:00.0028905 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PENDING, to: PROCESSING) | Passed | 00:00:00.0056708 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PROCESSING, to: FAILED) | Passed | 00:00:00.0000034 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PROCESSING, to: SUCCESS) | Passed | 00:00:00.0000041 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PROCESSING, to: UNKNOWN) | Passed | 00:00:00.0000030 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: REFUND_PENDING, to: REFUNDED) | Passed | 00:00:00.0000110 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: SUCCESS, to: REFUND_PENDING) | Passed | 00:00:00.0002415 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: UNKNOWN, to: FAILED) | Passed | 00:00:00.0000032 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: UNKNOWN, to: PROCESSING) | Passed | 00:00:00.0087422 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.FailureAndRefundAreTerminal(terminal: FAILED) | Passed | 00:00:00.0016056 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.FailureAndRefundAreTerminal(terminal: REFUNDED) | Passed | 00:00:00.0012544 |
-| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.SuccessfulPaymentCanOnlyEnterRefundFlow | Passed | 00:00:00.1253643 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.CartAdditionChecksCombinedQuantityAndLeavesTotalUnchangedOnRejection | Passed | 00:00:00.0082520 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.CartZeroUpdateRemovesItemAndRecalculatesTotal | Passed | 00:00:00.3680494 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.DuplicateProductLinesRespectCombinedStock(perLine: 5, accepted: True) | Passed | 00:00:00.0728483 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.DuplicateProductLinesRespectCombinedStock(perLine: 6, accepted: False) | Passed | 00:00:00.0230622 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InactiveProductCannotBeAddedOrUpdatedInCart | Passed | 00:00:00.0044382 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: -1) | Passed | 00:00:00.0003791 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: 0) | Passed | 00:00:00.0004344 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: 10001) | Passed | 00:00:00.0018284 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: 2147483647) | Passed | 00:00:00.0682524 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartUpdatePreservesItemAndTotal(quantity: -1) | Passed | 00:00:00.0011558 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartUpdatePreservesItemAndTotal(quantity: 10001) | Passed | 00:00:00.0045668 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartUpdatePreservesItemAndTotal(quantity: 11) | Passed | 00:00:00.0007146 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: -1, stock: 10) | Passed | 00:00:00.0002634 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: 0, stock: 10) | Passed | 00:00:00.0204793 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: 1000000, stock: 10) | Passed | 00:00:00.0042640 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: 25, stock: -1) | Passed | 00:00:00.0005366 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "", password: "StrongPassword!123", name: "Customer") | Passed | 00:00:00.0542494 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "customer@example.test", password: "", name: "Customer") | Passed | 00:00:00.0001717 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "customer@example.test", password: "StrongPassword!123", name: " ") | Passed | 00:00:00.0004019 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "customer@example.test", password: "short", name: "Customer") | Passed | 00:00:00.0035554 |
-| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "invalid", password: "StrongPassword!123", name: "Customer") | Passed | 00:00:02.3790413 |
-| OrderPaymentMicroservice.Tests.SecurityFuzzingTests.SeedCorpusMatchesExpectedValidatorOutcome | Passed | 00:00:00.1587473 |
-| OrderPaymentMicroservice.Tests.SecurityFuzzingTests.SeededOrderAndPaymentValidatorCampaignHasNoUnexpectedCrash | Passed | 00:00:00.1345259 |
-| OrderPaymentMicroservice.Tests.SecurityFuzzingTests.SeededStateMachineCampaignMatchesIndependentTransitionTables | Passed | 00:00:00.7525602 |
-| OrderPaymentMicroservice.Tests.UserServiceTests.LegacySha256PasswordIsUpgradedAfterSuccessfulLogin | Passed | 00:00:01.5469908 |
-| OrderPaymentMicroservice.Tests.UserServiceTests.RegisterHashesPasswordAndLoginReturnsSignedJwt | Passed | 00:00:00.2539938 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.CancellationCannotWinAfterPaymentEnteredProcessing | Passed | 00:00:02.3075895 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.CancelledOrderCannotBePaid | Passed | 00:00:00.0021071 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.DeclineFailsOrderAndReleasesInventory | Passed | 00:00:00.0032103 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.ExhaustedUnknownPaymentRemainsReservedUntilOutcomeIsKnown | Passed | 00:00:00.1014296 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.PaymentAmountMustEqualOrderTotal | Passed | 00:00:00.0010931 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.ReconciliationRecoversPaymentLeftProcessingByProcessCrash | Passed | 00:00:00.0018727 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.RefundReconciliationRecoversAfterProcessCrashWithoutIssuingAnotherRefund | Passed | 00:00:00.0040244 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.RetryingSameIdempotencyKeyReturnsOriginalPayment | Passed | 00:00:00.0024107 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.SuccessfulGatewayResultMovesPaymentAndOrderAtomically | Passed | 00:00:00.0013170 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.SuccessfulRefundCompensatesOrderAndReleasesInventory | Passed | 00:00:00.0140863 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.TimeoutBecomesUnknownAndRetryUsesSameLogicalPayment | Passed | 00:00:00.0338808 |
+| OrderPaymentMicroservice.Tests.PaymentServiceTests.UnknownRefundStaysPendingUntilSameRefundIsRetried | Passed | 00:00:00.0039742 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PENDING, to: PROCESSING) | Passed | 00:00:00.0001911 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PROCESSING, to: FAILED) | Passed | 00:00:00.0000004 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PROCESSING, to: SUCCESS) | Passed | 00:00:00.0000006 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PROCESSING, to: UNKNOWN) | Passed | 00:00:00.0000004 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: REFUND_PENDING, to: REFUNDED) | Passed | 00:00:00.0000004 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: SUCCESS, to: REFUND_PENDING) | Passed | 00:00:00.0000069 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: UNKNOWN, to: FAILED) | Passed | 00:00:00.0000004 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: UNKNOWN, to: PROCESSING) | Passed | 00:00:00.0330002 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.FailureAndRefundAreTerminal(terminal: FAILED) | Passed | 00:00:00.0001661 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.FailureAndRefundAreTerminal(terminal: REFUNDED) | Passed | 00:00:00.0001477 |
+| OrderPaymentMicroservice.Tests.PaymentStateMachineTests.SuccessfulPaymentCanOnlyEnterRefundFlow | Passed | 00:00:00.0432277 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.CartAdditionChecksCombinedQuantityAndLeavesTotalUnchangedOnRejection | Passed | 00:00:00.0058932 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.CartZeroUpdateRemovesItemAndRecalculatesTotal | Passed | 00:00:00.6917531 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.DuplicateProductLinesRespectCombinedStock(perLine: 5, accepted: True) | Passed | 00:00:00.0011203 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.DuplicateProductLinesRespectCombinedStock(perLine: 6, accepted: False) | Passed | 00:00:00.0075797 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InactiveProductCannotBeAddedOrUpdatedInCart | Passed | 00:00:00.0023898 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: -1) | Passed | 00:00:00.0003390 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: 0) | Passed | 00:00:00.0946962 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: 10001) | Passed | 00:00:00.0022800 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: 2147483647) | Passed | 00:00:00.0137379 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartUpdatePreservesItemAndTotal(quantity: -1) | Passed | 00:00:00.0018160 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartUpdatePreservesItemAndTotal(quantity: 10001) | Passed | 00:00:00.0038783 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartUpdatePreservesItemAndTotal(quantity: 11) | Passed | 00:00:00.0006351 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: -1, stock: 10) | Passed | 00:00:00.0002208 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: 0, stock: 10) | Passed | 00:00:00.0128630 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: 1000000, stock: 10) | Passed | 00:00:00.0016678 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: 25, stock: -1) | Passed | 00:00:00.0002846 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "", password: "StrongPassword!123", name: "Customer") | Passed | 00:00:00.0014395 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "customer@example.test", password: "", name: "Customer") | Passed | 00:00:00.0001903 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "customer@example.test", password: "StrongPassword!123", name: " ") | Passed | 00:00:00.0005627 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "customer@example.test", password: "short", name: "Customer") | Passed | 00:00:00.0002519 |
+| OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: "invalid", password: "StrongPassword!123", name: "Customer") | Passed | 00:00:00.8211971 |
+| OrderPaymentMicroservice.Tests.SecurityFuzzingTests.SeedCorpusMatchesExpectedValidatorOutcome | Passed | 00:00:00.2774256 |
+| OrderPaymentMicroservice.Tests.SecurityFuzzingTests.SeededOrderAndPaymentValidatorCampaignHasNoUnexpectedCrash | Passed | 00:00:00.3783554 |
+| OrderPaymentMicroservice.Tests.SecurityFuzzingTests.SeededStateMachineCampaignMatchesIndependentTransitionTables | Passed | 00:00:00.6408563 |
+| OrderPaymentMicroservice.Tests.UserServiceTests.LegacySha256PasswordIsUpgradedAfterSuccessfulLogin | Passed | 00:00:02.6009488 |
+| OrderPaymentMicroservice.Tests.UserServiceTests.RegisterHashesPasswordAndLoginReturnsSignedJwt | Passed | 00:00:00.1993107 |
 
 #### integration: 8/8
 
 | Case | Outcome | Duration |
 | --- | --- | --- |
-| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Admin_can_confirm_and_complete_paid_order | Passed | 00:00:01.7119356 |
-| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Authentication_and_resource_ownership_are_enforced | Passed | 00:00:01.0608837 |
-| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Cart_updates_and_removal_commit_consistent_totals_on_PostgreSQL | Passed | 00:00:00.8056347 |
-| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Concurrent_payment_and_cancellation_end_in_one_consistent_outcome | Passed | 00:00:00.5828586 |
-| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Concurrent_payment_requests_create_only_one_charge_record | Passed | 00:00:00.5865082 |
-| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Customer_can_complete_register_cart_order_payment_flow | Passed | 00:00:01.0068675 |
-| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Database_rejects_negative_stock_and_nonpositive_quantity | Passed | 00:00:00.3606960 |
-| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Invalid_payloads_are_rejected_without_changing_persisted_data | Passed | 00:00:00.3417484 |
+| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Admin_can_confirm_and_complete_paid_order | Passed | 00:00:00.4484455 |
+| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Authentication_and_resource_ownership_are_enforced | Passed | 00:00:01.2264207 |
+| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Cart_updates_and_removal_commit_consistent_totals_on_PostgreSQL | Passed | 00:00:00.2407894 |
+| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Concurrent_payment_and_cancellation_end_in_one_consistent_outcome | Passed | 00:00:00.2245571 |
+| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Concurrent_payment_requests_create_only_one_charge_record | Passed | 00:00:00.2306109 |
+| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Customer_can_complete_register_cart_order_payment_flow | Passed | 00:00:00.3672923 |
+| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Database_rejects_negative_stock_and_nonpositive_quantity | Passed | 00:00:00.0891711 |
+| OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Invalid_payloads_are_rejected_without_changing_persisted_data | Passed | 00:00:00.3389158 |
 
 ### F.2. Ma trận truy vết
 
@@ -380,7 +951,10 @@ Từ thư mục gốc, sau khi restore dependency và cài PostgreSQL binaries h
 
 ```bash
 dotnet test OrderPaymentMicroservice.slnx --no-restore --nologo --logger 'trx;LogFilePrefix=verification' --results-directory security-analysis/results/dotnet --blame-hang-timeout 60s
+python3 security-analysis/package_evidence.py
 python3 security-analysis/verify_recovery_model.py
+python3 security-analysis/audit_liveness.py
+python3 security-analysis/verify_threat_model.py
 python3 security-analysis/verify_payment_smt.py
 python3 security-analysis/verify_inventory_smt.py
 python3 security-analysis/create_order_payment_spec.py
@@ -403,7 +977,7 @@ của chính project và xuất pipeline JSON vào security-analysis/.
 | Rate limiting/audit | OPEN | Test giới hạn request; audit có actor/action/result và redaction |
 | API fuzz/network fault injection | OPEN | Target HTTP, corpus, oracle và campaign log |
 | Migration dữ liệu cũ | NOT_TESTED | Kiểm tra dữ liệu vi phạm trước khi apply; không tự xóa/sửa |
-| TLC/static/sanitizer coverage | HISTORICAL | Giữ source hash/tool/run timestamp khi chạy lại |
+| TLC/fuzz coverage | HISTORICAL | Giữ source hash/tool/run timestamp khi chạy lại |
 | Model→implementation | PARTIAL | Traceability và test hỗ trợ; chưa có refinement proof |
 
 INCONCLUSIVE, TOOL_ERROR, BUILD_ERROR hoặc SKIP không được chuyển thành PASS. Evidence thiếu phải được ghi rõ, không điền ID/hash giả.

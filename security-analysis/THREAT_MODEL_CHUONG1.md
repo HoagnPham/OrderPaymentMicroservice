@@ -64,20 +64,23 @@ Inventory vì gián đoạn có thể để lại giao dịch chưa xác định
 
 | ID | STRIDE / boundary | Kịch bản | Điểm | Trạng thái |
 |---|---|---|---:|---|
-| T1 | Spoofing / TB1 | Không có/giả mạo identity hoặc dùng route id của user khác | 20 CRITICAL | Đã giảm thiểu, cần E2E |
+| T1 | Spoofing / TB1 | Không có/giả mạo identity hoặc dùng route id của user khác | 20 CRITICAL | Đã xác minh trong các đường HTTP test |
 | T2 | Tampering / TB1 | Sửa price, total hoặc payment amount | 25 CRITICAL | Đã giảm thiểu |
 | T3 | Repudiation / TB1 | Phủ nhận payment/retry/cancel khi log không bền vững | 12 HIGH | **OPEN** |
-| T4 | Information disclosure / TB1 | IDOR đọc aggregate của user khác | 16 HIGH | Đã giảm thiểu, cần E2E |
+| T4 | Information disclosure / TB1 | IDOR đọc aggregate của user khác | 16 HIGH | Đã xác minh trong các đường HTTP test |
 | T5 | Denial of service / TB1 | Flood endpoint hoặc order có quá nhiều item | 16 HIGH | **OPEN** |
-| T6 | Elevation of privilege / TB1 | Customer gọi endpoint refund/list của Admin | 15 HIGH | Đã giảm thiểu, cần E2E |
-| T7 | Tampering / TB2 | Race payment-cancel, replay hoặc chuyển trạng thái sai | 20 CRITICAL | Đã giảm thiểu, cần DB test |
+| T6 | Elevation of privilege / TB1 | Customer gọi endpoint refund/list của Admin | 15 HIGH | Đã xác minh trong các đường HTTP test |
+| T7 | Tampering / TB2 | Race payment-cancel, replay hoặc chuyển trạng thái sai | 20 CRITICAL | Đã xác minh trong PostgreSQL race test |
 | T8 | Spoofing / TB3 | Giả/replay kết quả SUCCESS từ gateway thật | 15 HIGH | **OPEN cho gateway thật** |
 | T9 | Information disclosure / TB4 | Lộ JWT/DB secret qua config, log hoặc host | 15 HIGH | Giảm thiểu một phần |
 
 Risk score là **inherent risk** của kịch bản trước control. Trạng thái không được
-suy ra chỉ từ điểm số: `MITIGATED_NEEDS_E2E_VERIFICATION` nghĩa là source có
-control nhưng chưa có bằng chứng HTTP/PostgreSQL end-to-end; `OPEN` không được
-ghi thành “đã sửa”. Chi tiết threat agent, vulnerability, attack, control,
+suy ra chỉ từ điểm số: `VERIFIED_IN_TEST_SCOPE` nghĩa là có HTTP/PostgreSQL evidence cho các đường test đã chạy,
+không phải tất cả endpoint, token scenario hay mọi interleaving; `OPEN` không được
+ghi thành “đã sửa”. Property ID phải đi kèm namespace `base` hoặc `recovery`; trường `property_refs`
+trong JSON là tham chiếu chuẩn, `kripke_properties` giữ để tương thích metadata cũ.
+
+Chi tiết threat agent, vulnerability, attack, control,
 recommendation và evidence nằm trong JSON để tránh bảng tài liệu làm mất dữ liệu.
 
 STRIDE coverage đầy đủ cả sáu nhóm. Một threat có thể ảnh hưởng nhiều thuộc tính
@@ -88,12 +91,12 @@ CIA, nhưng phải có ít nhất một asset và một trust boundary cụ th�
 | Threat | Security requirement/control | Hợp đồng/thuộc tính hình thức | Kết luận trong phạm vi model |
 |---|---|---|---|
 | T1, T4, T6 | REQ-1/2; JWT, ownership, role | Ngoài model Order hiện tại | Không kết luận từ Kripke; cần model identity/role riêng |
-| T2 | REQ-3/4/6; giá server, equality | F1, F2; P3, P4, P11 | Chỉ amount đã xác minh mới đi vào payment; sai amount giữ PAYMENT_PENDING |
-| T7 | REQ-5/7/18; state guard, serializable, idempotency | F2, F3, F7; P1, P4, P7, P11–P15 | Cancel/payment có quyết định duy nhất; terminal không hồi sinh; callback trùng là no-op |
-| T5 | REQ-16; bounded retry | F3; P10, P14 với giả định fairness đã nêu | UNKNOWN giữ reservation và reconcile; model không chứng minh rate limit/load runtime |
-| T8 | REQ-6/7; xác thực gateway | F3, F6; P2, P13, P14 | Chứng minh cách xử lý proposition gateway; không chứng minh gateway thật đã xác thực |
+| T2 | REQ-3/4/6; giá server, equality | F1, F2; base:P3/P4, recovery:P2/P6/P11 | Chỉ amount đã xác minh mới đi vào payment; sai amount giữ PAYMENT_PENDING |
+| T7 | REQ-5/7/18; state guard, serializable, idempotency | F2, F3, F7; base:P1, recovery:P1/P4/P7/P11–P15 | Cancel/payment có quyết định duy nhất; terminal không hồi sinh; callback trùng là no-op |
+| T5 | REQ-16; bounded retry | F3; recovery:P10/P14 với giả định fairness đã nêu | UNKNOWN giữ reservation và reconcile; model không chứng minh rate limit/load runtime |
+| T8 | REQ-6/7; xác thực gateway | F3, F6; recovery:P2/P13/P14 | Chứng minh cách xử lý proposition gateway; không chứng minh gateway thật đã xác thực |
 
-Điểm quan trọng: `P3: AG(paid → payment_success)` chỉ chứng minh consistency
+Điểm quan trọng: `base:P3: AG(paid → payment_success)` chỉ chứng minh consistency
 trong mô hình. Nó **không** chứng minh proposition `payment_success` đến từ một
 gateway xác thực. Vì vậy T8 vẫn mở dù P3 PASS. Tương tự, model Kripke Order không
 mang identity/role nên không dùng P1–P4 để tuyên bố T1/T4/T6 đã được chứng minh.
@@ -115,8 +118,9 @@ state nguồn, event, state đích cùng các bất biến P1–P15.
    outcome; quy định integrity và retention.
 3. T8: khi thay fake gateway, xác thực signature/timestamp/nonce, merchant,
    order và amount trước khi nhận SUCCESS.
-4. T1/T4/T6/T7: chạy integration test thật qua HTTP/PostgreSQL để chuyển từ
-   “control có trong source” sang “đã kiểm chứng end-to-end”.
+4. T1/T4/T6/T7: các đường authorization/race đã có HTTP/PostgreSQL PASS;
+   tiếp tục kiểm token hết hạn, forged issuer/audience/signature, role revocation
+   và thêm interleaving. Không suy từ các đường test này sang mọi threat đã đóng.
 5. T9: secret manager, rotation và secret scanning cả Git history.
 
 ## 7. Kiểm chứng tái lập
@@ -132,3 +136,15 @@ Script kiểm tra ID duy nhất, tham chiếu asset/boundary hợp lệ, đủ s
 Kripke. Kết quả được lưu tại `results/threat_model_results.json`. Đây là kiểm tra
 tính nhất quán của threat model, không phải bằng chứng rằng mọi control runtime
 đã hoạt động.
+
+## 8. Evidence mở rộng ngày 12/10/2026
+
+Test authorization kiểm Cart/Order chéo user, Payment read/retry/reconcile chéo
+user, cùng Customer gọi Order listing/confirm/complete, Payment refund/refund retry
+và Product create/update/delete. T1/T4/T6/T7 có trạng thái VERIFIED_IN_TEST_SCOPE
+với runtime_evidence và limits; điểm inherent risk được giữ nguyên.
+
+Audit liveness mới xác nhận graph gốc không thỏa unconditional AG AF terminal,
+trong khi checker progress-only thỏa thuộc tính sau lọc cạnh. Xem
+[Chương 3](report/BAO_CAO.md#3-mô-hình-trạng-thái-kiểm-chứng-và-đối-chiếu-implementation)
+và [liveness audit](results/liveness_audit.results.json).

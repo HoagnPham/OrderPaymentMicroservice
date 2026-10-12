@@ -28,63 +28,122 @@
       "id": "A1",
       "name": "Customer identity and credentials",
       "classification": "RESTRICTED",
-      "cia": {"confidentiality": "HIGH", "integrity": "HIGH", "availability": "MEDIUM"}
+      "cia": {
+        "confidentiality": "HIGH",
+        "integrity": "HIGH",
+        "availability": "MEDIUM"
+      }
     },
     {
       "id": "A2",
       "name": "Order, cart and ownership data",
       "classification": "CONFIDENTIAL",
-      "cia": {"confidentiality": "HIGH", "integrity": "HIGH", "availability": "MEDIUM"}
+      "cia": {
+        "confidentiality": "HIGH",
+        "integrity": "HIGH",
+        "availability": "MEDIUM"
+      }
     },
     {
       "id": "A3",
       "name": "Payment state, amount and idempotency records",
       "classification": "RESTRICTED",
-      "cia": {"confidentiality": "MEDIUM", "integrity": "HIGH", "availability": "HIGH"}
+      "cia": {
+        "confidentiality": "MEDIUM",
+        "integrity": "HIGH",
+        "availability": "HIGH"
+      }
     },
     {
       "id": "A4",
       "name": "Product price and inventory",
       "classification": "INTERNAL",
-      "cia": {"confidentiality": "LOW", "integrity": "HIGH", "availability": "HIGH"}
+      "cia": {
+        "confidentiality": "LOW",
+        "integrity": "HIGH",
+        "availability": "HIGH"
+      }
     },
     {
       "id": "A5",
       "name": "JWT signing key and database connection secret",
       "classification": "RESTRICTED",
-      "cia": {"confidentiality": "HIGH", "integrity": "HIGH", "availability": "HIGH"}
+      "cia": {
+        "confidentiality": "HIGH",
+        "integrity": "HIGH",
+        "availability": "HIGH"
+      }
     },
     {
       "id": "A6",
       "name": "Security and transaction audit trail",
       "classification": "CONFIDENTIAL",
-      "cia": {"confidentiality": "MEDIUM", "integrity": "HIGH", "availability": "MEDIUM"}
+      "cia": {
+        "confidentiality": "MEDIUM",
+        "integrity": "HIGH",
+        "availability": "MEDIUM"
+      }
     }
   ],
   "trust_boundaries": [
     {
       "id": "TB1",
       "name": "Internet client to ASP.NET Core API",
-      "data_flows": ["JWT", "route identifiers", "order/cart/payment JSON"],
-      "required_controls": ["TLS at deployment", "JWT validation", "authorization and ownership checks", "input validation"]
+      "data_flows": [
+        "JWT",
+        "route identifiers",
+        "order/cart/payment JSON"
+      ],
+      "required_controls": [
+        "TLS at deployment",
+        "JWT validation",
+        "authorization and ownership checks",
+        "input validation"
+      ]
     },
     {
       "id": "TB2",
       "name": "Application process to PostgreSQL",
-      "data_flows": ["entities and queries", "transactions", "connection credentials"],
-      "required_controls": ["parameterized EF Core queries", "Serializable transactions", "least-privilege database account", "secret injection"]
+      "data_flows": [
+        "entities and queries",
+        "transactions",
+        "connection credentials"
+      ],
+      "required_controls": [
+        "parameterized EF Core queries",
+        "Serializable transactions",
+        "least-privilege database account",
+        "secret injection"
+      ]
     },
     {
       "id": "TB3",
       "name": "Payment service to payment gateway",
-      "data_flows": ["charge/refund request", "gateway status and transaction code"],
-      "required_controls": ["authenticated transport", "response authenticity", "amount binding", "idempotency", "timeout and reconciliation"]
+      "data_flows": [
+        "charge/refund request",
+        "gateway status and transaction code"
+      ],
+      "required_controls": [
+        "authenticated transport",
+        "response authenticity",
+        "amount binding",
+        "idempotency",
+        "timeout and reconciliation"
+      ]
     },
     {
       "id": "TB4",
       "name": "Host configuration to application process",
-      "data_flows": ["JWT key", "connection string", "recovery options"],
-      "required_controls": ["secrets outside source control", "startup validation", "restricted host access"]
+      "data_flows": [
+        "JWT key",
+        "connection string",
+        "recovery options"
+      ],
+      "required_controls": [
+        "secrets outside source control",
+        "startup validation",
+        "restricted host access"
+      ]
     }
   ],
   "threats": [
@@ -92,167 +151,441 @@
       "id": "T1",
       "stride": "SPOOFING",
       "boundary": "TB1",
-      "assets": ["A1", "A2", "A3"],
+      "assets": [
+        "A1",
+        "A2",
+        "A3"
+      ],
       "threat_agent": "anonymous_client",
       "threat": "Forge or omit identity and act as another customer",
       "vulnerability": "Missing authentication or failure to bind a route resource to the authenticated subject",
       "attack": "Call protected Order, Cart or Payment routes without a valid subject or with another user's identifier",
-      "cia": ["CONFIDENTIALITY", "INTEGRITY"],
+      "cia": [
+        "CONFIDENTIALITY",
+        "INTEGRITY"
+      ],
       "likelihood": 4,
       "impact": 5,
       "risk_score": 20,
-      "status": "MITIGATED_NEEDS_E2E_VERIFICATION",
-      "controls": ["JWT bearer validation", "[Authorize]", "claims-based ownership checks", "Admin role checks"],
-      "evidence": ["VULN-001", "VULN-005", "REQ-1", "REQ-2", "TC-1", "TC-2"],
-      "kripke_properties": []
+      "status": "VERIFIED_IN_TEST_SCOPE",
+      "controls": [
+        "JWT bearer validation",
+        "[Authorize]",
+        "claims-based ownership checks",
+        "Admin role checks"
+      ],
+      "evidence": [
+        "VULN-001",
+        "VULN-005",
+        "REQ-1",
+        "REQ-2",
+        "TC-1",
+        "TC-2"
+      ],
+      "kripke_properties": [],
+      "property_refs": [],
+      "runtime_evidence": {
+        "path": "security-analysis/results/application_tests.results.json",
+        "test": "Authentication_and_resource_ownership_are_enforced",
+        "limits": "HTTP/PostgreSQL test host; no guarantee for untested endpoints, key rotation, all interleavings or real gateway."
+      }
     },
     {
       "id": "T2",
       "stride": "TAMPERING",
       "boundary": "TB1",
-      "assets": ["A2", "A3", "A4"],
+      "assets": [
+        "A2",
+        "A3",
+        "A4"
+      ],
       "threat_agent": "authenticated_customer",
       "threat": "Change client-supplied price, total or payment amount",
       "vulnerability": "Trusting request monetary values without server-side recomputation and cross-aggregate checks",
       "attack": "Submit a cheap UnitPrice/TotalAmount or pay an amount different from the stored order total",
-      "cia": ["INTEGRITY"],
+      "cia": [
+        "INTEGRITY"
+      ],
       "likelihood": 5,
       "impact": 5,
       "risk_score": 25,
       "status": "MITIGATED",
-      "controls": ["server-side product price lookup", "total recomputation", "payment amount equality", "InputValidator bounds"],
-      "evidence": ["VULN-002", "VULN-004", "REQ-3", "REQ-4", "REQ-6", "TC-3", "TC-6", "TC-7"],
-      "kripke_properties": ["P3", "P4"]
+      "controls": [
+        "server-side product price lookup",
+        "total recomputation",
+        "payment amount equality",
+        "InputValidator bounds"
+      ],
+      "evidence": [
+        "VULN-002",
+        "VULN-004",
+        "REQ-3",
+        "REQ-4",
+        "REQ-6",
+        "TC-3",
+        "TC-6",
+        "TC-7"
+      ],
+      "kripke_properties": [
+        "P3",
+        "P4"
+      ],
+      "property_refs": [
+        {
+          "model": "base",
+          "id": "P3"
+        },
+        {
+          "model": "base",
+          "id": "P4"
+        },
+        {
+          "model": "recovery",
+          "id": "P2"
+        },
+        {
+          "model": "recovery",
+          "id": "P6"
+        },
+        {
+          "model": "recovery",
+          "id": "P11"
+        }
+      ]
     },
     {
       "id": "T3",
       "stride": "REPUDIATION",
       "boundary": "TB1",
-      "assets": ["A3", "A6"],
+      "assets": [
+        "A3",
+        "A6"
+      ],
       "threat_agent": "authenticated_customer",
       "threat": "Deny having initiated a payment, retry or cancellation",
       "vulnerability": "Application logs are not a durable, append-only audit trail and do not define correlation/retention guarantees",
       "attack": "Dispute a state-changing request after logs rotate or lack sufficient actor and correlation context",
-      "cia": ["INTEGRITY"],
+      "cia": [
+        "INTEGRITY"
+      ],
       "likelihood": 3,
       "impact": 4,
       "risk_score": 12,
       "status": "OPEN",
-      "controls": ["structured application logging", "JWT subject", "payment idempotency key"],
+      "controls": [
+        "structured application logging",
+        "JWT subject",
+        "payment idempotency key"
+      ],
       "recommendation": "Persist an append-only audit event containing actor, action, resource, correlation id, timestamp and outcome; protect integrity and define retention.",
-      "evidence": ["NFR-3", "REQ-7", "TC-8"],
-      "kripke_properties": []
+      "evidence": [
+        "NFR-3",
+        "REQ-7",
+        "TC-8"
+      ],
+      "kripke_properties": [],
+      "property_refs": []
     },
     {
       "id": "T4",
       "stride": "INFORMATION_DISCLOSURE",
       "boundary": "TB1",
-      "assets": ["A1", "A2", "A3"],
+      "assets": [
+        "A1",
+        "A2",
+        "A3"
+      ],
       "threat_agent": "authenticated_customer",
       "threat": "Read another customer's order, cart or payment",
       "vulnerability": "Predictable identifiers become an IDOR when ownership is not checked on every read path",
       "attack": "Enumerate resource identifiers and request another customer's aggregate",
-      "cia": ["CONFIDENTIALITY"],
+      "cia": [
+        "CONFIDENTIALITY"
+      ],
       "likelihood": 4,
       "impact": 4,
       "risk_score": 16,
-      "status": "MITIGATED_NEEDS_E2E_VERIFICATION",
-      "controls": ["resource ownership check", "Admin-only global order listing", "generic authorization failure"],
-      "evidence": ["VULN-001", "VULN-005", "REQ-2", "TC-2"],
-      "kripke_properties": []
+      "status": "VERIFIED_IN_TEST_SCOPE",
+      "controls": [
+        "resource ownership check",
+        "Admin-only global order listing",
+        "generic authorization failure"
+      ],
+      "evidence": [
+        "VULN-001",
+        "VULN-005",
+        "REQ-2",
+        "TC-2"
+      ],
+      "kripke_properties": [],
+      "property_refs": [],
+      "runtime_evidence": {
+        "path": "security-analysis/results/application_tests.results.json",
+        "test": "Authentication_and_resource_ownership_are_enforced",
+        "limits": "HTTP/PostgreSQL test host; no guarantee for untested endpoints, key rotation, all interleavings or real gateway."
+      }
     },
     {
       "id": "T5",
       "stride": "DENIAL_OF_SERVICE",
       "boundary": "TB1",
-      "assets": ["A3", "A4"],
+      "assets": [
+        "A3",
+        "A4"
+      ],
       "threat_agent": "anonymous_client",
       "threat": "Exhaust API, database or recovery capacity",
       "vulnerability": "Repository has no explicit rate limit and no documented maximum order-item collection size",
       "attack": "Flood authentication/business endpoints or submit repeatedly large order payloads",
-      "cia": ["AVAILABILITY"],
+      "cia": [
+        "AVAILABILITY"
+      ],
       "likelihood": 4,
       "impact": 4,
       "risk_score": 16,
       "status": "OPEN",
-      "controls": ["bounded per-item numeric fields", "bounded payment retry state machine"],
+      "controls": [
+        "bounded per-item numeric fields",
+        "bounded payment retry state machine"
+      ],
       "recommendation": "Add request/body and item-count limits, per-identity/IP rate limiting, gateway timeout and load tests.",
-      "evidence": ["REQ-16", "CON-7", "P2", "P10"],
-      "kripke_properties": ["P2", "P10"]
+      "evidence": [
+        "REQ-16",
+        "CON-7",
+        "P2",
+        "P10"
+      ],
+      "kripke_properties": [
+        "P2",
+        "P10"
+      ],
+      "property_refs": [
+        {
+          "model": "recovery",
+          "id": "P10"
+        },
+        {
+          "model": "recovery",
+          "id": "P14"
+        }
+      ]
     },
     {
       "id": "T6",
       "stride": "ELEVATION_OF_PRIVILEGE",
       "boundary": "TB1",
-      "assets": ["A2", "A3", "A5"],
+      "assets": [
+        "A2",
+        "A3",
+        "A5"
+      ],
       "threat_agent": "authenticated_customer",
       "threat": "Invoke administrator-only listing or refund operations",
       "vulnerability": "Missing role enforcement or acceptance of an untrusted/incorrectly signed role claim",
       "attack": "Call Admin endpoints with a customer token or a forged Admin claim",
-      "cia": ["CONFIDENTIALITY", "INTEGRITY"],
+      "cia": [
+        "CONFIDENTIALITY",
+        "INTEGRITY"
+      ],
       "likelihood": 3,
       "impact": 5,
       "risk_score": 15,
-      "status": "MITIGATED_NEEDS_E2E_VERIFICATION",
-      "controls": ["JWT signature/issuer/audience validation", "[Authorize(Roles = Admin)]", "minimum JWT key length at startup"],
-      "evidence": ["REQ-1", "REQ-2", "NFR-4", "TC-1", "TC-2"],
-      "kripke_properties": []
+      "status": "VERIFIED_IN_TEST_SCOPE",
+      "controls": [
+        "JWT signature/issuer/audience validation",
+        "[Authorize(Roles = Admin)]",
+        "minimum JWT key length at startup"
+      ],
+      "evidence": [
+        "REQ-1",
+        "REQ-2",
+        "NFR-4",
+        "TC-1",
+        "TC-2"
+      ],
+      "kripke_properties": [],
+      "property_refs": [],
+      "runtime_evidence": {
+        "path": "security-analysis/results/application_tests.results.json",
+        "test": "Authentication_and_resource_ownership_are_enforced",
+        "limits": "HTTP/PostgreSQL test host; no guarantee for untested endpoints, key rotation, all interleavings or real gateway."
+      }
     },
     {
       "id": "T7",
       "stride": "TAMPERING",
       "boundary": "TB2",
-      "assets": ["A2", "A3", "A4"],
+      "assets": [
+        "A2",
+        "A3",
+        "A4"
+      ],
       "threat_agent": "authenticated_customer",
       "threat": "Exploit concurrent payment/cancel or invalid transitions to corrupt workflow state",
       "vulnerability": "Unserialized transitions can revive terminal orders, double-charge, or diverge inventory and payment state",
       "attack": "Race payment against cancellation or replay the same payment operation",
-      "cia": ["INTEGRITY", "AVAILABILITY"],
+      "cia": [
+        "INTEGRITY",
+        "AVAILABILITY"
+      ],
       "likelihood": 4,
       "impact": 5,
       "risk_score": 20,
-      "status": "MITIGATED_NEEDS_DATABASE_VERIFICATION",
-      "controls": ["Order/Payment state machines", "Serializable transaction", "idempotency key", "reconciliation and refund"],
-      "evidence": ["VULN-003", "REQ-5", "REQ-7", "REQ-18", "NFR-1", "TC-5", "TC-8", "TC-15", "TC-17"],
-      "kripke_properties": ["P1", "P3", "P6", "P7", "P8"]
+      "status": "VERIFIED_IN_TEST_SCOPE",
+      "controls": [
+        "Order/Payment state machines",
+        "Serializable transaction",
+        "idempotency key",
+        "reconciliation and refund"
+      ],
+      "evidence": [
+        "VULN-003",
+        "REQ-5",
+        "REQ-7",
+        "REQ-18",
+        "NFR-1",
+        "TC-5",
+        "TC-8",
+        "TC-15",
+        "TC-17"
+      ],
+      "kripke_properties": [
+        "P1",
+        "P3",
+        "P6",
+        "P7",
+        "P8"
+      ],
+      "property_refs": [
+        {
+          "model": "base",
+          "id": "P1"
+        },
+        {
+          "model": "recovery",
+          "id": "P1"
+        },
+        {
+          "model": "recovery",
+          "id": "P4"
+        },
+        {
+          "model": "recovery",
+          "id": "P7"
+        },
+        {
+          "model": "recovery",
+          "id": "P11"
+        },
+        {
+          "model": "recovery",
+          "id": "P12"
+        },
+        {
+          "model": "recovery",
+          "id": "P13"
+        },
+        {
+          "model": "recovery",
+          "id": "P14"
+        },
+        {
+          "model": "recovery",
+          "id": "P15"
+        }
+      ],
+      "runtime_evidence": {
+        "path": "security-analysis/results/application_tests.results.json",
+        "test": "Concurrent_payment_and_cancellation_end_in_one_consistent_outcome",
+        "limits": "HTTP/PostgreSQL test host; no guarantee for untested endpoints, key rotation, all interleavings or real gateway."
+      }
     },
     {
       "id": "T8",
       "stride": "SPOOFING",
       "boundary": "TB3",
-      "assets": ["A3"],
+      "assets": [
+        "A3"
+      ],
       "threat_agent": "payment_gateway",
       "threat": "Supply a forged or replayed successful gateway result",
       "vulnerability": "Current FakePaymentGateway cannot establish authenticity guarantees of a production callback/response",
       "attack": "Forge SUCCESS or replay a transaction code so an unpaid order appears paid",
-      "cia": ["INTEGRITY"],
+      "cia": [
+        "INTEGRITY"
+      ],
       "likelihood": 3,
       "impact": 5,
       "risk_score": 15,
       "status": "OPEN_FOR_REAL_GATEWAY",
-      "controls": ["amount binding", "idempotency", "state guards", "reconciliation"],
+      "controls": [
+        "amount binding",
+        "idempotency",
+        "state guards",
+        "reconciliation"
+      ],
       "recommendation": "For the real adapter, validate provider signature, timestamp/nonce, merchant and amount before accepting SUCCESS.",
-      "evidence": ["REQ-6", "REQ-7", "P3", "TC-6", "TC-7"],
-      "kripke_properties": ["P3"]
+      "evidence": [
+        "REQ-6",
+        "REQ-7",
+        "P3",
+        "TC-6",
+        "TC-7"
+      ],
+      "kripke_properties": [
+        "P3"
+      ],
+      "property_refs": [
+        {
+          "model": "base",
+          "id": "P3"
+        },
+        {
+          "model": "recovery",
+          "id": "P2"
+        },
+        {
+          "model": "recovery",
+          "id": "P13"
+        },
+        {
+          "model": "recovery",
+          "id": "P14"
+        }
+      ]
     },
     {
       "id": "T9",
       "stride": "INFORMATION_DISCLOSURE",
       "boundary": "TB4",
-      "assets": ["A5"],
+      "assets": [
+        "A5"
+      ],
       "threat_agent": "database_administrator",
       "threat": "Expose JWT key or database credentials through source, logs or weak host permissions",
       "vulnerability": "Secrets copied into source-controlled configuration or emitted in diagnostic output",
       "attack": "Read leaked configuration and forge tokens or connect directly to the database",
-      "cia": ["CONFIDENTIALITY", "INTEGRITY"],
+      "cia": [
+        "CONFIDENTIALITY",
+        "INTEGRITY"
+      ],
       "likelihood": 3,
       "impact": 5,
       "risk_score": 15,
       "status": "PARTIALLY_MITIGATED",
-      "controls": ["external configuration requirement", "minimum JWT key length", "logging prohibition for secrets"],
+      "controls": [
+        "external configuration requirement",
+        "minimum JWT key length",
+        "logging prohibition for secrets"
+      ],
       "recommendation": "Use a deployment secret manager, rotate secrets and verify repository/history with secret scanning.",
-      "evidence": ["NFR-3", "NFR-4"],
-      "kripke_properties": []
+      "evidence": [
+        "NFR-3",
+        "NFR-4"
+      ],
+      "kripke_properties": [],
+      "property_refs": []
     }
-  ]
+  ],
+  "property_reference_rule": "property_refs is authoritative and model-qualified; kripke_properties is retained as legacy unqualified metadata."
 }

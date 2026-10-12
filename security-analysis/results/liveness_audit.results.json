@@ -1,0 +1,198 @@
+{
+  "passed": true,
+  "run_at_utc": "2026-10-12T13:13:59.711612+00:00",
+  "model_sha256": "b8283d6718efd22ebd6b490f3407c737b6f7bc77a865577e075cf1a4e35e2a39",
+  "reachable_count": 15,
+  "unconditional_AG_AF_terminal": false,
+  "unconditional_satisfying_states": [
+    "CANCELLED",
+    "COMPLETED",
+    "FAILED",
+    "PRE_PAYMENT_REJECTED",
+    "REFUNDED"
+  ],
+  "progress_only_AG_AF_terminal": true,
+  "raw_fixed_point_rounds": [
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "FAILED",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED"
+    ]
+  ],
+  "progress_fixed_point_rounds": [
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "FAILED",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "FAILED",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "CONFIRMED",
+      "FAILED",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "CONFIRMATION_RETRY",
+      "CONFIRMED",
+      "FAILED",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "CONFIRMATION_RETRY",
+      "CONFIRMED",
+      "FAILED",
+      "PAID",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "CONFIRMATION_RETRY",
+      "CONFIRMED",
+      "FAILED",
+      "PAID",
+      "PAYMENT_PROCESSING_FINAL",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "CONFIRMATION_RETRY",
+      "CONFIRMED",
+      "FAILED",
+      "PAID",
+      "PAYMENT_PROCESSING_FINAL",
+      "PAYMENT_RETRY",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "CONFIRMATION_RETRY",
+      "CONFIRMED",
+      "FAILED",
+      "PAID",
+      "PAYMENT_PROCESSING",
+      "PAYMENT_PROCESSING_FINAL",
+      "PAYMENT_RETRY",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "CONFIRMATION_RETRY",
+      "CONFIRMED",
+      "FAILED",
+      "PAID",
+      "PAYMENT_PENDING",
+      "PAYMENT_PROCESSING",
+      "PAYMENT_PROCESSING_FINAL",
+      "PAYMENT_RETRY",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "CONFIRMATION_RETRY",
+      "CONFIRMED",
+      "FAILED",
+      "PAID",
+      "PAYMENT_PENDING",
+      "PAYMENT_PROCESSING",
+      "PAYMENT_PROCESSING_FINAL",
+      "PAYMENT_RETRY",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING",
+      "VALIDATED"
+    ],
+    [
+      "CANCELLED",
+      "COMPLETED",
+      "CONFIRMATION_RETRY",
+      "CONFIRMED",
+      "CREATED",
+      "FAILED",
+      "PAID",
+      "PAYMENT_PENDING",
+      "PAYMENT_PROCESSING",
+      "PAYMENT_PROCESSING_FINAL",
+      "PAYMENT_RETRY",
+      "PRE_PAYMENT_REJECTED",
+      "REFUNDED",
+      "REFUND_PENDING",
+      "VALIDATED"
+    ]
+  ],
+  "counterexample_lasso": {
+    "prefix": [
+      "CREATED",
+      "VALIDATED",
+      "PAYMENT_PENDING",
+      "PAYMENT_PROCESSING",
+      "PAYMENT_RETRY"
+    ],
+    "loop": [
+      "PAYMENT_RETRY",
+      "PAYMENT_RETRY"
+    ],
+    "event": "retry_exhausted_unknown",
+    "interpretation": "Repeat the loop forever; terminal is never reached."
+  },
+  "excluded_edges_with_state_change": [
+    {
+      "source": "PAYMENT_PROCESSING_FINAL",
+      "problem": "Final attempt times out with an unknown outcome",
+      "event": "final_payment_unknown",
+      "detection": "No authenticated final response is available",
+      "solution": "Stop charging automatically and continue reconciliation/manual review without releasing inventory",
+      "to": "PAYMENT_RETRY",
+      "kind": "stutter"
+    },
+    {
+      "source": "PAYMENT_PROCESSING_FINAL",
+      "problem": "Final attempt charged but local commit failed",
+      "event": "final_charged_but_commit_failed",
+      "detection": "Payment remains PROCESSING while the gateway has a final result",
+      "solution": "Reconcile the existing charge; do not increase the charge attempt counter",
+      "to": "PAYMENT_RETRY",
+      "kind": "stutter"
+    }
+  ],
+  "limitations": [
+    "Deleting edges marked stutter is the existing checker policy, not a general fair-CTL algorithm.",
+    "Some edges marked stutter change state; this name is project metadata, not identity of all formal state variables.",
+    "Fairness of a gateway result requires environment assumptions; no runtime guarantee is inferred."
+  ]
+}

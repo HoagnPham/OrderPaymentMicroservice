@@ -31,6 +31,10 @@ def main():
         (BASE / "order_payment_recovery_model.json").read_text(encoding="utf-8")
     )
     known_properties |= {item["id"] for item in recovery["properties"]}
+    known_by_model = {
+        "base": {item["id"] for item in json.loads((BASE / "order_state_model.json").read_text())["properties_to_check"]},
+        "recovery": {item["id"] for item in recovery["properties"]},
+    }
     cia_covered = set()
     open_threats = []
     for item in threats:
@@ -42,6 +46,18 @@ def main():
         assert item["threat"] and item["vulnerability"] and item["attack"], f"{item['id']}: incomplete threat chain"
         assert item["controls"] and item["evidence"], f"{item['id']}: missing control/evidence"
         assert set(item["kripke_properties"]) <= known_properties, f"{item['id']}: unknown Kripke property"
+        for reference in item.get("property_refs", []):
+            namespace = reference.get("model")
+            if namespace not in known_by_model or reference.get("id") not in known_by_model[namespace]:
+                raise ValueError(f"{item['id']}: invalid qualified property reference {reference}")
+        if item["status"] == "VERIFIED_IN_TEST_SCOPE":
+            evidence = item.get("runtime_evidence", {})
+            if evidence.get("path") != "security-analysis/results/application_tests.results.json":
+                raise ValueError(f"{item['id']}: missing project runtime evidence")
+            suite = json.loads((OUT / "application_tests.results.json").read_text())["suites"]["integration"]
+            matching = [case for case in suite["cases"] if case["name"].endswith("." + evidence.get("test", ""))]
+            if not matching or any(case["outcome"] != "Passed" for case in matching) or not evidence.get("limits"):
+                raise ValueError(f"{item['id']}: runtime test missing, failed or lacks scope limits")
         cia_covered.update(item["cia"])
         if item["status"].startswith("OPEN"):
             assert item.get("recommendation"), f"{item['id']}: open threat needs recommendation"
@@ -62,7 +78,8 @@ def main():
             "complete STRIDE and CIA coverage",
             "risk = likelihood x impact",
             "complete threat chain and evidence",
-            "valid Kripke property references",
+            "valid legacy and model-qualified property references",
+            "runtime evidence and limits for VERIFIED_IN_TEST_SCOPE threats",
             "recommendation for open threats",
         ],
     }

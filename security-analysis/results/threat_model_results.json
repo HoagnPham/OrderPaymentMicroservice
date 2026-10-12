@@ -27,7 +27,8 @@
     "complete STRIDE and CIA coverage",
     "risk = likelihood x impact",
     "complete threat chain and evidence",
-    "valid Kripke property references",
+    "valid legacy and model-qualified property references",
+    "runtime evidence and limits for VERIFIED_IN_TEST_SCOPE threats",
     "recommendation for open threats"
   ]
 }

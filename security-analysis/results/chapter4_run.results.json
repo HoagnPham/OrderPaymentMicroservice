@@ -1,0 +1,121 @@
+{
+  "passed": true,
+  "recorded_at_utc": "2026-10-12T13:07:57.623713+00:00",
+  "environment": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "commands": [
+    "make -C security-analysis/c-memory static-check",
+    "make -C security-analysis/c-memory test"
+  ],
+  "attempts": [
+    {
+      "scope": "sandbox",
+      "outcome": "FAILED_ORACLE",
+      "note": "Nonzero exit / mismatching diagnostic; environment-sensitive run, not counted as valid memory finding."
+    },
+    {
+      "scope": "outside_sandbox",
+      "outcome": "PASS",
+      "cases": 22,
+      "note": "detect_leaks remained enabled."
+    }
+  ],
+  "sources": [
+    {
+      "path": "security-analysis/c-memory/modules/cart.c",
+      "sha256": "6bef9b35ef4dbcbd884af394cf23fdac06b8e4731bffc59fc4520e73377d4d9f"
+    },
+    {
+      "path": "security-analysis/c-memory/modules/order.c",
+      "sha256": "09a485758d828639ae1f3b272074aff10901eb3f89cd1333ba79bf70f368da00"
+    },
+    {
+      "path": "security-analysis/c-memory/modules/payment.c",
+      "sha256": "ecf49e283960644f50a5b4ba193a898fa052f256a67c5a4714b3fd25b8da5c43"
+    },
+    {
+      "path": "security-analysis/c-memory/modules/product.c",
+      "sha256": "d0fedcac0fe733a8771b5b1857607838913fcd003ece3ebf722dc23d83319088"
+    },
+    {
+      "path": "security-analysis/c-memory/modules/user.c",
+      "sha256": "63915a8ac8099fd4b244e1631d004e3b6a1d0556043f3c9913103e0d1289de53"
+    },
+    {
+      "path": "security-analysis/c-memory/modules/demo.h",
+      "sha256": "3eefe3006dc9561e9680977639f7848a729669a6480ca3834e519eee91cc0df4"
+    },
+    {
+      "path": "security-analysis/c-memory/tests/check_memory.py",
+      "sha256": "c34b0d2f1d79fcea690e0907909bc5b2cc0c263c5371381377a9f25ba1f3fe7d"
+    },
+    {
+      "path": "security-analysis/c-memory/tests/check_static.py",
+      "sha256": "e5e530cce9ddddad02cd9d760cce05c09157a0737c8a4875dcda54c498cbfebb"
+    },
+    {
+      "path": "security-analysis/c-memory/tests/layout_probe.c",
+      "sha256": "3a60e6712f2fb72e6dcaba77992908e3fef32446587953088b91d29bc619ef18"
+    },
+    {
+      "path": "security-analysis/c-memory/Makefile",
+      "sha256": "71ae40f45498e7bc06727bb1aa73abf6015b273be5a13671eb5d8ce0a5eb2d1f"
+    }
+  ],
+  "local_binaries": [
+    {
+      "path": "security-analysis/c-memory/build/cart_buggy",
+      "sha256": "02d8fdf98bc10b3a6b201d77ce03b549e2de3861f08d290382434a2757555493"
+    },
+    {
+      "path": "security-analysis/c-memory/build/cart_fixed",
+      "sha256": "50246f0f2ce6d265c6a78f00498af884097ac5369429b9d6dae6b1d41f564d02"
+    },
+    {
+      "path": "security-analysis/c-memory/build/order_buggy",
+      "sha256": "1a90172ade22b85c108a49845f35fb19307b36489115ef8f60305e22fd174f39"
+    },
+    {
+      "path": "security-analysis/c-memory/build/order_fixed",
+      "sha256": "7d70aa7c8c84ba4a80ee7ceeaf5fd28b10e9a7ecd4ccbacf82e23ff879b04edd"
+    },
+    {
+      "path": "security-analysis/c-memory/build/payment_buggy",
+      "sha256": "7e525fcb0fda604beb1063090e3701c40dd8aa6632d27e1f3293da30c6223003"
+    },
+    {
+      "path": "security-analysis/c-memory/build/payment_fixed",
+      "sha256": "e65f7041cd3e74165120c5301a173fd52e49df436003c458e9c4b583a3dd6b20"
+    },
+    {
+      "path": "security-analysis/c-memory/build/product_buggy",
+      "sha256": "10a9cf2dafb401e7ebb86b703af71c04e75ecefd3b08ad14171d567359941db4"
+    },
+    {
+      "path": "security-analysis/c-memory/build/product_fixed",
+      "sha256": "4e99d173b9700e0f4aae0bc8fc61abe927bb5e778263c3065d153f782a64d496"
+    },
+    {
+      "path": "security-analysis/c-memory/build/user_buggy",
+      "sha256": "154f5d942e6ce80e6aea259ba738b5a365f435384f65959492e417c22bb78738"
+    },
+    {
+      "path": "security-analysis/c-memory/build/user_fixed",
+      "sha256": "03be6b4935e7c1fa1ff46a3766d95d954154c3114bfa223dce557bfe4e266fb3"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "security-analysis/c-memory/evidence/static-analysis.json",
+      "sha256": "16088d28691fb2a6c01096b101748a8100de7194c9f4593de7eb3fc6eaad47e9"
+    },
+    {
+      "path": "security-analysis/c-memory/evidence/dynamic-analysis.json",
+      "sha256": "fa0994c42c66cad385f65370712cf77dc12e9a7550cac0341140129745489f04"
+    }
+  ],
+  "limitations": [
+    "Metadata recorded after successful commands; exact start/finish times were not captured.",
+    "Existing binaries were reused by make when newer than their sources; this was not a clean rebuild.",
+    "Raw sanitizer logs and binaries remain local."
+  ]
+}

@@ -18,6 +18,152 @@ def table(headers, rows):
     return '\n'.join(['| ' + ' | '.join(headers) + ' |', '| ' + ' | '.join(['---'] * len(headers)) + ' |'] +
                      ['| ' + ' | '.join(cell(value) for value in row) + ' |' for row in rows]) + '\n'
 
+def chapter_tokens():
+    threat = read('threat_model.json')
+    audit = read('results/liveness_audit.results.json')
+    memory = read('results/chapter4_run.results.json')
+    static = read('c-memory/evidence/static-analysis.json')
+    recovery = read('results/order_payment_recovery_model.results.json')
+    assets = table(['Asset', 'Tên', 'Phân loại', 'C / I / A'], [
+        [a['id'], a['name'], a['classification'], ' / '.join(a['cia'][k] for k in ('confidentiality','integrity','availability'))]
+        for a in threat['assets']])
+    risks = table(['Threat', 'STRIDE / boundary', 'Kịch bản', 'L×I', 'Trạng thái'], [
+        [t['id'], t['stride']+' / '+t['boundary'], t['threat'], f"{t['likelihood']}×{t['impact']}={t['risk_score']}", t['status']]
+        for t in threat['threats']])
+    liveness = table(['Phép kiểm', 'Kết quả', 'Nghĩa'], [
+        ['AG AF terminal trên graph gốc', audit['unconditional_AG_AF_terminal'], 'Có đường infinite nonterminal'],
+        ['AG AF terminal trên graph chỉ progress', audit['progress_only_AG_AF_terminal'], 'Kết quả của policy lọc cạnh'],
+        ['Audit đối chiếu hai semantics', audit['passed'], 'PASS xác nhận sự khác biệt, không phủ nhận counterexample'],
+    ])
+    mutations = table(['Mutation', 'Property FAIL thực tế', 'Detected'], [
+        [m['id'], ', '.join('recovery:'+p for p in m['actual_failed_properties']), m['detected']]
+        for m in recovery['negative_scenarios']])
+    memory_table = table(['Phép kiểm', 'Outcome', 'Điều kiện'], [
+        ['GCC + cppcheck + scanner + layout', static['assertions']['passed'], static['environment']['gcc']+'; '+static['environment']['cppcheck']],
+        ['Sanitizer case oracle', '22/22 PASS', 'Ngoài sandbox, ASan/UBSan/LSan; detect_leaks=1'],
+        ['Đóng gói evidence', memory['passed'], 'Hash source/binary/evidence; timestamp ghi sau lệnh'],
+    ])
+    static_table = table(['Module', 'Scanner BUGGY', 'Scanner FIXED', 'Cppcheck trực tiếp memory finding BUGGY'], [
+        [module, ', '.join(f['rule'] for f in static['modes']['buggy']['pattern_scanner'][module]),
+         ', '.join(f['rule'] for f in static['modes']['fixed']['pattern_scanner'][module]) or 'Không có',
+         'bufferAccessOutOfBounds' if module == 'user' else 'Không báo loại lỗi kỳ vọng']
+        for module in static['scope']])
+    layout_table = table(['Struct', 'sizeof', '_Alignof', 'Môi trường'], [
+        [name, value['size'], value['alignment'], static['environment']['platform']]
+        for name,value in static['layout'].items() if name != 'offsets'])
+    return {'@@ASSET_TABLE@@':assets, '@@THREAT_TABLE@@':risks, '@@LIVENESS_TABLE@@':liveness,
+            '@@MUTATION_TABLE@@':mutations, '@@MEMORY_RUN_TABLE@@':memory_table,
+            '@@STATIC_DETECTION_TABLE@@':static_table, '@@LAYOUT_TABLE@@':layout_table}
+
+
+def enrich_report(report):
+    import re
+    tokens = chapter_tokens()
+    parts = re.split(r'(?=^## [1-9]\. )', report, flags=re.M)
+    templates = sorted((OUT / 'chapters').glob('[0-9][0-9]_*.md'))
+    by_chapter = {int(p.name[:2]):p for p in templates}
+    for index,part in enumerate(parts):
+        match = re.match(r'## ([1-9])\.', part)
+        if match is None:
+            continue
+        number = int(match.group(1))
+        if number not in by_chapter:
+            raise ValueError(f'Missing chapter template {number}')
+        content = by_chapter[number].read_text(encoding='utf-8')
+        for name,value in tokens.items():
+            content = content.replace(name,value)
+        if '@@' in content:
+            raise ValueError(f'Unresolved token in chapter {number}')
+        parts[index] = content+'\n\n' if number <= 4 else part.rstrip()+'\n\n'+content+'\n\n'
+    return ''.join(parts)
+
+
+def enrich_annex(annex):
+    audit = read('results/liveness_audit.results.json')
+    static = read('c-memory/evidence/static-analysis.json')
+    model = read('order_payment_recovery_model.json')
+    recovery = read('results/order_payment_recovery_model.results.json')
+    threat = read('threat_model.json')
+    additions = {}
+    additions['A'] = '''### A.3. Ma trận endpoint/quyền
+
+| Method/route | Anonymous | Customer | Admin | Điều kiện |
+| --- | --- | --- | --- | --- |
+| POST users/register, users/login | Cho phép | Cho phép | Cho phép | DTO/service validation |
+| GET products, category, id | Cho phép | Cho phép | Cho phép | Active product |
+| POST/PUT/DELETE products | 401 | 403 | Cho phép | Validation và state data |
+| GET/PUT users/id | 401 | Owner | Cho phép | Claim→route user |
+| GET cart/user/id; POST add | 401 | Owner | Cho phép | Quantity/product guard |
+| PUT/DELETE cart/id/item/id; DELETE clear | 401 | Owner | Cho phép | Cart.UserId; CartItem.CartId |
+| POST orders | 401 | Cho phép | Cho phép | CustomerId từ subject; server price/stock |
+| GET orders | 401 | 403 | Cho phép | Global listing |
+| GET orders/mine; GET id; POST cancel | 401 | Owner | Theo policy endpoint | mine luôn dùng subject; cancel có payment guard |
+| POST orders/id/confirm, complete | 401 | 403 | Cho phép | Paid evidence và state nguồn |
+| POST payments; GET id; POST retry, reconcile | 401 | Owner | Cho phép | Order owner; amount/key/state guard |
+| POST payments/id/refund, refund/retry | 401 | 403 | Cho phép | Refund key và trạng thái hợp lệ |
+
+“Cho phép” là qua lớp quyền, không cam kết nghiệp vụ trả 2xx. Test hiện kiểm một
+phần các đường trong bảng; không dùng bảng chính sách source thay danh sách test.
+
+### A.4. Asset, boundary và qualified property references
+
+'''+table(['Threat','Asset','Boundary','Model-qualified properties','Control status'],[
+        [t['id'],', '.join(t['assets']),t['boundary'],', '.join(ref['model']+':'+ref['id'] for ref in t.get('property_refs',[])) or 'Ngoài model lifecycle',t['status']]
+        for t in threat['threats']])+'''
+### A.5. Chính sách data ownership
+
+UserId/CustomerId trong request không tự cấp quyền. PriceAtAdd là snapshot của Cart;
+Order dùng Product.Price hiện tại. Payment.Amount bind với Order.TotalAmount.
+InventoryStatus biểu diễn reservation cùng stock đã giảm; không có bảng reservation
+riêng. Hash/authenticity của gateway response chưa được mock chứng minh.
+'''
+    b = ['### B.6. Chi tiết hợp đồng F1–F7\n']
+    for contract in model['functional_contracts']:
+        b += [f"#### {contract['id']}\n", contract['responsibility']+'\n',
+              'Precondition: '+contract['precondition']+'\n',
+              table(['State','Event','Đích'], [[source,event,target] for source,outcomes in contract['state_outcomes'].items() for event,target in outcomes.items()]),
+              '\n'.join('- '+g for g in contract['guarantees'])+'\n']
+    b += ['### B.7. Counterexample recovery và property namespace\n']
+    for mutation in recovery['negative_scenarios']:
+        b += [f"#### {mutation['id']}\n",'Expected FAIL: '+', '.join(mutation['expected_failed_properties'])+'; actual FAIL: '+', '.join(mutation['actual_failed_properties'])+'.\n',
+              '```json\n'+json.dumps(mutation['witnesses'],ensure_ascii=False,indent=2)+'\n```\n']
+    b += ['### B.8. Audit liveness\n', table(['Raw AG AF','Progress-only AG AF','Audit PASS'],[[audit['unconditional_AG_AF_terminal'],audit['progress_only_AG_AF_terminal'],audit['passed']]]),
+          'Lasso là prefix hữu hạn nối cycle lặp vô hạn; cycle không chứa terminal.\n',
+          '```json\n'+json.dumps(audit['counterexample_lasso'],ensure_ascii=False,indent=2)+'\n```\n',
+          'Các cạnh được checker loại dù thay đổi state:\n',table(['Nguồn','Event','Đích','Kind'],[[e['source'],e['event'],e['to'],e['kind']]for e in audit['excluded_edges_with_state_change']]),
+          'Fixed-point rounds của cả graph nằm trong [liveness audit](../results/liveness_audit.results.json). Policy lọc cạnh không tự chứng minh fair-CTL.\n']
+    additions['B'] = '\n'.join(b)
+    c = ['### C.3. Compiler, configuration và ground truth\n',chapter_tokens()['@@STATIC_DETECTION_TABLE@@'],
+         'Cppcheck return_code=0 không đồng nghĩa không finding; XML vẫn có error/style. BUGGY và FIXED được chạy theo cấu hình preprocessor riêng.\n',
+         '### C.4. Source minh họa ownership/lifetime\n']
+    for module in static['scope']:
+        path = BASE/'c-memory/modules'/f'{module}.c'
+        c += [f'#### {module}.c\n','```c\n'+'\n'.join(line.rstrip() for line in path.read_text().splitlines())+'\n```\n']
+    c += ['### C.5. Diagnostic thực thi\n']
+    for module in static['scope']:
+        path = BASE/'c-memory/results'/f'{module}_buggy.log'
+        if path.exists():
+            lines = path.read_text(errors='replace').splitlines()
+            excerpt = '\n'.join(line for line in lines if any(key in line for key in ['ERROR:','SUMMARY:','#0 ','#1 ','Direct leak','Indirect leak']))
+            c += [f'#### {module}_buggy\n','```text\n'+excerpt[:3500]+'\n```\n']
+        else:
+            c += [f'{module}: raw log không có tại thời điểm sinh; dùng summary evidence, không tạo stack trace giả.\n']
+    c += ['### C.6. ABI và provenance\n',chapter_tokens()['@@LAYOUT_TABLE@@'],
+          'Offsets đo được: '+json.dumps(static['layout']['offsets'])+'.\n',
+          'Metadata source/binary/environment: [chapter4 run](../results/chapter4_run.results.json). Không có timestamp start/finish chính xác; make dùng binary hiện có nếu còn mới hơn source.\n',
+          '### C.7. Tái lập chỉ bằng project\n',
+          '```bash\nmake -C security-analysis/c-memory static-check\nmake -C security-analysis/c-memory test\n```\n',
+          'Không chạy make clean nếu muốn giữ raw log để đọc. Khi sandbox làm LSan thất bại, giữ failure riêng và chạy trong môi trường được phép; không tắt detect_leaks để đạt PASS.\n']
+    additions['C'] = '\n'.join(c)
+    import re
+    chunks = re.split(r'(?=^## Phụ lục [A-G] —)',annex,flags=re.M)
+    for index,chunk in enumerate(chunks):
+        match=re.match(r'## Phụ lục ([A-G]) —',chunk)
+        if match and match.group(1) in additions:
+            chunks[index]=chunk.rstrip()+'\n\n'+additions[match.group(1)]+'\n\n'
+    return ''.join(chunks)
+
+
 def main():
     tests = read('results/application_tests.results.json')
     mapping = read('results/model_projection.results.json')
@@ -181,7 +327,7 @@ regression test và constraint PostgreSQL. Bộ báo cáo và phụ lục phân 
 implementation, mô hình học tập, kiểm tra độc lập và evidence lịch sử. Phần còn
 mở được giữ rõ trong bảng truy vết để tránh suy rộng ngoài phạm vi đã xác minh.
 '''
-    (OUT / 'BAO_CAO.md').write_text(report, encoding='utf-8')
+    (OUT / 'BAO_CAO.md').write_text(enrich_report(report).rstrip()+'\n', encoding='utf-8')
     annex = ['# Phụ lục kỹ thuật OrderPaymentMicroservice\n',
              'Các bảng được sinh từ model và evidence của project. Không sao chép số liệu Smart EV.\n',
              '## Phụ lục A — Hệ thống\n', '''```mermaid
@@ -227,7 +373,7 @@ thay thế trực tiếp state Order.
               '## Phụ lục C — Static và bộ nhớ\n',
               '### C.1. CWE và phạm vi\n', table(['Module','Lỗi BUGGY','CWE'], [['Order','Owned allocation leak','CWE-401'],['Payment','Double free','CWE-415'],['Cart','Use after free','CWE-416'],['Product','Heap buffer copy','CWE-120'],['User','Stack buffer copy','CWE-120']]),
               'GCC/cppcheck version, finding và layout: ../c-memory/evidence/static-analysis.json. Pattern rules là scanner riêng; cppcheck có false negative được ghi rõ trong ../c-memory/README.md. Không tuyên bố Clang-Tidy/Clang Analyzer đã chạy.\n',
-              '### C.2. Toàn bộ case sanitizer (evidence lịch sử)\n', table(['Case','Test PASS','Exit code','Diagnostic mong đợi'], [[c['case'],c['passed'],c['exit_code'],c['expected_diagnostic']] for c in dynamic['cases']]),
+              '### C.2. Toàn bộ case sanitizer (lần chạy ngoài sandbox mới nhất)\n', table(['Case','Test PASS','Exit code','Diagnostic mong đợi'], [[c['case'],c['passed'],c['exit_code'],c['expected_diagnostic']] for c in dynamic['cases']]),
               '## Phụ lục D — SMT và biên\n',
               '### D.1. Payment SMT\n', table(['Query','Expected','Actual','PASS'], [[c['id'],c['expected'],c['actual'],c['passed']] for c in payment['cases']]),
               'Đặc tả: ../../OrderPaymentMicroservice/Security/PaymentVerification.z3. Model integer cents; witness/model solver nằm trong ../results/payment_verification.results.json.\n',
@@ -249,7 +395,10 @@ thay thế trực tiếp state Order.
 
 ```bash
 dotnet test OrderPaymentMicroservice.slnx --no-restore --nologo --logger 'trx;LogFilePrefix=verification' --results-directory security-analysis/results/dotnet --blame-hang-timeout 60s
+python3 security-analysis/package_evidence.py
 python3 security-analysis/verify_recovery_model.py
+python3 security-analysis/audit_liveness.py
+python3 security-analysis/verify_threat_model.py
 python3 security-analysis/verify_payment_smt.py
 python3 security-analysis/verify_inventory_smt.py
 python3 security-analysis/create_order_payment_spec.py
@@ -270,11 +419,11 @@ của chính project và xuất pipeline JSON vào security-analysis/.
                   ['Rate limiting/audit','OPEN','Test giới hạn request; audit có actor/action/result và redaction'],
                   ['API fuzz/network fault injection','OPEN','Target HTTP, corpus, oracle và campaign log'],
                   ['Migration dữ liệu cũ','NOT_TESTED','Kiểm tra dữ liệu vi phạm trước khi apply; không tự xóa/sửa'],
-                  ['TLC/static/sanitizer coverage','HISTORICAL','Giữ source hash/tool/run timestamp khi chạy lại'],
+                  ['TLC/fuzz coverage','HISTORICAL','Giữ source hash/tool/run timestamp khi chạy lại'],
                   ['Model→implementation','PARTIAL','Traceability và test hỗ trợ; chưa có refinement proof'],
               ]),
               'INCONCLUSIVE, TOOL_ERROR, BUILD_ERROR hoặc SKIP không được chuyển thành PASS. Evidence thiếu phải được ghi rõ, không điền ID/hash giả.\n']
-    (OUT / 'PHU_LUC_A_G.md').write_text('\n'.join(annex),encoding='utf-8')
+    (OUT / 'PHU_LUC_A_G.md').write_text(enrich_annex('\n'.join(annex)),encoding='utf-8')
     print(OUT / 'BAO_CAO.md');print(OUT / 'PHU_LUC_A_G.md')
 
 if __name__ == '__main__':

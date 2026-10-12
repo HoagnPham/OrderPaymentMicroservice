@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "packaged_at_utc": "2026-10-12T12:34:50.274988+00:00",
-  "git_base_commit": "4bcc04dfb038cec81c94947197b4528b3908187d",
+  "packaged_at_utc": "2026-10-12T13:15:13.243484+00:00",
+  "git_base_commit": "d0ed646bc90dc8931bf0fb988f397d7470eae9f9",
   "working_tree_dirty": true,
   "dotnet_version": "10.0.112",
   "fresh_checks": [
@@ -10,14 +10,17 @@
     "inventory_verification.results.json",
     "payment_verification.results.json",
     "order_payment_recovery_model.results.json",
-    "teacher_spec_verification.json"
+    "teacher_spec_verification.json",
+    "liveness_audit.results.json",
+    "threat_model_results.json",
+    "chapter4_run.results.json",
+    "c-memory/evidence/static-analysis.json",
+    "c-memory/evidence/dynamic-analysis.json"
   ],
   "historical_checks_not_rerun": [
     "tlc/OrderPayment.tlc.results.json",
     "application_fuzzing.results.json",
-    "coverage_summary.json",
-    "c-memory/evidence/static-analysis.json",
-    "c-memory/evidence/dynamic-analysis.json"
+    "coverage_summary.json"
   ],
   "artifacts": [
     {
@@ -452,8 +455,8 @@
     },
     {
       "path": "OrderPaymentMicroservice.IntegrationTests/OrderPaymentApiTests.cs",
-      "sha256": "fb5f7a8a93ab690ce04967d2d8c4c4ce44a6c1a8f485977c2dcd267c5578b090",
-      "bytes": 18284
+      "sha256": "e4f2ad033b2c07a7d7fb0b0018693dae198d1197bf2c186c792e31b915521b5a",
+      "bytes": 19766
     },
     {
       "path": "OrderPaymentMicroservice.IntegrationTests/OrderPaymentMicroservice.IntegrationTests.csproj",
@@ -487,13 +490,18 @@
     },
     {
       "path": "security-analysis/THREAT_MODEL_CHUONG1.md",
-      "sha256": "b8d7113af16a816cb076ea66b916bb9dd777720f8f9d47b373656e07389cd9f8",
-      "bytes": 8155
+      "sha256": "427fbc5a221d836079adff0c8d61ec2a82540198ceca6c0ed1f4d059a865de3f",
+      "bytes": 9325
+    },
+    {
+      "path": "security-analysis/audit_liveness.py",
+      "sha256": "5936e154708812e2f709b451ecac42aa43f816a94cfc6dc547df5521912fa624",
+      "bytes": 3896
     },
     {
       "path": "security-analysis/build_report.py",
-      "sha256": "d17d04a5e32aa75c6be0250f5e58f159906e3a2bf1df043a5d7c50eab8de9339",
-      "bytes": 21334
+      "sha256": "40c1686119efd77711d098622ed317560b56aa8ef6d50889ea81d256c9bfcbd8",
+      "bytes": 31942
     },
     {
       "path": "security-analysis/c-memory/README.md",
@@ -542,7 +550,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/cart_buggy.log",
-      "sha256": "58c5ca94593ac0d1b9bd7018b54553c4a3fa19f9f3375c7e267a1a49c5af38cd",
+      "sha256": "a210d8a9633348cd9e9da7dfc070cab892a5cab58b745489865c63640318f464",
       "bytes": 3243
     },
     {
@@ -552,7 +560,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/order_buggy.log",
-      "sha256": "120e099a3b4ea5e2d3d198715ee853d30dfdb7221e9c43ddf49c16bc31b11245",
+      "sha256": "c7b6feb1917a4e1244ab280b3acedef90e4ef5042c145fe896b879e3416cdc26",
       "bytes": 813
     },
     {
@@ -562,7 +570,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/payment_buggy.log",
-      "sha256": "51e223118a510303617aa7321a6787d039cb1835e2f0bdaa23e66f246ccc6b1b",
+      "sha256": "1f17186ffc2a3a65bfa423cc14310602ecbc118b51cfdc09c3c3b47cf645397e",
       "bytes": 1902
     },
     {
@@ -572,7 +580,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/product_buggy.log",
-      "sha256": "6b1710ac106f4205a33984ef5045d62ea7ed3ae8eb27eedcdde7076fdff445a7",
+      "sha256": "99808868fa0e240b58cab50d37595576bbc8069eedd18376fab43ab2df87a9d2",
       "bytes": 2887
     },
     {
@@ -617,7 +625,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/user_buggy.log",
-      "sha256": "fb71edec6f03498568f135111718f1c446188cd17d74001c497821e23e646e37",
+      "sha256": "b3937e535d76f816710915a20782ca9500324c479fb9a9fba1713f2c5fcfcd5c",
       "bytes": 2706
     },
     {
@@ -702,18 +710,63 @@
     },
     {
       "path": "security-analysis/package_evidence.py",
-      "sha256": "d1f8d1815c70e6de24572b5f40dc513acbfdf41aea2295f6959b1cb771e7ad3b",
-      "bytes": 11173
+      "sha256": "22614f142a72ed5dd62e49c46b154622bd3e435adda200c027a3696f8a509860",
+      "bytes": 11262
     },
     {
       "path": "security-analysis/report/BAO_CAO.md",
-      "sha256": "f77d06510e665f6f18ed0c91d99b59621ca0dbfeb3391c32bc678fe91f4e6fb3",
-      "bytes": 9765
+      "sha256": "34decd616db98c0e70a399e3a36f58e97e51774a53dc09285982584bd454efed",
+      "bytes": 56999
     },
     {
       "path": "security-analysis/report/PHU_LUC_A_G.md",
-      "sha256": "5d8075c0b8e5bbc0b5ba3415efd007b69223b6e2efdc22898ecbda1a27f664a7",
-      "bytes": 38717
+      "sha256": "ce96fc1435d417f35d6330a73439a963c9d4e4898ec10b194e490b7fcaf62f32",
+      "bytes": 57938
+    },
+    {
+      "path": "security-analysis/report/chapters/01_muc_tieu.md",
+      "sha256": "1f51ec68a94e160ff3ca7f548912daa40a52b3a305b74597762fd22f6b021ab3",
+      "bytes": 7162
+    },
+    {
+      "path": "security-analysis/report/chapters/02_he_thong.md",
+      "sha256": "d8958868c827b7c3ece7b39f5e262a5051ef95937491c6cbdb7d4e705afa15a0",
+      "bytes": 9718
+    },
+    {
+      "path": "security-analysis/report/chapters/03_mo_hinh.md",
+      "sha256": "391098a35815c8216fdc080bd929cdda0f5a819453849a6ea7b1f4a63fa91e5c",
+      "bytes": 9999
+    },
+    {
+      "path": "security-analysis/report/chapters/04_bo_nho.md",
+      "sha256": "70b1be7ad794f4a770b0f1ab6e5a3bebdf001fdea067ac8f160c5ff493eaf28e",
+      "bytes": 9114
+    },
+    {
+      "path": "security-analysis/report/chapters/05_so_hoc_bo_sung.md",
+      "sha256": "feff7854da2a7224071519cbdd1874410851ee4523abc3c454568b1667d366c4",
+      "bytes": 2458
+    },
+    {
+      "path": "security-analysis/report/chapters/06_kiem_thu_bo_sung.md",
+      "sha256": "217de82447a656d11e2309322b528519f43e9a4eeb7ff4e58fe6773e56d43343",
+      "bytes": 3105
+    },
+    {
+      "path": "security-analysis/report/chapters/07_evidence_bo_sung.md",
+      "sha256": "1508d1c868ddad2c69855b8ebbf8a756749698244df5fc6b955c68310ff1c741",
+      "bytes": 2410
+    },
+    {
+      "path": "security-analysis/report/chapters/08_han_che_bo_sung.md",
+      "sha256": "9f5195e5ba1a8d12bea2721a166fa2d23c89975e45e53b684d691c81a7b1be78",
+      "bytes": 2531
+    },
+    {
+      "path": "security-analysis/report/chapters/09_ket_luan_bo_sung.md",
+      "sha256": "dd5ab692288f5bdae3b7e68fae7e06072ef912807bb9d052751b12f0dd917a11",
+      "bytes": 1276
     },
     {
       "path": "security-analysis/results/application-fuzzing-coverage.cobertura.xml",
@@ -727,8 +780,13 @@
     },
     {
       "path": "security-analysis/results/application_tests.results.json",
-      "sha256": "0b268a7ce355f99375761c74585a363078152410b75fbf92d19f4167065fea40",
+      "sha256": "177d08f47e9ce0c22726c025aa92d2f7fe7db262fbb9ff10a1b2f7a70a6e318b",
       "bytes": 27586
+    },
+    {
+      "path": "security-analysis/results/chapter4_run.results.json",
+      "sha256": "b7c9e1f190c562e224465b56cc685b76cceecbdb1107ee45a6176758f520f1b0",
+      "bytes": 4454
     },
     {
       "path": "security-analysis/results/coverage_summary.json",
@@ -744,6 +802,11 @@
       "path": "security-analysis/results/inventory_verification.results.json",
       "sha256": "cd8ba8c84e4e6c3d53e14d6db66c0a9874437d940f68859f60f0a30e06d1a354",
       "bytes": 1028
+    },
+    {
+      "path": "security-analysis/results/liveness_audit.results.json",
+      "sha256": "560de11e5e71f62a844359f8e90ff503a8fbce794b634e30e87b090876a063e5",
+      "bytes": 4691
     },
     {
       "path": "security-analysis/results/model_projection.results.json",
@@ -787,8 +850,8 @@
     },
     {
       "path": "security-analysis/results/threat_model_results.json",
-      "sha256": "d88ff027e2af319a3b963b08c80b32e47eff302731bdac50d1e7c584521cd789",
-      "bytes": 665
+      "sha256": "fd46c24546a6c6363717986ddb401d2e15cd35f2d515142f76466e1e49c05fc7",
+      "bytes": 755
     },
     {
       "path": "security-analysis/results/tlc/OrderPayment.tlc.log",
@@ -822,8 +885,8 @@
     },
     {
       "path": "security-analysis/threat_model.json",
-      "sha256": "8cd2246407a8db4fe31436ebd93e9bfd285aefc0c1423cb3e95042edb7782aeb",
-      "bytes": 11295
+      "sha256": "27df2d56905d0318ab645fe56c10b234a733d8e3f7428f16fe7e6a6eeebf8ebe",
+      "bytes": 16148
     },
     {
       "path": "security-analysis/verify_inventory_smt.py",
@@ -847,8 +910,8 @@
     },
     {
       "path": "security-analysis/verify_threat_model.py",
-      "sha256": "b9b16f20853c20a95c2eef7694a07e650e90f7487363c9c92fbf189217fab33d",
-      "bytes": 3482
+      "sha256": "d5753857e868dfd41f8cc7e98670ca9309356e7621e311a147d430d0a214ecf2",
+      "bytes": 4844
     },
     {
       "path": "security-analysis/vulnerabilities.json",
