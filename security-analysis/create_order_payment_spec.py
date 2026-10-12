@@ -1,4 +1,4 @@
-"""Create the OrderPaymentMicroservice security specification from the ATPM XLSX template."""
+"""Create the OrderPaymentMicroservice security specification using the existing project workbook layout."""
 
 from __future__ import annotations
 
@@ -12,9 +12,9 @@ from zipfile import ZIP_DEFLATED, ZipFile
 
 
 ROOT = Path(__file__).resolve().parents[1]
-TEMPLATE = ROOT / "ATPM" / "Template_Software_Security_iot_gateway_spec.xlsx"
+TEMPLATE = ROOT / "OrderPaymentMicroservice_Security_Spec.xlsx"
 OUTPUT = ROOT / "OrderPaymentMicroservice_Security_Spec.xlsx"
-ATPM_JSON_OUTPUT = ROOT / "ATPM" / "specs" / "specs" / "order_payment_microservice_spec.json"
+PIPELINE_JSON_OUTPUT = ROOT / "security-analysis" / "order_payment_pipeline_spec.json"
 
 NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"
 REL_NS = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
@@ -258,252 +258,14 @@ def apply_recovery_model() -> None:
         ["TC-22", "REQ-4, REQ-6", "Kiểm chứng SMT cho tổng tiền và thanh toán", "Z3 có trên PATH", "Chạy python security-analysis/verify_payment_smt.py", "7/7 ca SAT/UNSAT đúng kỳ vọng; có counterexample tràn Int32 và bằng chứng giới hạn tổng tiền", "HIGH"],
         ["TC-23", "REQ-1, REQ-2, REQ-3, REQ-7, REQ-18", "Kiểm tra threat model Chương 1", "threat_model.json hợp lệ", "Chạy python security-analysis/verify_threat_model.py", "ID và tham chiếu hợp lệ; đủ CIA, 6/6 STRIDE, risk score và liên kết evidence/property", "HIGH"],
         ["TC-24", "REQ-9, REQ-10, REQ-11, REQ-12, REQ-13, NFR-5", "Static analysis BUGGY/FIXED và alignment", "GCC và cppcheck có trên PATH", "Chạy make -C security-analysis/c-memory static-check", "Scanner bắt đủ 5 lỗi BUGGY, FIXED sạch theo rule; lưu finding cppcheck và layout thực tế", "HIGH"],
-        ["TC-25", "REQ-1, REQ-2, REQ-7, REQ-18, NFR-1", "Integration HTTP với PostgreSQL thật", "Docker hoặc PostgreSQL binaries cục bộ khả dụng", "Chạy dotnet test cho OrderPaymentMicroservice.IntegrationTests", "5/5 PASS: xác thực/quyền sở hữu, rollback, idempotency, payment-cancel và concurrency được kiểm tra trên PostgreSQL", "HIGH"],
+        ["TC-25", "REQ-1, REQ-2, REQ-7, REQ-18, NFR-1", "Integration HTTP với PostgreSQL thật", "Docker hoặc PostgreSQL binaries cục bộ khả dụng", "Chạy dotnet test cho OrderPaymentMicroservice.IntegrationTests", "Tất cả test PASS, không SKIP; số lượng và verdict lấy từ application_tests.results.json. Kiểm tra quyền, idempotency, payment-cancel, validation và migration trên PostgreSQL", "HIGH"],
         ["TC-26", "REQ-4, REQ-5, REQ-6, NFR-2", "Fuzzing xác định validator và state machine", "Có corpus, seed cố định, timeout và crash policy", "Chạy python security-analysis/run_fuzzing.py", "3/3 campaign PASS; 25.000 iteration cho validator và 25.000 transition; branch coverage 99,07%, không crash", "HIGH"],
         ["TC-27", "REQ-5, REQ-14, REQ-16, REQ-17, NFR-6", "TLC kiểm chứng đặc tả TLA+", "Có tla2tools.jar", "Chạy python security-analysis/run_tlc.py --jar /duong-dan/tla2tools.jar", "TLC không phát hiện lỗi: 35 state sinh, 20 state phân biệt, độ sâu 9; safety và liveness đều thỏa", "HIGH"],
-        ["TC-28", "REQ-5, REQ-14, NFR-6", "Tương thích bộ công cụ ATPM của giảng viên", "Workbook và JSON pipeline đã sinh", "Chạy pytest ATPM/atpm_project/python/tests/test_order_payment_spec.py và verify_teacher_spec.py", "Schema đúng 10 sheet; Excel/JSON đồng nghĩa; Kripke total và reachable; 7/7 CTL PASS; 6/6 test đặc tả PASS", "HIGH"],
+        ["TC-28", "REQ-5, REQ-14, NFR-6", "Tương thích bộ công cụ ATPM của giảng viên", "Workbook và JSON pipeline đã sinh", "Chạy python security-analysis/verify_teacher_spec.py", "Checker độc lập: schema đúng 10 sheet; Excel/JSON đồng nghĩa; Kripke total và reachable; 7/7 CTL PASS. Không thay thế lần chạy công cụ Windows của giảng viên.", "HIGH"],
     ])
 
 
 apply_recovery_model()
-
-
-def apply_progress_evidence() -> None:
-    """Attach implementation status and reproducible evidence to the specification.
-
-    The original workbook described what should exist, but it did not distinguish
-    implemented code, model-only evidence, skipped integration tests, and open
-    work.  Keep those distinctions machine-readable in the workbook itself.
-    """
-    import json
-
-    result_dir = ROOT / "security-analysis" / "results"
-    recovery_result = json.loads(
-        (result_dir / "order_payment_recovery_model.results.json").read_text(encoding="utf-8")
-    )
-
-    info = SHEETS["ThongTin"]
-    info["rows"].extend([
-        ["updated_at", "08/10/2026"],
-        [
-            "verified_summary",
-            "Threat model PASS; Kripke cơ sở 4/4 PASS; recovery model 15/15 PASS "
-            "(15 state, 37 transition, 7 hợp đồng); 6/6 mutation bị phát hiện; "
-            "SMT 7/7 PASS; static analysis C PASS; sanitizer 22/22 PASS; "
-            "xUnit 84/84 PASS; InputValidator branch coverage 96,87%.",
-        ],
-        [
-            "open_scope",
-            "5 integration test PostgreSQL đã viết nhưng chưa có kết quả PASS do thiếu Docker; "
-            "chưa có TLC/BMC output; chưa có fuzz harness/corpus/coverage; gateway thật, "
-            "rate limiting và audit trail production còn mở.",
-        ],
-        [
-            "evidence_rule",
-            "MODEL_PASS không chứng minh implementation; UNIT_PASS không thay thế E2E; "
-            "SKIPPED không được tính là PASS; ATPM/ chỉ là tài liệu tham chiếu.",
-        ],
-    ])
-
-    requirement_evidence = {
-        "REQ-1": ("IMPLEMENTED_NEEDS_E2E", "SOURCE + E2E_TEST_SKIPPED", "Controllers có [Authorize]/Admin role; TC-1 tồn tại nhưng cần Docker để xác minh HTTP 401."),
-        "REQ-2": ("IMPLEMENTED_NEEDS_E2E", "SOURCE + E2E_TEST_SKIPPED", "Controller đối chiếu claim/ownership; TC-2 tồn tại nhưng cần Docker để xác minh HTTP 403."),
-        "REQ-3": ("VERIFIED_UNIT", "SOURCE + UNIT", "OrderServiceTests: giá server, stock và tampered price; 84/84 unit PASS."),
-        "REQ-4": ("VERIFIED_UNIT_SMT", "UNIT + COVERAGE + SMT", "34 ca InputValidator; branch 96,87%; Z3 7/7 đúng kỳ vọng."),
-        "REQ-5": ("VERIFIED_MODEL_UNIT", "KRIPKE + UNIT", "Model cơ sở 4/4; recovery P1/P12/P15 PASS; state-machine unit test PASS."),
-        "REQ-6": ("VERIFIED_MODEL_UNIT", "KRIPKE + UNIT + SMT", "P2/P3/P6 PASS; PaymentService amount/success tests PASS; SMT underpayment UNSAT."),
-        "REQ-7": ("VERIFIED_UNIT_NEEDS_DB_E2E", "SOURCE + UNIT + E2E_TEST_SKIPPED", "Idempotency unit test PASS và unique indexes có trong model DB; concurrency PostgreSQL chưa chạy."),
-        "REQ-8": ("VERIFIED_UNIT", "SOURCE + UNIT", "UserServiceTests xác minh PasswordHasher, JWT HS256 và nâng cấp SHA-256 legacy."),
-        "REQ-9": ("VERIFIED_C", "STATIC + ASAN", "user_buggy bị stack-buffer-overflow; user_fixed và biên 0/1/31/32/128 đúng kỳ vọng."),
-        "REQ-10": ("VERIFIED_C", "STATIC + ASAN", "product_buggy bị heap-buffer-overflow; product_fixed và biên chuỗi PASS."),
-        "REQ-11": ("VERIFIED_C", "STATIC + ASAN", "cart_buggy bị heap-use-after-free; cart_fixed sạch sanitizer."),
-        "REQ-12": ("VERIFIED_C", "STATIC + LSAN", "order_buggy bị leak; order_fixed giải phóng vùng con và sạch sanitizer."),
-        "REQ-13": ("VERIFIED_C", "STATIC + ASAN", "payment_buggy bị double-free; payment_fixed sạch sanitizer."),
-        "REQ-14": ("VERIFIED_MODEL_ASSUMPTION", "KRIPKE", "P2 cơ sở và P10 recovery PASS; kết luận phụ thuộc weak fairness/stutter policy."),
-        "REQ-15": ("VERIFIED_MODEL", "KRIPKE", "15 state/37 transition; P8/P9/P11/P15 PASS; ma trận state-response được sinh tự động."),
-        "REQ-16": ("VERIFIED_MODEL_UNIT", "KRIPKE + UNIT", "Retry charge có bound; UNKNOWN giữ inventory reserved và chuyển reconciliation/manual review, không suy diễn là FAILED."),
-        "REQ-17": ("VERIFIED_MODEL_UNIT", "KRIPKE + UNIT", "P13 PASS; refund/refund retry/reconcile unit tests PASS."),
-        "REQ-18": ("VERIFIED_MODEL_UNIT_NEEDS_DB_E2E", "KRIPKE + UNIT + E2E_TEST_SKIPPED", "P7/P15 PASS; unit race PASS; PostgreSQL concurrency test chưa chạy."),
-    }
-    req_sheet = SHEETS["YeuCauChucNang"]
-    req_sheet["rows"][0].extend(["TrangThai", "MucBangChung", "KetQuaVaGioiHan"])
-    for row in req_sheet["rows"][1:]:
-        row.extend(requirement_evidence[row[0]])
-    req_sheet["widths"].extend([28, 28, 86])
-
-    # Correct the retry requirement: an unauthoritative timeout must remain
-    # UNKNOWN, not be collapsed into FAILED merely because the retry budget ends.
-    req16 = next(row for row in req_sheet["rows"] if row[0] == "REQ-16")
-    req16[1] = (
-        "Retry thanh toán và xác nhận phải có bound. Hết ngân sách charge không được gọi "
-        "thêm; decline có thẩm quyền mới đi FAILED, kết quả UNKNOWN phải giữ inventory "
-        "reserved để reconcile/manual review, còn lỗi fulfillment sau charge đi REFUND_PENDING."
-    )
-
-    nfr_evidence = {
-        "NFR-1": ("IMPLEMENTED_NEEDS_POSTGRES_E2E", "Serializable transaction và concurrency token có trong source; 2 test PostgreSQL concurrency đang SKIP."),
-        "NFR-2": ("PARTIAL", "InputValidator đạt 96,87% branch; chưa có báo cáo coverage riêng cho toàn bộ state guard/Service/Controller."),
-        "NFR-3": ("OPEN", "Chưa có kiểm chứng tự động về redaction, audit integrity và retention; threat T3 còn OPEN."),
-        "NFR-4": ("PARTIAL", "Startup từ chối Jwt:Key <32 ký tự; secret manager/rotation/history scan chưa hoàn tất; threat T9 partial."),
-        "NFR-5": ("VERIFIED_C", "ASan/UBSan/LSan 22/22 đúng kỳ vọng; evidence/dynamic-analysis.json."),
-        "NFR-6": ("VERIFIED_MODEL", "Duyệt toàn bộ graph, ghi counterexample/mutation, fairness và giới hạn; P1-P15 PASS."),
-    }
-    nfr_sheet = SHEETS["YeuCauPhiChucNang"]
-    nfr_sheet["rows"][0].extend(["TrangThai", "KetQuaVaGioiHan"])
-    for row in nfr_sheet["rows"][1:]:
-        row.extend(nfr_evidence[row[0]])
-    nfr_sheet["widths"].extend([32, 92])
-
-    constraint_evidence = {
-        "CON-1": ("CONFIRMED_SOURCE", ".NET 10/EF Core/PostgreSQL/REST hiện diện trong project và migrations."),
-        "CON-2": ("VERIFIED_UNIT_SMT", "InputValidator/PaymentValidator unit tests và QF_NIA 7/7."),
-        "CON-3": ("VERIFIED_UNIT_SOURCE", "PaymentValidator max 128; unique index; idempotency unit PASS."),
-        "CON-4": ("VERIFIED_MODEL", "Terminal self-loop được P12 kiểm tra; recovery model còn REFUNDED và PRE_PAYMENT_REJECTED terminal thiết kế."),
-        "CON-5": ("VERIFIED_C", "Biên 31 chấp nhận, 32/128 từ chối; sanitizer evidence."),
-        "CON-6": ("SCOPE_DECLARED", "Kết quả C chỉ áp dụng năm executable học tập, không suy rộng sang C#."),
-        "CON-7": ("VERIFIED_MODEL_UNIT", "PAYMENT_PROCESSING_FINAL và max attempt được model/unit test kiểm tra; UNKNOWN chuyển review/reconcile."),
-        "CON-8": ("VERIFIED_MODEL_ASSUMPTION", "P10 loại cạnh stutter khi kiểm liveness; assumption được ghi trong model/báo cáo."),
-        "CON-9": ("VERIFIED_UNIT_SOURCE", "RefundIdempotencyKey unique; refund retry/reconciliation unit PASS; gateway thật chưa có."),
-    }
-    con_sheet = SHEETS["RangBuoc"]
-    con4 = next(row for row in con_sheet["rows"] if row[0] == "CON-4")
-    con4[1] = (
-        "Model Order cơ sở dùng COMPLETED, CANCELLED, FAILED làm terminal. Recovery model "
-        "bổ sung REFUNDED và PRE_PAYMENT_REJECTED; mọi terminal dùng self-loop stutter để "
-        "quan hệ chuyển là total và không hồi sinh aggregate."
-    )
-    con7 = next(row for row in con_sheet["rows"] if row[0] == "CON-7")
-    con7[1] = (
-        "Model chỉ cho một lần charge retry cuối tại PAYMENT_PROCESSING_FINAL. Nếu kết quả "
-        "vẫn UNKNOWN, state quay về PAYMENT_RETRY dưới dạng stutter để reconcile/manual review, "
-        "nhưng không được phát thêm charge attempt."
-    )
-    con_sheet["rows"][0].extend(["TrangThai", "BangChung"])
-    for row in con_sheet["rows"][1:]:
-        row.extend(constraint_evidence[row[0]])
-    con_sheet["widths"].extend([30, 88])
-
-    state_sheet = SHEETS["MoHinhTrangThai"]
-    state_sheet["rows"][0].extend(["KetQua", "BangChung"])
-    for row in state_sheet["rows"][1:]:
-        row.extend(["REACHABLE_PASS", "P8 PASS; aggregate metadata được verifier đối chiếu."])
-    state_sheet["widths"].extend([22, 58])
-
-    # Use the exact executable property catalogue instead of a shorter,
-    # hand-written CTL subset that omitted P8-P15.
-    property_rows = [["ID", "Loai", "MoTa", "KetQua", "BangChung"]]
-    for prop in recovery_result["model"]["properties"]:
-        property_rows.append([
-            prop["id"],
-            prop["type"],
-            prop["description"],
-            "PASS" if prop["holds"] else "FAIL",
-            "security-analysis/results/order_payment_recovery_model.results.json",
-        ])
-    SHEETS["ThuocTinhAnToan"]["rows"] = property_rows
-    SHEETS["ThuocTinhAnToan"]["widths"] = [10, 28, 92, 14, 72]
-
-    exclusion_sheet = SHEETS["LoaiTruLanNhau"]
-    exclusion_sheet["rows"][0].extend(["KetQua", "BangChung"])
-    for row in exclusion_sheet["rows"][1:]:
-        row.extend(["PASS_MODEL", "P1/P4/P5/P6/P7/P13/P14 và mutation tương ứng."])
-    exclusion_sheet["widths"].extend([18, 68])
-
-    generated_sheet = SHEETS["HamSinhMa"]
-    generated_sheet["rows"][0].extend(["TrangThai", "BangChung"])
-    for row in generated_sheet["rows"][1:]:
-        if row[0] in {"safe_divide_retry_budget", "verify_gateway_callback"}:
-            row.extend(["REFERENCE_ONLY_NOT_IMPLEMENTED", "Ví dụ ATPM tham chiếu; không có implementation trong sản phẩm dự án."])
-        else:
-            row.extend(["VERIFIED_C", "Static scanner + ASan/UBSan/LSan; 22/22 case đúng kỳ vọng."])
-    generated_sheet["widths"].extend([34, 76])
-
-    arithmetic_status = {
-        "order_item_subtotal_cents": ("VERIFIED_SMT", "TEST6 SAT counterexample; TEST7 UNSAT dưới total bound."),
-        "order_total_cents": ("VERIFIED_SMT", "AmountInvariant; mismatch UNSAT."),
-        "two_payment_total_cents": ("VERIFIED_SMT", "PaymentInvariant; valid paid SAT, under/overpayment UNSAT."),
-        "inventory_after_reserve": ("NOT_VERIFIED_BY_CURRENT_SMT", "Có unit/concurrency guard, nhưng PaymentVerification.z3 chưa mã hóa inventory."),
-        "retry_counter_increment": ("NOT_VERIFIED_BY_CURRENT_SMT", "Bound được kiểm bằng model/unit, chưa có truy vấn SMT riêng."),
-        "refund_total_cents": ("NOT_VERIFIED_BY_CURRENT_SMT", "Refund được kiểm bằng state model/unit, chưa có truy vấn SMT số học riêng."),
-    }
-    math_sheet = SHEETS["KiemTraSoHoc"]
-    math_sheet["rows"][0].extend(["TrangThai", "KetQuaVaGioiHan"])
-    for row in math_sheet["rows"][1:]:
-        row.extend(arithmetic_status[row[0]])
-    math_sheet["widths"].extend([34, 86])
-
-    test_sheet = SHEETS["TestCase"]
-    # Correct names/expectations that previously overstated the executed work.
-    tc13 = next(row for row in test_sheet["rows"] if row[0] == "TC-13")
-    tc13[2] = "Kiểm thử biên validator Order (chưa phải fuzzing)"
-    tc13[5] = "34 ca InputValidator PASS; branch coverage 31/32 = 96,87%; chưa có fuzz harness/corpus."
-    next(row for row in test_sheet["rows"] if row[0] == "TC-17")[5] = "Mutation bị phát hiện: P1, P4, P10, P11, P12 FAIL; có witness CANCELLED → PAID_AFTER_CANCELLED."
-    next(row for row in test_sheet["rows"] if row[0] == "TC-18")[5] = "Mutation bị phát hiện: P1, P10, P11 FAIL; có witness tới amount_mismatch."
-    next(row for row in test_sheet["rows"] if row[0] == "TC-19")[5] = "Mutation bị phát hiện: P1, P10, P11 FAIL; có witness two_success_payments."
-    next(row for row in test_sheet["rows"] if row[0] == "TC-20")[5] = "Mutation bị phát hiện: P1, P7, P10, P11 FAIL; có witness resource_conflict."
-    next(row for row in test_sheet["rows"] if row[0] == "TC-21")[5] = (
-        "Không charge quá bound; decline có thẩm quyền → FAILED; UNKNOWN giữ PAYMENT_RETRY/inventory reserved để reconcile; "
-        "lỗi sau charge → REFUND_PENDING → REFUNDED."
-    )
-    test_sheet["rows"].extend([
-        ["TC-25", "REQ-17", "Mutation bỏ qua refund sau PAID", "Bật BUG-PAID-FAILED-WITHOUT-REFUND", "Chuyển PAID thẳng FAILED", "P11 và P13 FAIL; mutation bị phát hiện.", "HIGH"],
-        ["TC-26", "REQ-16", "Mutation giải phóng inventory khi payment UNKNOWN", "Bật BUG-UNKNOWN-RELEASED", "Đóng UNKNOWN thành terminal và release inventory", "P11 và P14 FAIL; mutation bị phát hiện.", "HIGH"],
-        ["TC-27", "NFR-2", "Đo branch coverage InputValidator", "Coverlet khả dụng", "Chạy dotnet test với CollectCoverage, Include InputValidator và threshold branch=90", "31/32 branch = 96,87%; nhánh subtotal < 0 true bất khả thi sau guard.", "HIGH"],
-        ["TC-28", "REQ-3..REQ-8, REQ-16..REQ-18", "Chạy toàn bộ unit test", ".NET SDK và restore hoàn tất", "dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj --no-restore", "84 PASS, 0 FAIL, 0 SKIP.", "HIGH"],
-        ["TC-29", "REQ-1, REQ-2, REQ-7, REQ-18, NFR-1", "HTTP/PostgreSQL integration suite", "Docker daemon hoạt động", "dotnet test OrderPaymentMicroservice.IntegrationTests/OrderPaymentMicroservice.IntegrationTests.csproj", "Mục tiêu 5 PASS; hiện 5 SKIP vì môi trường thiếu Docker, chưa được tính PASS.", "HIGH"],
-        ["TC-30", "REQ-4", "Fuzz application target", "Có harness, corpus, timeout và crash policy", "Chạy fuzzer trên validator/parser/transition", "CHƯA THỰC HIỆN: chưa có harness/corpus/coverage/crash artifact.", "MEDIUM"],
-        ["TC-31", "REQ-5, REQ-14, NFR-6", "TLC/BMC cho đặc tả TLA+", "TLC có trên PATH", "Chạy TLC với OrderPayment.cfg và lưu output", "CHƯA THỰC HIỆN: có .tla/.cfg nhưng chưa có log TLC/BMC.", "HIGH"],
-    ])
-
-    test_status = {
-        **{f"TC-{i}": "PASS_UNIT" for i in range(3, 9)},
-        "TC-1": "TEST_EXISTS_SKIPPED_DOCKER",
-        "TC-2": "TEST_EXISTS_SKIPPED_DOCKER",
-        "TC-9": "PASS_MODEL",
-        "TC-10": "EXPECTED_FAIL_DETECTED",
-        "TC-11": "PASS_SANITIZER",
-        "TC-12": "PASS_SANITIZER",
-        "TC-13": "PASS_BOUNDARY_NOT_FUZZ",
-        "TC-14": "PASS_UNIT",
-        "TC-15": "NOT_VERIFIED_POSTGRES",
-        "TC-16": "PASS_MODEL",
-        "TC-17": "EXPECTED_FAIL_DETECTED",
-        "TC-18": "EXPECTED_FAIL_DETECTED",
-        "TC-19": "EXPECTED_FAIL_DETECTED",
-        "TC-20": "EXPECTED_FAIL_DETECTED",
-        "TC-21": "PASS_MODEL_UNIT",
-        "TC-22": "PASS_SMT",
-        "TC-23": "PASS_MODEL",
-        "TC-24": "PASS_STATIC",
-        "TC-25": "EXPECTED_FAIL_DETECTED",
-        "TC-26": "EXPECTED_FAIL_DETECTED",
-        "TC-27": "PASS_COVERAGE",
-        "TC-28": "PASS_UNIT",
-        "TC-29": "SKIPPED_DOCKER",
-        "TC-30": "NOT_IMPLEMENTED",
-        "TC-31": "NOT_RUN",
-    }
-    test_evidence = {
-        "PASS_UNIT": "OrderPaymentMicroservice.Tests; lần chạy 08/10/2026: 84/84 PASS.",
-        "TEST_EXISTS_SKIPPED_DOCKER": "OrderPaymentApiTests.cs; cần Docker/PostgreSQL để có bằng chứng HTTP.",
-        "PASS_MODEL": "security-analysis/results/*.results.json",
-        "EXPECTED_FAIL_DETECTED": "order_state_model_buggy hoặc negative_scenarios trong recovery results.",
-        "PASS_SANITIZER": "security-analysis/c-memory/evidence/dynamic-analysis.json (22/22).",
-        "PASS_BOUNDARY_NOT_FUZZ": "InputValidatorTests + coverage_summary.json; không phải fuzz campaign.",
-        "NOT_VERIFIED_POSTGRES": "Serializable source đã có; thiếu ca fault-injection PostgreSQL thực chạy.",
-        "PASS_MODEL_UNIT": "recovery results + PaymentServiceTests/OrderServiceTests.",
-        "PASS_SMT": "payment_verification.results.json: 7/7.",
-        "PASS_STATIC": "c-memory/evidence/static-analysis.json.",
-        "PASS_COVERAGE": "coverage_summary.json: branch 96,87%, threshold 90%.",
-        "SKIPPED_DOCKER": "5 DockerFact; Docker không có trong môi trường xác minh.",
-        "NOT_IMPLEMENTED": "Không có fuzz harness/corpus/artifact của application.",
-        "NOT_RUN": "Có OrderPayment.tla/.cfg; không có TLC output.",
-    }
-    test_sheet["rows"][0].extend(["TrangThaiThucTe", "BangChung"])
-    for row in test_sheet["rows"][1:]:
-        status = test_status[row[0]]
-        row.extend([status, test_evidence[status]])
-    test_sheet["widths"].extend([32, 84])
 
 
 # Evidence and implementation status belong in BAO_CAO_TIEN_DO_ATPM.md.  The
@@ -764,12 +526,12 @@ def build() -> None:
         finally:
             temp_path.unlink(missing_ok=True)
 
-    ATPM_JSON_OUTPUT.write_text(
+    PIPELINE_JSON_OUTPUT.write_text(
         json.dumps(build_pipeline_json(), ensure_ascii=False, indent=2) + "\n",
         encoding="utf-8",
     )
     print(OUTPUT)
-    print(ATPM_JSON_OUTPUT)
+    print(PIPELINE_JSON_OUTPUT)
 
 
 if __name__ == "__main__":

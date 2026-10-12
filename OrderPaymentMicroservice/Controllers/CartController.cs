@@ -1,3 +1,4 @@
+using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using OrderPaymentMicroservice.DTOs.Cart;
@@ -29,6 +30,10 @@ public class CartController : ControllerBase
             var cart = await _cartService.GetOrCreateCartAsync(userId);
             return Ok(cart);
         }
+        catch (DbUpdateException)
+        {
+            return Conflict("Cart changed concurrently; reload and retry");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching cart for user {UserId}", userId);
@@ -49,6 +54,10 @@ public class CartController : ControllerBase
         {
             _logger.LogWarning(ex, "Invalid operation: {Message}", ex.Message);
             return BadRequest(ex.Message);
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Cart changed concurrently; reload and retry");
         }
         catch (Exception ex)
         {
@@ -73,6 +82,10 @@ public class CartController : ControllerBase
             _logger.LogWarning(ex, "Invalid operation: {Message}", ex.Message);
             return BadRequest(ex.Message);
         }
+        catch (DbUpdateException)
+        {
+            return Conflict("Cart changed concurrently; reload and retry");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating cart item");
@@ -96,6 +109,10 @@ public class CartController : ControllerBase
             _logger.LogWarning(ex, "Invalid operation: {Message}", ex.Message);
             return BadRequest(ex.Message);
         }
+        catch (DbUpdateException)
+        {
+            return Conflict("Cart changed concurrently; reload and retry");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error removing item from cart");
@@ -113,6 +130,10 @@ public class CartController : ControllerBase
             if (!User.CanAccessUser(cart.UserId)) return Forbid();
             await _cartService.ClearCartAsync(cartId);
             return Ok(new { message = "Cart cleared successfully" });
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict("Cart changed concurrently; reload and retry");
         }
         catch (Exception ex)
         {

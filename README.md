@@ -1,5 +1,16 @@
 # OrderPaymentMicroservice — Bài tập lớn An toàn phần mềm
 
+> Cập nhật 12/10/2026: đã sửa tồn kho khi Order có dòng sản phẩm trùng, validation
+> Cart/User/Product và transaction giỏ hàng; migration bổ sung CHECK stock/price/quantity.
+> Kết quả mới: 108 unit + 8 PostgreSQL integration PASS, không SKIP.
+> [Báo cáo 9 chương](security-analysis/report/BAO_CAO.md),
+> [Phụ lục A–G](security-analysis/report/PHU_LUC_A_G.md),
+> [traceability](security-analysis/results/traceability_matrix.csv) và
+> [manifest](security-analysis/results/evidence_manifest.json).
+> Evidence TLC/static/sanitizer/coverage trước đây được giữ như kết quả lịch sử.
+> Workbook generator và checker hiện dùng artifact của project, không truy cập ATPM.
+
+
 ## 1. Mục tiêu dự án
 
 Đề tài xây dựng và kiểm chứng an toàn hệ thống xử lý đơn hàng và thanh toán trực tuyến dưới dạng REST API. Trọng tâm không phải phát triển một website thương mại điện tử lớn mà là dùng Order và Payment làm đối tượng để thực hành quy trình:
@@ -39,7 +50,7 @@ Source code ASP.NET Core trên .NET 10, Entity Framework Core và PostgreSQL. C�
 
 ### `OrderPaymentMicroservice.Tests/`
 
-Project xUnit hiện có 87 unit test, trong đó 34 trường hợp tập trung vào InputValidator và 3 fuzz campaign xác định; phần còn lại kiểm tra User, Order, hai state machine, Payment, retry/reconciliation, refund, inventory compensation và race payment–cancel. Project integration test bổ sung 5 luồng HTTP chạy trên PostgreSQL thật qua Docker hoặc cluster cục bộ tạm thời.
+Project xUnit hiện có 108 unit test, trong đó 34 trường hợp tập trung vào InputValidator và 3 fuzz campaign xác định; phần còn lại kiểm tra User, Order, hai state machine, Payment, retry/reconciliation, refund, inventory compensation và race payment–cancel. Project integration test bổ sung 8 luồng HTTP chạy trên PostgreSQL thật qua Docker hoặc cluster cục bộ tạm thời.
 
 ### `security-analysis/`
 
@@ -131,17 +142,17 @@ P1 FAIL với counterexample:
 CREATED → CANCELLED → PAID_AFTER_CANCELLED
 ```
 
-Kết quả chứng minh công cụ phát hiện được lỗi đã mô hình hóa. Nó cũng tương ứng với vấn đề trong PaymentService: đơn tồn tại có thể bị đặt PAID mà chưa kiểm tra trạng thái nguồn.
+Kết quả chứng minh công cụ phát hiện được lỗi đã mô hình hóa. Đây là lỗi của baseline ban đầu. PaymentService hiện đã kiểm tra trạng thái nguồn; regression test chặn thanh toán đơn CANCELLED.
 
 ### 4.3. Unit test và coverage
 
-Đã xây dựng 34 test xUnit riêng cho InputValidator, gồm null/rỗng, ID không dương, biên TotalAmount/Quantity/UnitPrice, nhiều item, tolerance và decimal.MaxValue. Toàn solution hiện có 87 unit test và 5 integration test PostgreSQL, bổ sung fuzzing validator/state machine, test transition Order/Payment, timeout/unknown, retry giới hạn, crash reconciliation, refund, hoàn tồn kho, authorization và cạnh tranh payment/cancel.
+Đã xây dựng 34 test xUnit riêng cho InputValidator, gồm null/rỗng, ID không dương, biên TotalAmount/Quantity/UnitPrice, nhiều item, tolerance và decimal.MaxValue. Toàn solution hiện có 108 unit test và 8 integration test PostgreSQL, bổ sung fuzzing validator/state machine, test transition Order/Payment, timeout/unknown, retry giới hạn, crash reconciliation, refund, hoàn tồn kho, authorization và cạnh tranh payment/cancel.
 
-Kết quả chạy lại ngày **09/10/2026**:
+Kết quả chạy lại ngày **12/10/2026**:
 
 ```text
-Unit: Passed 87, Failed 0, Skipped 0
-Integration: Passed 5, Failed 0, Skipped 0 (PostgreSQL local fallback)
+Unit: Passed 108, Failed 0, Skipped 0
+Integration: Passed 8, Failed 0, Skipped 0 (PostgreSQL local fallback)
 ```
 
 Coverage đã lưu:
@@ -178,7 +189,7 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 |---|---|---|
 | Hệ thống Order & Payment chạy được | **Một phần** | Có lifecycle, test mức service và bộ E2E PostgreSQL; gateway mặc định còn mô phỏng |
 | REST API tích hợp shop | **Một phần** | Có JWT/role/ownership và HTTP integration test; script đã đồng bộ contract nhưng chưa có transcript demo hiện hành |
-| Database hoạt động | **Đạt trong integration suite** | Tạo PostgreSQL sạch, apply migration/seed và chạy 5/5 test qua Docker hoặc local fallback |
+| Database hoạt động | **Đạt trong integration suite** | Tạo PostgreSQL sạch, apply migration/seed và chạy 8/8 test qua Docker hoặc local fallback |
 | Demo hệ thống | **Một phần** | Có frontend và script; chưa có kết quả demo E2E hiện hành |
 | Model và thuộc tính | **Đạt trong phạm vi model** | Kripke đúng + BUGGY + bốn kết quả kiểm chứng |
 | Bằng chứng kiểm thử | **Đạt cho InputValidator** | 34 test, Cobertura, branch coverage > 90% |
@@ -187,7 +198,7 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 | TLA+/TLC | **Đạt trong phạm vi model** | TLC: 35 state sinh, 20 state phân biệt, depth 9, không phát hiện lỗi safety/liveness |
 | Fuzzing/dynamic testing | **Đạt cho target đã chọn** | 3/3 campaign, seed corpus cố định, 50.000 iteration, timeout/crash policy, branch 99,07% |
 | Phân tích an toàn bộ nhớ/phương án phù hợp | **Đạt trên mô hình C học tập** | Static scanner phân biệt 5 BUGGY/FIXED, có cppcheck/layout evidence và sanitizer 22/22; không suy rộng sang C# |
-| Sửa lỗi và kiểm chứng lại | **Đạt trong suite hiện tại** | Guard đã có; 87 unit và 5 PostgreSQL integration test đều PASS |
+| Sửa lỗi và kiểm chứng lại | **Đạt trong suite hiện tại** | Guard đã có; 108 unit và 8 PostgreSQL integration test đều PASS |
 | Báo cáo kỹ thuật | **Đang hoàn thiện** | Đã có báo cáo tiến độ và tài liệu chi tiết; cần cập nhật sau sửa lỗi |
 
 **Kết luận:** Bốn chương đều đã có artifact và bằng chứng tái lập, gồm TLC, fuzzing và PostgreSQL integration. Hệ thống vẫn chưa được coi là production-ready vì gateway thật, hardening vận hành và demo triển khai ngoài test host còn nằm ngoài phạm vi đã xác minh.
@@ -235,7 +246,9 @@ python security-analysis/run_fuzzing.py
 python security-analysis/run_tlc.py --jar /path/to/tla2tools.jar
 python security-analysis/create_order_payment_spec.py
 python security-analysis/verify_teacher_spec.py
-pytest -q ATPM/atpm_project/python/tests/test_order_payment_spec.py
+python security-analysis/verify_inventory_smt.py
+python security-analysis/package_evidence.py
+python security-analysis/build_report.py
 ```
 
 Các script chạy threat model, model đúng/BUGGY, recovery model, risk assessment, SMT/Z3, fuzzing, TLC và kiểm tra workbook theo đúng schema ATPM của giảng viên. Static/dynamic analysis C chạy riêng bằng `make -C security-analysis/c-memory static-check` và `make -C security-analysis/c-memory test`. Muốn chủ động tạo lại dataset/model từ mã sinh:

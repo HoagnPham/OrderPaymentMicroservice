@@ -1,3 +1,4 @@
+using OrderPaymentMicroservice.Security;
 using Microsoft.EntityFrameworkCore;
 using OrderPaymentMicroservice.Data;
 using OrderPaymentMicroservice.DTOs.Products;
@@ -41,6 +42,7 @@ public class ProductService : IProductService
 
     public async Task<ProductResponse> CreateProductAsync(CreateProductRequest request)
     {
+        RequestValidation.Validate(request);
         var product = new Product
         {
             Name = request.Name,
@@ -63,6 +65,7 @@ public class ProductService : IProductService
 
     public async Task<ProductResponse?> UpdateProductAsync(int productId, UpdateProductRequest request)
     {
+        RequestValidation.Validate(request);
         var product = await _context.Products.FindAsync(productId);
         if (product == null)
             return null;

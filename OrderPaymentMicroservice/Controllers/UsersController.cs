@@ -34,6 +34,10 @@ public class UsersController : ControllerBase
             _logger.LogWarning(ex, "Registration error: {Message}", ex.Message);
             return BadRequest(ex.Message);
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error registering user");
@@ -55,6 +59,10 @@ public class UsersController : ControllerBase
             _logger.LogWarning(ex, "Login error: {Message}", ex.Message);
             return Unauthorized(ex.Message);
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error logging in");
@@ -73,6 +81,10 @@ public class UsersController : ControllerBase
                 return NotFound($"User {id} not found");
 
             return Ok(user);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -93,6 +105,10 @@ public class UsersController : ControllerBase
         catch (InvalidOperationException ex)
         {
             _logger.LogWarning(ex, "Update error: {Message}", ex.Message);
+            return BadRequest(ex.Message);
+        }
+        catch (ArgumentException ex)
+        {
             return BadRequest(ex.Message);
         }
         catch (Exception ex)

@@ -1,3 +1,4 @@
+using OrderPaymentMicroservice.Security;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -33,6 +34,7 @@ public class UserService : IUserService
 
     public async Task<UserResponse> RegisterAsync(RegisterRequest request)
     {
+        RequestValidation.Validate(request);
         if (await EmailExistsAsync(request.Email))
             throw new InvalidOperationException($"Email {request.Email} already registered");
 
@@ -56,6 +58,7 @@ public class UserService : IUserService
 
     public async Task<LoginResponse> LoginAsync(LoginRequest request)
     {
+        RequestValidation.Validate(request);
         var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == request.Email);
         if (user == null)
             throw new InvalidOperationException("Invalid email or password");
@@ -79,7 +82,6 @@ public class UserService : IUserService
         if (!user.IsActive)
             throw new InvalidOperationException("User account is not active");
 
-        // TODO: Implement JWT token generation
         var expiresAt = DateTime.UtcNow.AddHours(1);
         var token = GenerateJwtToken(user, expiresAt);
 
@@ -102,6 +104,7 @@ public class UserService : IUserService
 
     public async Task<UserResponse> UpdateUserAsync(int userId, UpdateUserRequest request)
     {
+        RequestValidation.Validate(request);
         var user = await _context.Users.FindAsync(userId);
         if (user == null)
             throw new InvalidOperationException($"User {userId} not found");

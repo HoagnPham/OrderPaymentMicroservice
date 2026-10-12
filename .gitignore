@@ -35,3 +35,6 @@ appsettings.*.local.json
 
 # Removed course tools may remain locked locally while running.
 ATPM/**/*.exe
+
+# Raw local test logs; portable outcomes and log hashes are packaged separately.
+security-analysis/results/dotnet/

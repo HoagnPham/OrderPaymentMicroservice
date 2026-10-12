@@ -1,22 +1,36 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace OrderPaymentMicroservice.DTOs.Products;
 
 public class CreateProductRequest
 {
+    [Required, StringLength(255)]
     public string Name { get; set; } = string.Empty;
+    [StringLength(1000)]
     public string Description { get; set; } = string.Empty;
+    [Range(typeof(decimal), "0.01", "999999.99")]
     public decimal Price { get; set; }
+    [Range(0, int.MaxValue)]
     public int Stock { get; set; }
+    [StringLength(500)]
     public string? ImageUrl { get; set; }
+    [StringLength(100)]
     public string? Category { get; set; }
 }
 
 public class UpdateProductRequest
 {
+    [StringLength(255)]
     public string? Name { get; set; }
+    [StringLength(1000)]
     public string? Description { get; set; }
+    [Range(typeof(decimal), "0.01", "999999.99")]
     public decimal? Price { get; set; }
+    [Range(0, int.MaxValue)]
     public int? Stock { get; set; }
+    [StringLength(500)]
     public string? ImageUrl { get; set; }
+    [StringLength(100)]
     public string? Category { get; set; }
 }
 

@@ -50,6 +50,10 @@ public class AppDbContext : DbContext
         // Configure OrderItem entity
         modelBuilder.Entity<OrderItem>(entity =>
         {
+            entity.ToTable("OrderItems", table =>
+            {
+                table.HasCheckConstraint("CK_OrderItems_Quantity_Positive", "\"Quantity\" > 0");
+            });
             entity.HasKey(oi => oi.Id);
             entity.Property(oi => oi.OrderId).IsRequired();
             entity.Property(oi => oi.ProductId).IsRequired();
@@ -82,6 +86,11 @@ public class AppDbContext : DbContext
         // Configure Product entity
         modelBuilder.Entity<Product>(entity =>
         {
+            entity.ToTable("Products", table =>
+            {
+                table.HasCheckConstraint("CK_Products_Stock_Nonnegative", "\"Stock\" >= 0");
+                table.HasCheckConstraint("CK_Products_Price_Positive", "\"Price\" > 0");
+            });
             entity.HasKey(p => p.Id);
             entity.Property(p => p.Name).HasMaxLength(255).IsRequired();
             entity.Property(p => p.Description).HasMaxLength(1000);
@@ -149,6 +158,10 @@ public class AppDbContext : DbContext
         // Configure CartItem entity
         modelBuilder.Entity<CartItem>(entity =>
         {
+            entity.ToTable("CartItems", table =>
+            {
+                table.HasCheckConstraint("CK_CartItems_Quantity_Positive", "\"Quantity\" > 0");
+            });
             entity.HasKey(ci => ci.Id);
             entity.Property(ci => ci.CartId).IsRequired();
             entity.Property(ci => ci.ProductId).IsRequired();

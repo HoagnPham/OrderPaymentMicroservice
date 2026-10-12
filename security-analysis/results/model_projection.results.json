@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "recovery_event_transitions": 37,
+  "recovery_unique_state_pairs": 32,
+  "pipeline_state_pairs": 32,
+  "only_recovery": [],
+  "only_pipeline": [],
+  "projection": "Drop event/action/kind metadata and deduplicate source-target pairs.",
+  "limitations": [
+    "Matching edges does not make the seven workbook CTL properties equivalent to all fifteen recovery properties."
+  ]
+}

@@ -1,5 +1,13 @@
 # Bổ sung ATPM cho OrderPaymentMicroservice
 
+> Bản tổng hợp mới ngày 12/10/2026: [Báo cáo](report/BAO_CAO.md) và
+> [Phụ lục A–G](report/PHU_LUC_A_G.md). 108 unit + 8 integration PASS;
+> inventory SMT 3/3, payment SMT 7/7, recovery P1–P15 PASS.
+> Số liệu 09/10/2026 bên dưới là lịch sử, không phải kết quả chạy mới.
+> Quy trình đợt này không truy cập ATPM; JSON workbook nằm tại
+> `security-analysis/order_payment_pipeline_spec.json`.
+
+
 ## Kết quả đã chạy
 
 - Model kỳ vọng: **4/4 PASS**.
@@ -48,7 +56,7 @@ thích từng state, sự cố, giải pháp và state tiếp theo nằm trong
 `results/order_payment_recovery_model.results.json`; ma trận state/sự cố/giải
 pháp nằm trong `results/order_payment_state_response_matrix.csv`.
 
-NuGet cần mạng trong lần restore đầu. Test không cần PostgreSQL và không khởi động API.
+NuGet cần mạng trong lần restore đầu. Unit test không cần PostgreSQL. Integration test khởi động API test host và PostgreSQL tạm.
 `run_analysis.py` import trực tiếp `kripke_model.py` Lab 1 và `risk_assessor.py` Lab 3, không sao chép hay sửa script mẫu. Kết quả nằm trong `results/`.
 Lab 3 CLI gốc dùng dataset cố định, vì vậy integration gọi `assess_all()` với dataset của project.
 

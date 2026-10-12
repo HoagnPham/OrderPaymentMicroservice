@@ -1,0 +1,869 @@
+{
+  "schema_version": 1,
+  "packaged_at_utc": "2026-10-12T12:34:50.274988+00:00",
+  "git_base_commit": "4bcc04dfb038cec81c94947197b4528b3908187d",
+  "working_tree_dirty": true,
+  "dotnet_version": "10.0.112",
+  "fresh_checks": [
+    "application_tests.results.json",
+    "model_projection.results.json",
+    "inventory_verification.results.json",
+    "payment_verification.results.json",
+    "order_payment_recovery_model.results.json",
+    "teacher_spec_verification.json"
+  ],
+  "historical_checks_not_rerun": [
+    "tlc/OrderPayment.tlc.results.json",
+    "application_fuzzing.results.json",
+    "coverage_summary.json",
+    "c-memory/evidence/static-analysis.json",
+    "c-memory/evidence/dynamic-analysis.json"
+  ],
+  "artifacts": [
+    {
+      "path": "OrderPaymentMicroservice/Controllers/CartController.cs",
+      "sha256": "9e743454457b1981cad1977f21618c180a06211b27eb228d631361fb58015a98",
+      "bytes": 5151
+    },
+    {
+      "path": "OrderPaymentMicroservice/Controllers/OrdersController.cs",
+      "sha256": "13f60f8965418949182e598637d0229cb9d03ddf5038f5fb3303c4c2103cc63c",
+      "bytes": 6822
+    },
+    {
+      "path": "OrderPaymentMicroservice/Controllers/PaymentsController.cs",
+      "sha256": "02d57027432e3ee9391752962ed8f27d72451922dc399e31223a5708d14eda3d",
+      "bytes": 7568
+    },
+    {
+      "path": "OrderPaymentMicroservice/Controllers/ProductsController.cs",
+      "sha256": "1a657d765daf0ac5bc22523056f622bd5ff293a953f4950b1cf3cf645b4fbb76",
+      "bytes": 4483
+    },
+    {
+      "path": "OrderPaymentMicroservice/Controllers/UsersController.cs",
+      "sha256": "a3c87b7d2abd014318972b093ae14142949d25655ac0421b91602f03e052a77b",
+      "bytes": 3695
+    },
+    {
+      "path": "OrderPaymentMicroservice/DTOs/Cart/CartRequest.cs",
+      "sha256": "dcf298a2271148d252120c1a2901018d849f62a61ec8d18b38ce03f893c7d3f8",
+      "bytes": 776
+    },
+    {
+      "path": "OrderPaymentMicroservice/DTOs/Orders/CreateOrderItemRequest.cs",
+      "sha256": "9320f8accf2096e76daa3c42850d9efc3e158120d49a2c022dc957da07468324",
+      "bytes": 338
+    },
+    {
+      "path": "OrderPaymentMicroservice/DTOs/Orders/CreateOrderRequest.cs",
+      "sha256": "56bfcc7160329c2cda28b81742cdf0a31ba7ea1d1cc104289b8ae866e328a235",
+      "bytes": 447
+    },
+    {
+      "path": "OrderPaymentMicroservice/DTOs/Orders/OrderItemResponse.cs",
+      "sha256": "83e503c7ba09786c78564183224dff075db997c353f6818e070c087db8c15363",
+      "bytes": 408
+    },
+    {
+      "path": "OrderPaymentMicroservice/DTOs/Orders/OrderResponse.cs",
+      "sha256": "dd56f85432486581dec0e92b94966fb536e9c3a23bfde5760c78e5de30dc4419",
+      "bytes": 631
+    },
+    {
+      "path": "OrderPaymentMicroservice/DTOs/Payments/CreatePaymentRequest.cs",
+      "sha256": "ae3b4615ea2e2ff60a8427750ce865f2b1a00994f246ed84c645f6804178a1f2",
+      "bytes": 331
+    },
+    {
+      "path": "OrderPaymentMicroservice/DTOs/Payments/PaymentResponse.cs",
+      "sha256": "8c279f50d2abf138a5b46f91f9e27a6d97581370902ebce4e81ec246f92edad2",
+      "bytes": 713
+    },
+    {
+      "path": "OrderPaymentMicroservice/DTOs/Products/ProductRequest.cs",
+      "sha256": "fe339e8441fd9a7e04e87747f985575ed9eb038acebf7f532d662a9b6f343dc3",
+      "bytes": 1470
+    },
+    {
+      "path": "OrderPaymentMicroservice/DTOs/Users/UserRequest.cs",
+      "sha256": "18af6a6bc0ef3f40b1a08c3473da5d43444adcd7d447911545fd17a7e8a6e041",
+      "bytes": 1784
+    },
+    {
+      "path": "OrderPaymentMicroservice/Data/AppDbContext.cs",
+      "sha256": "f1602569e3ec0146758af5578365b0a649d47724a3a00d5dd54e7c8713e5b091",
+      "bytes": 7710
+    },
+    {
+      "path": "OrderPaymentMicroservice/Data/DbInitializer.cs",
+      "sha256": "b55b9f17ef722f5b7514038242e29d3bbe92639959b9c72bea43f6974fe1b9ad",
+      "bytes": 4319
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20260912044133_InitialCreate.Designer.cs",
+      "sha256": "66f788418b370f8f0e97e68dfc74cf03b43ba40638f7e3ae6cae0a70bdceaad0",
+      "bytes": 5195
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20260912044133_InitialCreate.cs",
+      "sha256": "5c0f8fffa0a674f9c375a6eed7f54d97c7a5dba76678330cb324d862ff5dd004",
+      "bytes": 4555
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20260912131635_AddProductUserCart.Designer.cs",
+      "sha256": "4cc3c71f6cc522bfd421bac155a7b2146cbd4fd05f44d467c65ed4da12bf134e",
+      "bytes": 13313
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20260912131635_AddProductUserCart.cs",
+      "sha256": "bf984b886ba057ec5a42ed29a44781ac318c451c1c7e20053dd549e55c27872f",
+      "bytes": 8842
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20260913120000_AddRoleColumnToUsers.cs",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20260915044440_AddAddressCityToOrder.Designer.cs",
+      "sha256": "56c3af2df94a03872ebded7dde1c1d37f7e087eb0f3c7abbb97b4ce363048048",
+      "bytes": 13707
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20260915044440_AddAddressCityToOrder.cs",
+      "sha256": "8a186f621a7854941b9be2f4f3c20a96ef6d91b787aa18960495f0871ff983e2",
+      "bytes": 1015
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20260921072143_AddPaymentIdempotency.Designer.cs",
+      "sha256": "fabb0b166de3aa1b1198aadc5e1437a119c656ac643956992ecb015367a76025",
+      "bytes": 14289
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20260921072143_AddPaymentIdempotency.cs",
+      "sha256": "50558933235d0ae088ee02142188634452b26beb6f54c840759c2856086b7a39",
+      "bytes": 2207
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20261007031314_AddDurableOrderPaymentLifecycle.Designer.cs",
+      "sha256": "582a37c3d4b90db96bfe0feb6de45d5de78bc7455a4d2368bba13cb145a3eafd",
+      "bytes": 15610
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20261007031314_AddDurableOrderPaymentLifecycle.cs",
+      "sha256": "f33afa025a018a1b536a0f6c98bcf69254006322c6381b8ded897689a7d4b137",
+      "bytes": 5504
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20261007031951_AddLifecycleConcurrencyTokens.Designer.cs",
+      "sha256": "f8ba1d8f6778dcc31b88dd0bfe2af2e14f701b85e99207f5ea6129a2848d15ed",
+      "bytes": 15942
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20261007031951_AddLifecycleConcurrencyTokens.cs",
+      "sha256": "70c6ba641626183abb86f72176ac28b444ee5cc1b7bcc42c3aad232a6ec15097",
+      "bytes": 1106
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20261012130000_EnforceInventoryAndQuantityBounds.Designer.cs",
+      "sha256": "38669be1669cd794e21abd5717395812ed90c55f188e2be6640ffabbaf3b3b02",
+      "bytes": 16491
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/20261012130000_EnforceInventoryAndQuantityBounds.cs",
+      "sha256": "5c9220ca3c7088e8cfc84152bbb65dbe7b871a94477c53b23982866b309bfa1f",
+      "bytes": 1306
+    },
+    {
+      "path": "OrderPaymentMicroservice/Migrations/AppDbContextModelSnapshot.cs",
+      "sha256": "ca93eb7d77d1c1d26dbfdedad6347fcef5fd64afbb633ed87f20c057e4945ed7",
+      "bytes": 16350
+    },
+    {
+      "path": "OrderPaymentMicroservice/Models/InventoryReservationStatus.cs",
+      "sha256": "306f444633ae1eb6e03d5bd4fe007af71519dae1935aca204f72e39ada9aec78",
+      "bytes": 294
+    },
+    {
+      "path": "OrderPaymentMicroservice/Models/Order.cs",
+      "sha256": "1bd665b0f2f7196dc5190bc9ab6f7d53320d6e27dab9c31d5c12c41113085dbc",
+      "bytes": 1820
+    },
+    {
+      "path": "OrderPaymentMicroservice/Models/OrderItem.cs",
+      "sha256": "c919620860d4f61b08d5b57797719fab9526cfb060e090c6f6f4f03991e82e80",
+      "bytes": 1397
+    },
+    {
+      "path": "OrderPaymentMicroservice/Models/OrderStatus.cs",
+      "sha256": "7d25200c43ec7144419d4676227c962022e55387dfb817c644c5c4720132d934",
+      "bytes": 420
+    },
+    {
+      "path": "OrderPaymentMicroservice/Models/Payment.cs",
+      "sha256": "48d05db4dd09783266d5ba9fa18ccf62a99f479578e7a14878a513cf3ca43894",
+      "bytes": 1446
+    },
+    {
+      "path": "OrderPaymentMicroservice/Models/PaymentStatus.cs",
+      "sha256": "6a3b0036c0751682ef3d03c7028b85b026b4c02765a2dd637d60e0ab02b314dd",
+      "bytes": 357
+    },
+    {
+      "path": "OrderPaymentMicroservice/Models/Product.cs",
+      "sha256": "2c9b63769c65a3ce6b0eb2c12e33eb0d685919d2f0a2204b72c7b08233fba624",
+      "bytes": 1429
+    },
+    {
+      "path": "OrderPaymentMicroservice/Models/ShoppingCart.cs",
+      "sha256": "2564a128b7721eec4b5432615dcfa0ab0fb803c3879582aace2a8a4b6ab8c3c6",
+      "bytes": 2017
+    },
+    {
+      "path": "OrderPaymentMicroservice/Models/User.cs",
+      "sha256": "903e8d2da4e012c30369fb29ba9a54aa51180d9f964234dbf6e47afcdc393c55",
+      "bytes": 1824
+    },
+    {
+      "path": "OrderPaymentMicroservice/OrderPaymentMicroservice.csproj",
+      "sha256": "89dca7dfae8beb3e741ba4d8face08aa8cd8de94f8ccd4a5ccca84e35b6387fd",
+      "bytes": 756
+    },
+    {
+      "path": "OrderPaymentMicroservice/Program.cs",
+      "sha256": "85f843b2052fe1c746e8f55288702ac34cb383f69fef0b91a0132aefb05b0477",
+      "bytes": 4249
+    },
+    {
+      "path": "OrderPaymentMicroservice/Properties/launchSettings.json",
+      "sha256": "766b37fea7f1a04ac9635b42106496060962074c9314a64125503d1c930bccb2",
+      "bytes": 621
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/ClaimsPrincipalExtensions.cs",
+      "sha256": "07cc4e6be599d5f1fc8fe5fdae492e103c9f8376c6855b9f33ddac760b257819",
+      "bytes": 630
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/InputValidator.cs",
+      "sha256": "edb425e498e0cd8899809ff8e64a4b53ef1ee3d92bae73d63207e26c2a01441a",
+      "bytes": 4327
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/InventoryVerification.z3",
+      "sha256": "c0cd7fa578070485e7ee31e9172bf4d1abde23d1961ea816c859241b6e0ea68b",
+      "bytes": 770
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/OrderPayment.cfg",
+      "sha256": "bcc4efcfa56df799153ca14c393d6690e0d4cdb7c257bbded1543b1013bfa3a9",
+      "bytes": 245
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/OrderPayment.tla",
+      "sha256": "0ac6246131d85a3eb09b83623a613b4711f52cea62f3e76be5f1663f1ad50df9",
+      "bytes": 5749
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/OrderStateMachine.cs",
+      "sha256": "c55900e5f450f1024bba9ca00594da21c8c96cbabb7937c1fe598977f50cd145",
+      "bytes": 1463
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/PaymentStateMachine.cs",
+      "sha256": "a63fecaa8f327a685c048afa30314d400c31e0a7d546ad8d5110f41ccd591795",
+      "bytes": 1161
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/PaymentValidator.cs",
+      "sha256": "6c7b172097b3bc5dd56136d2fa692feebc9ca44e567c8f3429e2e2a56705c893",
+      "bytes": 2114
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/PaymentVerification.z3",
+      "sha256": "9de7db19129f265d91c866470c22b48f7a3cb0e98d7b5ef25df0092508e350f3",
+      "bytes": 3110
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/RequestValidation.cs",
+      "sha256": "b07dca9f1100e74c3892bbab07326467ed8af2dada829ce21fe63e7b0d8ce5a1",
+      "bytes": 500
+    },
+    {
+      "path": "OrderPaymentMicroservice/Security/WorkflowAnalysis.md",
+      "sha256": "e6bed5000ed9cf86640bb77d01aed9ce0b9aeb018753bda62ec2e84bfc4c5197",
+      "bytes": 4640
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/CartService.cs",
+      "sha256": "a30ad60371722dd33a84ebed2960d6ecc4450bee8cfeae63b4ddafffc0fabe21",
+      "bytes": 8026
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/Interfaces/ICartService.cs",
+      "sha256": "0482b52a0e5c1f7bb90ce1f46adb71121288a150eef1ca63fd07cb435f055272",
+      "bytes": 1041
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/Interfaces/IOrderService.cs",
+      "sha256": "0f3a4689d8c0153a317b90f7ed68de78c29650fbc8033a1cd952fe65becb8cb6",
+      "bytes": 1091
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/Interfaces/IPaymentService.cs",
+      "sha256": "976e4a7b792564a046f890c278fe884b888258ae96e701740aed92bacbc125d9",
+      "bytes": 961
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/Interfaces/IProductService.cs",
+      "sha256": "af67880d915e605f6f9e29f9e718c269919f17db5023f7a39741e38b8166e70e",
+      "bytes": 1019
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/Interfaces/IUserService.cs",
+      "sha256": "16c177f5b8bff229c32a196f98f87be746ae3f6cb93907bec1e24a421aed7d6b",
+      "bytes": 842
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/InventoryReservation.cs",
+      "sha256": "104b22cad1797e92115c882f557632517c54acdc0224657168e7da49cfe3eab1",
+      "bytes": 1334
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/OrderService.cs",
+      "sha256": "edad85b7c335802b7e43e897d60dc5124d6f646cfd840ead70164039e6c0c333",
+      "bytes": 9081
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/PaymentService.cs",
+      "sha256": "0990036a79cdc1ac82ede78ce2cf327978689c7a83a9d5db0ab508c64b190d32",
+      "bytes": 17417
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/Payments/FakePaymentGateway.cs",
+      "sha256": "4a134db59a67607b5484e0920b971b7b65838236b2dbe4695905d138018d7a25",
+      "bytes": 1904
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/Payments/IPaymentGateway.cs",
+      "sha256": "7eba147b549a3ce82d1c689eee1ac2ad5c61f15469572a86fe56a5cc82aa4d12",
+      "bytes": 979
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/Payments/PaymentRecoveryOptions.cs",
+      "sha256": "87be07a5e0c831edcb5f060883ca07da4161e9bbef69add47c7793736445a5b4",
+      "bytes": 359
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/Payments/PaymentRecoveryWorker.cs",
+      "sha256": "2818da0f7c4d5b5d6bc71fdcade46e4664a0ebd16db5795c931829a5a817872b",
+      "bytes": 3686
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/ProductService.cs",
+      "sha256": "1996f5daa3998dfde7d265f32f81a468e5b14ab315fc857005d18323726af5d3",
+      "bytes": 4063
+    },
+    {
+      "path": "OrderPaymentMicroservice/Services/UserService.cs",
+      "sha256": "0d2776e6cb2143e0cf6db5c807a1cc2afda36a71af210d7d6cc9f882b79f41c4",
+      "bytes": 6874
+    },
+    {
+      "path": "OrderPaymentMicroservice/Utilities/DbInitializer.cs",
+      "sha256": "015367b5301ccd85ba0a98a555b9d75f20513c42f9b82bf3e817df3127e04631",
+      "bytes": 2568
+    },
+    {
+      "path": "OrderPaymentMicroservice/appsettings.Development.json",
+      "sha256": "b6e0af608453e4ae36ed62ddf35fbe576dea77fffd79c847e2c68c502bf86eba",
+      "bytes": 227
+    },
+    {
+      "path": "OrderPaymentMicroservice/appsettings.json",
+      "sha256": "66d21698117b44f8b30b0a93197081834168b451415c7b01ba5337c3be1d7027",
+      "bytes": 506
+    },
+    {
+      "path": "OrderPaymentMicroservice/readme.md",
+      "sha256": "19707db6966ed329f99252a7103f3db3def23788c5471d9168b08febb15071a2",
+      "bytes": 3539
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json",
+      "sha256": "142cb02f928897c81e9483b878a77800d193a2bdc5ecf2e20cf3837d3117fe99",
+      "bytes": 1524
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/InputValidatorTests.cs",
+      "sha256": "c69a904fe9853ed659fb237792eda82d3be6cd56bf0d53feabc6df3d0931c442",
+      "bytes": 4375
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj",
+      "sha256": "6b594a0bc194519b3384bf72912d4e3121f177fed3c8e9b21fb805ec198ace25",
+      "bytes": 925
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/OrderServiceTests.cs",
+      "sha256": "add37294b317c90bbf6c9f718a983359196e9d501b7f4052eade5e65264c0983",
+      "bytes": 6965
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/OrderStateMachineTests.cs",
+      "sha256": "c580975462e172cf1446285bd5e9ba8995cd3e66eea1c482f71434eddffc2ce8",
+      "bytes": 2110
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/PaymentServiceTests.cs",
+      "sha256": "ac26e4cdfe1070e352a9c5ba26fd97dc24e59f5f3432682b478073af912aa58a",
+      "bytes": 17176
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/PaymentStateMachineTests.cs",
+      "sha256": "e8714459cfde084cf7994ead3fb8b354105f2707759989650d0ac188d7f54fcb",
+      "bytes": 1477
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/RequestBoundaryRegressionTests.cs",
+      "sha256": "9d5c1d3662fae3ef4e021efe91db220d5e6902dad01e7b6abf7441581dbb7e2c",
+      "bytes": 6988
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs",
+      "sha256": "69fcef032dd9a63787e4a6d6ea184cfa86ab577554d79f2808cf0fbfa2b59787",
+      "bytes": 9754
+    },
+    {
+      "path": "OrderPaymentMicroservice.Tests/UserServiceTests.cs",
+      "sha256": "ee9db1a9a705cec7ca7258964bdf5388a84400a23443fddca619f667c0666991",
+      "bytes": 3831
+    },
+    {
+      "path": "OrderPaymentMicroservice.IntegrationTests/DockerFactAttribute.cs",
+      "sha256": "57e652000fae021da82f1eb2bb3e4863833638c397ef3579bda0fa23244f6b42",
+      "bytes": 1235
+    },
+    {
+      "path": "OrderPaymentMicroservice.IntegrationTests/LocalPostgresServer.cs",
+      "sha256": "8630490ed15e33f3e613a289013a958c9456acdb14b4a2be9cdb124ea2bcef5b",
+      "bytes": 4617
+    },
+    {
+      "path": "OrderPaymentMicroservice.IntegrationTests/OrderPaymentApiTests.cs",
+      "sha256": "fb5f7a8a93ab690ce04967d2d8c4c4ce44a6c1a8f485977c2dcd267c5578b090",
+      "bytes": 18284
+    },
+    {
+      "path": "OrderPaymentMicroservice.IntegrationTests/OrderPaymentMicroservice.IntegrationTests.csproj",
+      "sha256": "6da2bfa6f55a88e35069b6768ddfa02cdf82920599c4a77e5799a29bc8ef42d5",
+      "bytes": 798
+    },
+    {
+      "path": "OrderPaymentMicroservice.IntegrationTests/PostgresApiFixture.cs",
+      "sha256": "0505e1a8c3f526dd6debaba8c93fa25b321e63007ea0387f552d52f203d5ef68",
+      "bytes": 3603
+    },
+    {
+      "path": "security-analysis/BAO_CAO_TIEN_DO_ATPM.md",
+      "sha256": "243ee5d8635ceb7de979f432853aca7019defe277c852e61fa95760382be6a6a",
+      "bytes": 36444
+    },
+    {
+      "path": "security-analysis/GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md",
+      "sha256": "e0b1f94150f18256919f8ffe164d5db15c76ffcd225631b1e25c22e8f0057954",
+      "bytes": 15476
+    },
+    {
+      "path": "security-analysis/MO_HINH_XU_LY_SU_CO.md",
+      "sha256": "d5429317f6eda6bba28ecbe37bd4e4af4d4801c17f3a99817580b67b2bbb2cb2",
+      "bytes": 12895
+    },
+    {
+      "path": "security-analysis/README.md",
+      "sha256": "2c332c1b849f892b0d320a7b279fa3d2c70cd70ea8ef1a0e5112ff88491fb570",
+      "bytes": 14072
+    },
+    {
+      "path": "security-analysis/THREAT_MODEL_CHUONG1.md",
+      "sha256": "b8d7113af16a816cb076ea66b916bb9dd777720f8f9d47b373656e07389cd9f8",
+      "bytes": 8155
+    },
+    {
+      "path": "security-analysis/build_report.py",
+      "sha256": "d17d04a5e32aa75c6be0250f5e58f159906e3a2bf1df043a5d7c50eab8de9339",
+      "bytes": 21334
+    },
+    {
+      "path": "security-analysis/c-memory/README.md",
+      "sha256": "9452366a2ecfb7971c50034f219ddb88bb5904577c97691b797b9d58e76ac1ab",
+      "bytes": 10573
+    },
+    {
+      "path": "security-analysis/c-memory/evidence/dynamic-analysis.json",
+      "sha256": "fa0994c42c66cad385f65370712cf77dc12e9a7550cac0341140129745489f04",
+      "bytes": 4565
+    },
+    {
+      "path": "security-analysis/c-memory/evidence/static-analysis.json",
+      "sha256": "16088d28691fb2a6c01096b101748a8100de7194c9f4593de7eb3fc6eaad47e9",
+      "bytes": 5049
+    },
+    {
+      "path": "security-analysis/c-memory/modules/cart.c",
+      "sha256": "6bef9b35ef4dbcbd884af394cf23fdac06b8e4731bffc59fc4520e73377d4d9f",
+      "bytes": 662
+    },
+    {
+      "path": "security-analysis/c-memory/modules/demo.h",
+      "sha256": "3eefe3006dc9561e9680977639f7848a729669a6480ca3834e519eee91cc0df4",
+      "bytes": 331
+    },
+    {
+      "path": "security-analysis/c-memory/modules/order.c",
+      "sha256": "09a485758d828639ae1f3b272074aff10901eb3f89cd1333ba79bf70f368da00",
+      "bytes": 807
+    },
+    {
+      "path": "security-analysis/c-memory/modules/payment.c",
+      "sha256": "ecf49e283960644f50a5b4ba193a898fa052f256a67c5a4714b3fd25b8da5c43",
+      "bytes": 585
+    },
+    {
+      "path": "security-analysis/c-memory/modules/product.c",
+      "sha256": "d0fedcac0fe733a8771b5b1857607838913fcd003ece3ebf722dc23d83319088",
+      "bytes": 719
+    },
+    {
+      "path": "security-analysis/c-memory/modules/user.c",
+      "sha256": "63915a8ac8099fd4b244e1631d004e3b6a1d0556043f3c9913103e0d1289de53",
+      "bytes": 617
+    },
+    {
+      "path": "security-analysis/c-memory/results/cart_buggy.log",
+      "sha256": "58c5ca94593ac0d1b9bd7018b54553c4a3fa19f9f3375c7e267a1a49c5af38cd",
+      "bytes": 3243
+    },
+    {
+      "path": "security-analysis/c-memory/results/cart_fixed.log",
+      "sha256": "bbeeaa1e985ceb90092499fd39f97ecf307f6167cb7c4c1ce1cd0b2f99616d5b",
+      "bytes": 20
+    },
+    {
+      "path": "security-analysis/c-memory/results/order_buggy.log",
+      "sha256": "120e099a3b4ea5e2d3d198715ee853d30dfdb7221e9c43ddf49c16bc31b11245",
+      "bytes": 813
+    },
+    {
+      "path": "security-analysis/c-memory/results/order_fixed.log",
+      "sha256": "9ec458dbdd1ec622c38b9ec3ac63287d871938985e828b6dfbad0ebf755156fa",
+      "bytes": 120
+    },
+    {
+      "path": "security-analysis/c-memory/results/payment_buggy.log",
+      "sha256": "51e223118a510303617aa7321a6787d039cb1835e2f0bdaa23e66f246ccc6b1b",
+      "bytes": 1902
+    },
+    {
+      "path": "security-analysis/c-memory/results/payment_fixed.log",
+      "sha256": "8866a9dae4fa587b9bc21eaa101553ee78022775577c1f6c4044feda95a3295f",
+      "bytes": 42
+    },
+    {
+      "path": "security-analysis/c-memory/results/product_buggy.log",
+      "sha256": "6b1710ac106f4205a33984ef5045d62ea7ed3ae8eb27eedcdde7076fdff445a7",
+      "bytes": 2887
+    },
+    {
+      "path": "security-analysis/c-memory/results/product_buggy_valid.log",
+      "sha256": "dddddea3093dcfc4bec7e29d44fac07f9178c1defb4068d4c2182cdfd5042e25",
+      "bytes": 18
+    },
+    {
+      "path": "security-analysis/c-memory/results/product_fixed.log",
+      "sha256": "79c708cc59ce69ef9bd60d804f30d50a33b1d2e77adc7db94e42db583693f135",
+      "bytes": 32
+    },
+    {
+      "path": "security-analysis/c-memory/results/product_fixed_length_0.log",
+      "sha256": "ea9d6dd9b1e1255d46280a44c5b86f1036e1c3d06b961912c93c84ce891b3a0a",
+      "bytes": 14
+    },
+    {
+      "path": "security-analysis/c-memory/results/product_fixed_length_1.log",
+      "sha256": "8d8eea6a66bec0fd00b3b7a2eceb958c4932ca03c58d00e200b870bceaaf9c94",
+      "bytes": 15
+    },
+    {
+      "path": "security-analysis/c-memory/results/product_fixed_length_128.log",
+      "sha256": "79c708cc59ce69ef9bd60d804f30d50a33b1d2e77adc7db94e42db583693f135",
+      "bytes": 32
+    },
+    {
+      "path": "security-analysis/c-memory/results/product_fixed_length_31.log",
+      "sha256": "ab376416d7a35be1b0a49f0e80f48f889c44d132195ab5ea76bc6d77aef052e5",
+      "bytes": 45
+    },
+    {
+      "path": "security-analysis/c-memory/results/product_fixed_length_32.log",
+      "sha256": "79c708cc59ce69ef9bd60d804f30d50a33b1d2e77adc7db94e42db583693f135",
+      "bytes": 32
+    },
+    {
+      "path": "security-analysis/c-memory/results/summary.json",
+      "sha256": "ad6c2266fc50fc3c77dee271f6ab6e3acfd2ca022b65435cf25f01e0e20d0864",
+      "bytes": 3826
+    },
+    {
+      "path": "security-analysis/c-memory/results/user_buggy.log",
+      "sha256": "fb71edec6f03498568f135111718f1c446188cd17d74001c497821e23e646e37",
+      "bytes": 2706
+    },
+    {
+      "path": "security-analysis/c-memory/results/user_buggy_valid.log",
+      "sha256": "1785eb9dc664ca898d0533f05283544fc738d2bf1f9f9764392d64446293df77",
+      "bytes": 23
+    },
+    {
+      "path": "security-analysis/c-memory/results/user_fixed.log",
+      "sha256": "94e36d096b249e5751587fe0f35b7654c4e8d14e29445af580ca9a2541f01bdc",
+      "bytes": 25
+    },
+    {
+      "path": "security-analysis/c-memory/results/user_fixed_length_0.log",
+      "sha256": "63b2f3e0c47134d958203697a03022fb82ccb28b4460ce7542a67ed620e5fa23",
+      "bytes": 19
+    },
+    {
+      "path": "security-analysis/c-memory/results/user_fixed_length_1.log",
+      "sha256": "1448ac3bf4232fbab0bf041604217ead0790e9c5a75393fcfa2f2bd094fc0bd1",
+      "bytes": 20
+    },
+    {
+      "path": "security-analysis/c-memory/results/user_fixed_length_128.log",
+      "sha256": "94e36d096b249e5751587fe0f35b7654c4e8d14e29445af580ca9a2541f01bdc",
+      "bytes": 25
+    },
+    {
+      "path": "security-analysis/c-memory/results/user_fixed_length_31.log",
+      "sha256": "e53c4e7c6df4ba7795ad89ea6f08e2979a5013795b54e0dec30eb170fe98b0ea",
+      "bytes": 50
+    },
+    {
+      "path": "security-analysis/c-memory/results/user_fixed_length_32.log",
+      "sha256": "94e36d096b249e5751587fe0f35b7654c4e8d14e29445af580ca9a2541f01bdc",
+      "bytes": 25
+    },
+    {
+      "path": "security-analysis/c-memory/tests/check_memory.py",
+      "sha256": "c34b0d2f1d79fcea690e0907909bc5b2cc0c263c5371381377a9f25ba1f3fe7d",
+      "bytes": 2857
+    },
+    {
+      "path": "security-analysis/c-memory/tests/check_static.py",
+      "sha256": "e5e530cce9ddddad02cd9d760cce05c09157a0737c8a4875dcda54c498cbfebb",
+      "bytes": 10073
+    },
+    {
+      "path": "security-analysis/c-memory/tests/layout_probe.c",
+      "sha256": "3a60e6712f2fb72e6dcaba77992908e3fef32446587953088b91d29bc619ef18",
+      "bytes": 1231
+    },
+    {
+      "path": "security-analysis/create_datasets.py",
+      "sha256": "130161189b550a0ecb92f8ef29a03d277ff9c23577d92ce89aa4cd030beb4019",
+      "bytes": 5139
+    },
+    {
+      "path": "security-analysis/create_order_payment_spec.py",
+      "sha256": "e262c19a7cd0c8cbe0c2cc1d9f7a638d17a1f9a1c9b586eacb9d18a66ee57bb1",
+      "bytes": 36100
+    },
+    {
+      "path": "security-analysis/order_payment_pipeline_spec.json",
+      "sha256": "c2b748d21d62c974947c05e44fba3c1897292cbf305ab810132d77e0438e165e",
+      "bytes": 14009
+    },
+    {
+      "path": "security-analysis/order_payment_recovery_model.json",
+      "sha256": "b8283d6718efd22ebd6b490f3407c737b6f7bc77a865577e075cf1a4e35e2a39",
+      "bytes": 26441
+    },
+    {
+      "path": "security-analysis/order_state_model.json",
+      "sha256": "753acb2d7dc2d6e8682c875a715b6f720885cfa97c18d444bcdada3266e95db6",
+      "bytes": 3608
+    },
+    {
+      "path": "security-analysis/order_state_model_buggy.json",
+      "sha256": "92268cf4204a59de502c84c8991a4f630ed263c8082ce160619414f9dce699a5",
+      "bytes": 4144
+    },
+    {
+      "path": "security-analysis/package_evidence.py",
+      "sha256": "d1f8d1815c70e6de24572b5f40dc513acbfdf41aea2295f6959b1cb771e7ad3b",
+      "bytes": 11173
+    },
+    {
+      "path": "security-analysis/report/BAO_CAO.md",
+      "sha256": "f77d06510e665f6f18ed0c91d99b59621ca0dbfeb3391c32bc678fe91f4e6fb3",
+      "bytes": 9765
+    },
+    {
+      "path": "security-analysis/report/PHU_LUC_A_G.md",
+      "sha256": "5d8075c0b8e5bbc0b5ba3415efd007b69223b6e2efdc22898ecbda1a27f664a7",
+      "bytes": 38717
+    },
+    {
+      "path": "security-analysis/results/application-fuzzing-coverage.cobertura.xml",
+      "sha256": "dfc51f06abfcaa62679280bbc0543f2b210a1c68b09ec62139b5a90f08261cd7",
+      "bytes": 30472
+    },
+    {
+      "path": "security-analysis/results/application_fuzzing.results.json",
+      "sha256": "b4b6587acef0177af248c23037e7ba4db604c95e2ff49c1b87283701eb7ff6e2",
+      "bytes": 1625
+    },
+    {
+      "path": "security-analysis/results/application_tests.results.json",
+      "sha256": "0b268a7ce355f99375761c74585a363078152410b75fbf92d19f4167065fea40",
+      "bytes": 27586
+    },
+    {
+      "path": "security-analysis/results/coverage_summary.json",
+      "sha256": "5ebfbdfdd8e1c1ef2ee658e81b835f5f4ffdb9884f80a8debddf426125917e56",
+      "bytes": 579
+    },
+    {
+      "path": "security-analysis/results/input-validator.cobertura.xml",
+      "sha256": "ab17e49bfd6fbecdce66ca7b1290036848c3315776e7799676078264b737f697",
+      "bytes": 13150
+    },
+    {
+      "path": "security-analysis/results/inventory_verification.results.json",
+      "sha256": "cd8ba8c84e4e6c3d53e14d6db66c0a9874437d940f68859f60f0a30e06d1a354",
+      "bytes": 1028
+    },
+    {
+      "path": "security-analysis/results/model_projection.results.json",
+      "sha256": "e87cb6f9e8187d488b70f5508aecef02e0f5488dd7105c3e1e31959164eb06cf",
+      "bytes": 398
+    },
+    {
+      "path": "security-analysis/results/order_payment_recovery_model.results.json",
+      "sha256": "2a69cde151dbac251a44689a2fcee6a79348b7f8ef41fb73b8cbc28c30b131da",
+      "bytes": 38501
+    },
+    {
+      "path": "security-analysis/results/order_payment_state_response_matrix.csv",
+      "sha256": "cae50605793ce67f913cd68580ddfd8eec8505d1308df6069dc71fef0faf7d79",
+      "bytes": 15788
+    },
+    {
+      "path": "security-analysis/results/order_state_model.results.json",
+      "sha256": "a0063aa1fbb7c9f7691f76b43971f811179e7ea623d579958d5cbe8561956944",
+      "bytes": 962
+    },
+    {
+      "path": "security-analysis/results/order_state_model_buggy.results.json",
+      "sha256": "bf50a6a57a6e6ba29a50a78f62c1aab9090ba57f74fe27520759778a00038c11",
+      "bytes": 1195
+    },
+    {
+      "path": "security-analysis/results/payment_verification.results.json",
+      "sha256": "cfec02fb9b829cc5e65d9ac3b3d413caa1f91b2ae2518b66317879cef2d005cf",
+      "bytes": 1767
+    },
+    {
+      "path": "security-analysis/results/risk_assessment_results.json",
+      "sha256": "2b70acc0b30352e46a929868f91004ac573537e72f4f09e146b9ddb79067ce65",
+      "bytes": 2474
+    },
+    {
+      "path": "security-analysis/results/teacher_spec_verification.json",
+      "sha256": "2fd2cefeb88e65049147dcc805a94b02f0f0fe5db636e653f6d135a11cfa9738",
+      "bytes": 698
+    },
+    {
+      "path": "security-analysis/results/threat_model_results.json",
+      "sha256": "d88ff027e2af319a3b963b08c80b32e47eff302731bdac50d1e7c584521cd789",
+      "bytes": 665
+    },
+    {
+      "path": "security-analysis/results/tlc/OrderPayment.tlc.log",
+      "sha256": "5b82355d7d85cf1fa60494dfce0fa735b098b96ccf7fa0c9895eef21f8fea959",
+      "bytes": 2659
+    },
+    {
+      "path": "security-analysis/results/tlc/OrderPayment.tlc.results.json",
+      "sha256": "e61c0378ecf75d3510614d987dbe45cb0d3c21a7a4b56b4a5a73db9d211e7082",
+      "bytes": 1106
+    },
+    {
+      "path": "security-analysis/results/traceability_matrix.csv",
+      "sha256": "3a05f2898ee85a850d03c502854341349f48116d4f94b57f707294f2a938cdca",
+      "bytes": 3688
+    },
+    {
+      "path": "security-analysis/run_analysis.py",
+      "sha256": "147bf337f0a6a30300f06f98c1a83e7f76e3c2f5f91353463305d47dcd4dda34",
+      "bytes": 5270
+    },
+    {
+      "path": "security-analysis/run_fuzzing.py",
+      "sha256": "94e0d1cd2dd624fbaaa5cf3dbb79381951dfa45462e58dd6baa88ad04f606efe",
+      "bytes": 3980
+    },
+    {
+      "path": "security-analysis/run_tlc.py",
+      "sha256": "6bf16cbac8d3235b48d05990e65930c4d1524c25dce4fa521b64eb0d30e74697",
+      "bytes": 3567
+    },
+    {
+      "path": "security-analysis/threat_model.json",
+      "sha256": "8cd2246407a8db4fe31436ebd93e9bfd285aefc0c1423cb3e95042edb7782aeb",
+      "bytes": 11295
+    },
+    {
+      "path": "security-analysis/verify_inventory_smt.py",
+      "sha256": "f824b28f5208b938d91a5419d74f654c5b4ebb161a6cf69d28929f3d10190eea",
+      "bytes": 2088
+    },
+    {
+      "path": "security-analysis/verify_payment_smt.py",
+      "sha256": "bcd424ea6f710067cec87580cfd962970890a4f4aacaa783585c8a05d7e6ef58",
+      "bytes": 3217
+    },
+    {
+      "path": "security-analysis/verify_recovery_model.py",
+      "sha256": "fd96d3779a05f80fffb040c8b01a011921d2981701e6d0810526e494f756f1c7",
+      "bytes": 17674
+    },
+    {
+      "path": "security-analysis/verify_teacher_spec.py",
+      "sha256": "75981a6645406037c8b8474d5fed5e3254b0b93fc068b55e017f9c78df9e44a5",
+      "bytes": 13326
+    },
+    {
+      "path": "security-analysis/verify_threat_model.py",
+      "sha256": "b9b16f20853c20a95c2eef7694a07e650e90f7487363c9c92fbf189217fab33d",
+      "bytes": 3482
+    },
+    {
+      "path": "security-analysis/vulnerabilities.json",
+      "sha256": "8f6d2152fb7bcf4a798b6ab052959fe118920df67ba99faa9951a1908c39c8ea",
+      "bytes": 5434
+    },
+    {
+      "path": "OrderPaymentMicroservice_Security_Spec.xlsx",
+      "sha256": "fc219747559e778bf96c3190f2a1a018b20a90a83e42658316c3295683e89b83",
+      "bytes": 20431
+    }
+  ],
+  "limitations": [
+    "Hash captures packaging-time bytes, not historical tool-run provenance.",
+    "Base commit plus dirty working-tree artifact hashes identify uncommitted changes.",
+    "No course tools or files in ATPM were accessed."
+  ]
+}

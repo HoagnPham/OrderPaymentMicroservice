@@ -1,4 +1,5 @@
 using Microsoft.EntityFrameworkCore;
+using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Data;
 using OrderPaymentMicroservice.DTOs.Cart;
 using OrderPaymentMicroservice.Models;
@@ -54,11 +55,18 @@ public class CartService : ICartService
 
     public async Task<CartResponse> AddItemToCartAsync(int userId, int productId, int quantity)
     {
-        var cart = await GetOrCreateCartAsync(userId);
+        if (userId <= 0 || productId <= 0)
+            throw new InvalidOperationException("UserId and ProductId must be positive");
+        if (quantity < 1 || quantity > 10000)
+            throw new InvalidOperationException("Quantity must be between 1 and 10000");
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            : null;
         var product = await _context.Products.FindAsync(productId);
 
-        if (product == null)
-            throw new InvalidOperationException($"Product {productId} not found");
+        if (product == null || !product.IsActive)
+            throw new InvalidOperationException($"Product {productId} is not available");
+        var cart = await GetOrCreateCartAsync(userId);
 
         if (product.Stock < quantity)
             throw new InvalidOperationException($"Not enough stock for product {productId}");
@@ -66,9 +74,12 @@ public class CartService : ICartService
         var existingItem = await _context.CartItems
             .FirstOrDefaultAsync(ci => ci.CartId == cart.Id && ci.ProductId == productId);
 
+        var combinedQuantity = (long)(existingItem?.Quantity ?? 0) + quantity;
+        if (combinedQuantity > 10000 || combinedQuantity > product.Stock)
+            throw new InvalidOperationException("Combined quantity exceeds stock or the quantity limit");
         if (existingItem != null)
         {
-            existingItem.Quantity += quantity;
+            existingItem.Quantity = (int)combinedQuantity;
             existingItem.SubTotal = existingItem.Quantity * existingItem.PriceAtAdd;
         }
         else
@@ -88,6 +99,7 @@ public class CartService : ICartService
         // Lưu CartItem trước, sau đó mới tính lại tổng
         await _context.SaveChangesAsync();
         await UpdateCartTotalAsync(cart.Id);
+        if (transaction != null) await transaction.CommitAsync();
         _logger.LogInformation("Item added to cart: User={UserId}, Product={ProductId}, Qty={Quantity}", userId, productId, quantity);
 
         var updatedCart = await GetCartByIdAsync(cart.Id);
@@ -96,23 +108,40 @@ public class CartService : ICartService
 
     public async Task<CartResponse> UpdateCartItemAsync(int cartId, int cartItemId, int quantity)
     {
+        if (quantity < 0 || quantity > 10000)
+            throw new InvalidOperationException("Quantity must be between 0 and 10000; zero removes the item");
+        await using var transaction = _context.Database.IsRelational()
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            : null;
         var cartItem = await _context.CartItems.FindAsync(cartItemId);
         if (cartItem == null || cartItem.CartId != cartId)
             throw new InvalidOperationException("Cart item not found");
 
-        if (quantity <= 0)
-            return await RemoveItemFromCartAsync(cartId, cartItemId);
+        if (quantity == 0)
+        {
+            var result = await RemoveItemFromCartAsync(cartId, cartItemId);
+            if (transaction != null) await transaction.CommitAsync();
+            return result;
+        }
+        var product = await _context.Products.FindAsync(cartItem.ProductId);
+        if (product == null || !product.IsActive || quantity > product.Stock)
+            throw new InvalidOperationException("Product is unavailable or quantity exceeds stock");
 
         cartItem.Quantity = quantity;
         cartItem.SubTotal = quantity * cartItem.PriceAtAdd;
         await _context.SaveChangesAsync();
 
         await UpdateCartTotalAsync(cartId);
+        if (transaction != null) await transaction.CommitAsync();
         return await GetCartByIdAsync(cartId) ?? throw new InvalidOperationException("Cart not found");
     }
 
     public async Task<CartResponse> RemoveItemFromCartAsync(int cartId, int cartItemId)
     {
+        // Reuse an update transaction when quantity zero delegates to removal.
+        await using var transaction = _context.Database.IsRelational() && _context.Database.CurrentTransaction == null
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            : null;
         var cartItem = await _context.CartItems.FindAsync(cartItemId);
         if (cartItem == null || cartItem.CartId != cartId)
             throw new InvalidOperationException("Cart item not found");
@@ -121,6 +150,7 @@ public class CartService : ICartService
         await _context.SaveChangesAsync();
 
         await UpdateCartTotalAsync(cartId);
+        if (transaction != null) await transaction.CommitAsync();
         return await GetCartByIdAsync(cartId) ?? throw new InvalidOperationException("Cart not found");
     }
 

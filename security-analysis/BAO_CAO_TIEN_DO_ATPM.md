@@ -1,5 +1,13 @@
 # BÁO CÁO TIẾN ĐỘ BÀI TẬP LỚN AN TOÀN PHẦN MỀM
 
+> Bản tổng hợp mới ngày 12/10/2026: [Báo cáo](report/BAO_CAO.md) và
+> [Phụ lục A–G](report/PHU_LUC_A_G.md). 108 unit + 8 integration PASS;
+> inventory SMT 3/3, payment SMT 7/7, recovery P1–P15 PASS.
+> Số liệu 09/10/2026 bên dưới là lịch sử, không phải kết quả chạy mới.
+> Quy trình đợt này không truy cập ATPM; JSON workbook nằm tại
+> `security-analysis/order_payment_pipeline_spec.json`.
+
+
 ## Đề tài: Kiểm chứng an toàn hệ thống Order–Payment Microservice
 
 **Ngày cập nhật:** 09/10/2026

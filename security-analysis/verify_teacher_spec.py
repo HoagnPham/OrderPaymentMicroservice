@@ -20,7 +20,7 @@ from zipfile import ZipFile
 
 ROOT = Path(__file__).resolve().parents[1]
 WORKBOOK = ROOT / "OrderPaymentMicroservice_Security_Spec.xlsx"
-PIPELINE_JSON = ROOT / "ATPM" / "specs" / "specs" / "order_payment_microservice_spec.json"
+PIPELINE_JSON = ROOT / "security-analysis" / "order_payment_pipeline_spec.json"
 RESULT = ROOT / "security-analysis" / "results" / "teacher_spec_verification.json"
 
 NS = "http://schemas.openxmlformats.org/spreadsheetml/2006/main"

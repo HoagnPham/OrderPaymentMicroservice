@@ -26,6 +26,10 @@ public class ProductsController : ControllerBase
             var products = await _productService.GetAllProductsAsync();
             return Ok(products);
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching products");
@@ -40,6 +44,10 @@ public class ProductsController : ControllerBase
         {
             var products = await _productService.GetProductsByCategoryAsync(category);
             return Ok(products);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -59,6 +67,10 @@ public class ProductsController : ControllerBase
 
             return Ok(product);
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching product {ProductId}", id);
@@ -74,6 +86,10 @@ public class ProductsController : ControllerBase
         {
             var product = await _productService.CreateProductAsync(request);
             return CreatedAtAction(nameof(GetProduct), new { id = product.Id }, product);
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {
@@ -94,6 +110,10 @@ public class ProductsController : ControllerBase
 
             return Ok(product);
         }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating product {ProductId}", id);
@@ -112,6 +132,10 @@ public class ProductsController : ControllerBase
                 return NotFound($"Product {id} not found");
 
             return Ok(new { message = "Product deleted successfully" });
+        }
+        catch (ArgumentException ex)
+        {
+            return BadRequest(ex.Message);
         }
         catch (Exception ex)
         {

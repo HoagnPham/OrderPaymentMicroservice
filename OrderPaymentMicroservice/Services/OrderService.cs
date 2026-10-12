@@ -31,7 +31,10 @@ public class OrderService : IOrderService
             ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
             : null;
 
-        var productIds = request.Items.Select(item => item.ProductId).Distinct().ToList();
+        // Stock must cover the sum of all lines for a product, not each line separately.
+        var requestedQuantities = request.Items.GroupBy(item => item.ProductId)
+            .ToDictionary(group => group.Key, group => group.Sum(item => (long)item.Quantity));
+        var productIds = requestedQuantities.Keys.ToList();
         var products = await _context.Products
             .Where(product => productIds.Contains(product.Id))
             .ToDictionaryAsync(product => product.Id);
@@ -45,7 +48,7 @@ public class OrderService : IOrderService
             var product = products[item.ProductId];
             if (!product.IsActive)
                 throw new InvalidOperationException($"Product {product.Id} is not active");
-            if (product.Stock < item.Quantity)
+            if (product.Stock < requestedQuantities[item.ProductId])
                 throw new InvalidOperationException($"Not enough stock for product {product.Id}");
 
             serverTotal = checked(serverTotal + item.Quantity * product.Price);

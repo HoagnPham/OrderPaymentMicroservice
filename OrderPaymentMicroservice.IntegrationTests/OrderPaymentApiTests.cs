@@ -212,6 +212,86 @@ public sealed class OrderPaymentApiTests(PostgresApiFixture fixture)
         Assert.Equal("CONSUMED", completed.InventoryStatus);
     }
 
+    [DockerFact]
+    public async Task Invalid_payloads_are_rejected_without_changing_persisted_data()
+    {
+        using var anonymous = fixture.CreateClient();
+        var invalidUser = await anonymous.PostAsJsonAsync("api/users/register", new RegisterRequest
+        { Email = "invalid-email", Password = "short", FullName = " " });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidUser.StatusCode);
+        var customer = await RegisterAndLoginAsync("validation");
+        using var client = AuthorizedClient(customer.Token);
+        var product = await GetFirstProductAsync(client);
+        var invalidCart = await client.PostAsJsonAsync($"api/cart/user/{customer.UserId}/add",
+            new AddToCartRequest { ProductId = product.Id, Quantity = -1 });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidCart.StatusCode);
+
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        var stored = new Product { Name = "Duplicate-line regression", Price = 25m, Stock = 10, IsActive = true };
+        db.Products.Add(stored);
+        await db.SaveChangesAsync();
+        product = new ProductResponse { Id = stored.Id, Price = stored.Price, Stock = stored.Stock };
+        var stockBefore = stored.Stock;
+        var quantity = stockBefore / 2 + 1;
+        var rejectedOrder = await client.PostAsJsonAsync("api/orders", new CreateOrderRequest
+        {
+            TotalAmount = product.Price * quantity * 2,
+            Items = [new() { ProductId = product.Id, Quantity = quantity, UnitPrice = product.Price },
+                     new() { ProductId = product.Id, Quantity = quantity, UnitPrice = product.Price }]
+        });
+        Assert.Equal(HttpStatusCode.Conflict, rejectedOrder.StatusCode);
+        await db.Entry(stored).ReloadAsync();
+        Assert.Equal(stockBefore, stored.Stock);
+        Assert.False(await db.Orders.AnyAsync(o => o.CustomerId == customer.UserId));
+        Assert.False(await db.CartItems.AnyAsync(i => i.Cart!.UserId == customer.UserId));
+
+        await PromoteToAdminAsync(customer.UserId);
+        using var admin = AuthorizedClient((await LoginAsync(customer.Email)).Token);
+        var invalidProduct = await admin.PostAsJsonAsync("api/products", new CreateProductRequest
+        { Name = "Invalid", Price = -1, Stock = -1 });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidProduct.StatusCode);
+    }
+
+    [DockerFact]
+    public async Task Database_rejects_negative_stock_and_nonpositive_quantity()
+    {
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.False(db.Database.HasPendingModelChanges());
+        var product = await db.Products.FirstAsync();
+        var stockError = await Assert.ThrowsAsync<Npgsql.PostgresException>(() => db.Database.ExecuteSqlInterpolatedAsync(
+            $"UPDATE \"Products\" SET \"Stock\" = {-1} WHERE \"Id\" = {product.Id}"));
+        Assert.Equal("23514", stockError.SqlState);
+        Assert.Equal("CK_Products_Stock_Nonnegative", stockError.ConstraintName);
+        var quantityError = await Assert.ThrowsAsync<Npgsql.PostgresException>(() => db.Database.ExecuteSqlInterpolatedAsync(
+            $"INSERT INTO \"CartItems\" (\"CartId\", \"ProductId\", \"Quantity\", \"PriceAtAdd\", \"SubTotal\") VALUES ({0}, {product.Id}, {0}, {25m}, {0m})"));
+        Assert.Equal("23514", quantityError.SqlState);
+        Assert.Equal("CK_CartItems_Quantity_Positive", quantityError.ConstraintName);
+    }
+
+    [DockerFact]
+    public async Task Cart_updates_and_removal_commit_consistent_totals_on_PostgreSQL()
+    {
+        var customer = await RegisterAndLoginAsync("cart-transaction");
+        using var client = AuthorizedClient(customer.Token);
+        var product = await GetFirstProductAsync(client);
+        var added = await client.PostAsJsonAsync($"api/cart/user/{customer.UserId}/add",
+            new AddToCartRequest { ProductId = product.Id, Quantity = 2 });
+        Assert.Equal(HttpStatusCode.OK, added.StatusCode);
+        var cart = await ReadAsync<CartResponse>(added);
+        var item = Assert.Single(cart.Items);
+        var updated = await client.PutAsJsonAsync($"api/cart/{cart.Id}/item/{item.Id}", new UpdateCartItemRequest { Quantity = 3 });
+        Assert.Equal(HttpStatusCode.OK, updated.StatusCode);
+        Assert.Equal(product.Price * 3, (await ReadAsync<CartResponse>(updated)).TotalPrice);
+        var removed = await client.PutAsJsonAsync($"api/cart/{cart.Id}/item/{item.Id}", new UpdateCartItemRequest { Quantity = 0 });
+        Assert.Equal(HttpStatusCode.OK, removed.StatusCode);
+        await using var scope = fixture.Services.CreateAsyncScope();
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal(0m, (await db.ShoppingCarts.SingleAsync(c => c.Id == cart.Id)).TotalPrice);
+        Assert.False(await db.CartItems.AnyAsync(i => i.CartId == cart.Id));
+    }
+
     private async Task<(int UserId, string Email, string Token)> RegisterAndLoginAsync(string prefix)
     {
         var email = $"{prefix}-{Guid.NewGuid():N}@example.test";

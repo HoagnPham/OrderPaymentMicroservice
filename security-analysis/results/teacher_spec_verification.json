@@ -1,7 +1,7 @@
 {
   "passed": true,
   "workbook": "OrderPaymentMicroservice_Security_Spec.xlsx",
-  "pipeline_json": "ATPM/specs/specs/order_payment_microservice_spec.json",
+  "pipeline_json": "security-analysis/order_payment_pipeline_spec.json",
   "sheet_count": 10,
   "requirements": 18,
   "states": 15,

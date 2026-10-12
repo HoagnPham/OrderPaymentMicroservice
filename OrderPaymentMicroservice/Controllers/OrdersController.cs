@@ -49,6 +49,10 @@ public class OrdersController : ControllerBase
             _logger.LogWarning("Validation error: {Message}", ex.Message);
             return BadRequest(ex.Message);
         }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(ex.Message);
+        }
         catch (DbUpdateException ex)
         {
             _logger.LogWarning(ex, "Concurrent order creation conflict");

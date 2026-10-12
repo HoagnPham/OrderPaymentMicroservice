@@ -53,7 +53,10 @@ namespace OrderPaymentMicroservice.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("CartItems");
+                    b.ToTable("CartItems", t =>
+                    {
+                        t.HasCheckConstraint("CK_CartItems_Quantity_Positive", "\"Quantity\" > 0");
+                    });
                 });
 
             modelBuilder.Entity("OrderPaymentMicroservice.Models.Order", b =>
@@ -134,7 +137,10 @@ namespace OrderPaymentMicroservice.Migrations
 
                     b.HasIndex("ProductId");
 
-                    b.ToTable("OrderItems");
+                    b.ToTable("OrderItems", t =>
+                    {
+                        t.HasCheckConstraint("CK_OrderItems_Quantity_Positive", "\"Quantity\" > 0");
+                    });
                 });
 
             modelBuilder.Entity("OrderPaymentMicroservice.Models.Payment", b =>
@@ -255,7 +261,11 @@ namespace OrderPaymentMicroservice.Migrations
 
                     b.HasIndex("IsActive");
 
-                    b.ToTable("Products");
+                    b.ToTable("Products", t =>
+                    {
+                        t.HasCheckConstraint("CK_Products_Stock_Nonnegative", "\"Stock\" >= 0");
+                        t.HasCheckConstraint("CK_Products_Price_Positive", "\"Price\" > 0");
+                    });
                 });
 
             modelBuilder.Entity("OrderPaymentMicroservice.Models.ShoppingCart", b =>
