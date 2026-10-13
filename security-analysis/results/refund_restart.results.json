@@ -1,0 +1,30 @@
+{
+  "passed": true,
+  "run_at_utc": "2026-10-13T09:55:24.1196041Z",
+  "first_pid": 41352,
+  "restarted_pid": 41428,
+  "kill_window": "Refund journal published; local payment REFUND_PENDING and inventory RESERVED",
+  "recovered_by": "PaymentRecoveryWorker",
+  "journal_entries": 2,
+  "journal_hashes": {
+    "D56B153B86378AF2140F29DB60966E0ACF6A7259E1A4AA2E25D751D607AF0E4A.json": "86A4790461924CF4EFE1A7092006593E81F75F5AEE7E89E9D85381FA01E2C546",
+    "950A00C7ED90BF496B43DEDC819407B116DDC62AA24B674CA6396A4B055C8386.json": "10A7F58D2510F197503AE1570CC60D46DA26E8CABBED02804D329BC413AA7668"
+  },
+  "refund_journal_unchanged": true,
+  "charge_reference_preserved": true,
+  "inventory_released_once": true,
+  "pending_since_cleared": true,
+  "health_database_outage_verified": true,
+  "source_sha256": {
+    "OrderPaymentMicroservice.IntegrationTests/RefundRestartTests.cs": "247FA16633ABDC1AA95D6762F52E1058DC2EE84D8CB51EBFD5310344360C6A33",
+    "OrderPaymentMicroservice.IntegrationTests/OperationalProbe.cs": "3284445BE5F01F0960406F9666B83B5D0D48396AEB23782002702D4391873526",
+    "OrderPaymentMicroservice.CrashProbe/CrashProbeHost.cs": "64FD0E8BB7577E60C23D2F9CBFFA88B66AF81AA5A649C9FE2195C79E32CD19FD",
+    "OrderPaymentMicroservice/Services/Payments/PaymentRecoveryWorker.cs": "5263F06D645C1456534C3FA98F2BD387EB8F480E3007886C6580BA876F57F05B",
+    "OrderPaymentMicroservice/Services/PaymentService.cs": "B001669F1FEB07095D9C936D12BBD7C8C07E4230ECB45E0B09288B3C19DE68EC",
+    "OrderPaymentMicroservice/Program.cs": "78DB51AC564D34F3620559A6DD141ABE87CBAB1C86C5E9A8D4EE7EC8F4EBD214"
+  },
+  "limitations": [
+    "Local simulated provider and abrupt API kill after journal publish; no real provider, power loss or network partition.",
+    "Database outage is a stopped temporary cluster; no failover/PITR or recovery after reconnect tested."
+  ]
+}

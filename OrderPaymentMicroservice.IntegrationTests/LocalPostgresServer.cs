@@ -115,7 +115,7 @@ internal sealed class LocalPostgresServer : IAsyncDisposable
         }
     }
 
-    private static string? FindBinDirectory()
+    internal static string? FindBinDirectory()
     {
         var configured = Environment.GetEnvironmentVariable("POSTGRES_BIN");
         if (!string.IsNullOrWhiteSpace(configured) && File.Exists(Path.Combine(configured, "postgres")))

@@ -30,7 +30,7 @@ chứng cho điều kiện chuyển, thay vì chỉ một happy path.
 | Q6 | Người đọc có thể tái lập và truy vết kết luận không? | Có source/model, command, tool version, outcome, hash và giới hạn từng evidence | Manifest, phụ lục và verifier |
 
 Các tiêu chí này giới hạn kết luận theo phép kiểm. “Đủ sáu nhóm STRIDE” là coverage
-của hoạt động phân tích đe dọa; “140 unit PASS” là outcome của các ca thực thi;
+của hoạt động phân tích đe dọa; “141 unit PASS” là outcome của các ca thực thi;
 “UNSAT” là kết luận trên tập ràng buộc. Ba loại kết quả không thay thế nhau.
 
 ### 1.3. Phạm vi và giả định vận hành
@@ -332,6 +332,21 @@ Checkout lưu key trước fetch trong sessionStorage, giữ khi mất response/
 đổi payload khi chưa rõ outcome và tránh double submit trong cùng tab. Browser
 mocked-fetch regression PASS; HTTP/PostgreSQL tests kiểm chứng backend riêng.
 Snapshot receipt chứa thông tin giao hàng; phải bảo vệ như dữ liệu order.
+
+### 2.10. Quan sát vận hành và tuổi pending
+
+Health live chỉ phản ánh process, ready chạy SELECT 1 có budget 2 giây. Endpoint
+/api/operations/status yêu cầu Admin, trả aggregates và counters process-local,
+không PII hoặc exception. OperationsAlertWorker đọc số liệu mỗi 30 giây và log
+mã cảnh báo khi tập alert đổi; chưa external notification/Prometheus exporter.
+
+PendingSince lưu thời điểm unresolved operation bắt đầu, độc lập UpdatedAt. Giữ mốc
+qua unknown lookup và reconcile, clear khi SUCCESS/FAILED/REFUNDED; refund mới bắt
+đầu window riêng. State machine và BEFORE Payments trigger bảo vệ mốc. Migration
+backfill record cũ bằng UpdatedAt nên chỉ là lower-bound age của lịch sử. Chỉ số
+stuck ngưỡng mặc định 300 giây, không hứa gateway giải quyết trong 300 giây.
+Counters audit append failures và recovery outcomes reset khi process restart.
+Count queries tuần tự có deadline, không là transactional global snapshot.
 
 
 ## 3. Mô hình trạng thái, kiểm chứng và đối chiếu implementation
@@ -720,10 +735,10 @@ model solver được giữ tại Phụ lục D, không đưa verdict suy đoán
 
 ## 6. Kiểm thử động và fuzzing
 
-Bộ test ứng dụng mới nhất ghi nhận 140/140 unit test và
-24/24 integration test PASS, không SKIP.
+Bộ test ứng dụng mới nhất ghi nhận 141/141 unit test và
+30/30 integration test PASS, không SKIP.
 Ba campaign fuzz cũng nằm trong unit suite; đợt này đo lại coverage campaign.
-Branch coverage 97.36% áp dụng InputValidator,
+Branch coverage 96.66% áp dụng InputValidator,
 PaymentValidator, hai state machine và MoneyAmounts. InputValidator có branch coverage 97.22%,
 không phải coverage toàn ứng dụng.
 
@@ -830,13 +845,68 @@ Browser checkout regression kiểm syntax toàn app.js và thực thi hàm check
 mocked fetch cho network loss/503/double submit/payload change/payment cleanup.
 Không gọi browser test là end-to-end HTTP hoặc kết quả chịu tải production.
 
+### 6.9. Restore drill và tải HTTP qua hai OS process
+
+| Kịch bản | Phạm vi / outcome | Timing trong lần chạy |
+| --- | --- | --- |
+| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 80.2 ms; restore 183.0 ms; API recovery 1852.6 ms |
+| read | 200 requests; concurrency 8; 200: 200 | 298.33 req/s; successful 298.33/s; p95 47.50 ms |
+| write | 96 requests; concurrency 8; 201: 24, 409: 72 | 60.37 req/s; successful 15.09/s; p95 495.03 ms |
+| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 80.29 req/s; successful 20.07/s; p95 225.85 ms |
+| Refund process kill | 2 journal entries giữ hash; charge reference giữ nguyên; stock release một lần | PASS; DB outage live=200, ready/status=503 |
+
+
+Backup drill khởi tạo PostgreSQL tạm, tạo đơn có receipt, dừng API sau khi gateway
+journal có charge nhưng payment còn PROCESSING. Không còn writer, pg_dump custom
+và tar ledger tạo snapshot cặp. pg_restore vào database tên khác, ledger giải nén
+vào thư mục khác. So sánh hash rows của 9 bảng trước khi bật worker: dữ liệu nghiệp
+vụ, user/product/cart, audit và migration history khớp. Bốn audit triggers enabled.
+Replay trả receipt cũ, tạo đơn mới kiểm tra identity sequence. Worker chốt SUCCESS
+bằng transaction cũ, AttemptCount=1, chỉ một journal entry không đổi; DB nguồn
+không đổi sau restore. Archive có dữ liệu test được cleanup, evidence chỉ giữ hash.
+
+Load probe dùng hai OS process API thật trên loopback, chung PostgreSQL và ledger.
+Đọc 200 request, tạo đơn 96 request cùng một product hot spot, concurrency=8; không
+retry 409 ở workload đo. Quota nâng lên 100000/process để cô lập DB contention.
+Scenario rate riêng dùng host quota=5/phút/subject, 20 requests concurrency=4,
+assert 5 HTTP 200 + 15 HTTP 429. Created order count, stock deduction và ORDER_INSERT
+COMMIT audit khớp. Không có 500/503 trong các scenario đạt assertion.
+
+Percentile dùng nearest-rank; latency đo từ sau khi lấy semaphore đến đọc hết body,
+không bao gồm queue wait. Throughput tính theo wall time cả batch; successful/s
+loại response >=400. Evidence giữ từng sample status/elapsed_ms để tính lại p95.
+Đây là lần đo ngắn có cold-start requests, không benchmark saturation/soak hoặc SLA
+nhiều máy. Recovery timing là riêng, không đo payment backlog dưới tải đồng thời.
+409 cao trong hot spot cho thấy contention và nhu cầu retry bằng key cũ, không là
+bằng chứng bán vượt kho hay một capacity bound của production.
+
+Nguồn: [backup_restore.results.json](../results/backup_restore.results.json),
+[load_probe.results.json](../results/load_probe.results.json),
+[OperationalDrillTests](../../OrderPaymentMicroservice.IntegrationTests/OperationalDrillTests.cs).
+
+### 6.10. Monitoring, pending age và refund process kill
+
+OperationsTests kiểm anonymous live/ready chỉ có status, unauthenticated 401 và
+customer 403 trên operational detail, Admin 200/no-store/không secrets. Clock quan
+sát tiến 10 phút tạo oracle stuck mà không sleep. Lookup UNKNOWN hai lần và raw SQL
+UpdatedAt refresh không đổi PendingSince. BEGIN thiếu RESULT sinh cảnh báo; lỗi
+BEGIN insert tăng process audit counter và không tạo đơn.
+
+RefundRestartTests kill API khi gateway đã ghi refund journal nhưng local chưa
+finalize; worker process mới đối soát thành REFUNDED, preserve charge reference,
+clear PendingSince, release kho một lần. Refund replay giữ hai journal hashes.
+Telemetry recovery_resolved được kiểm chứng. Sau đó dừng PostgreSQL tạm: live 200,
+ready/status 503 không lộ connection string. Cửa sổ kill refund và shutdown DB không
+chứng minh disk failure, network partition, provider thật hoặc reconnect recovery.
+Evidence: [refund_restart.results.json](../results/refund_restart.results.json).
+
 
 ## 7. Kết quả và truy vết
 
 | Phép kiểm | Kết quả | Phạm vi |
 | --- | --- | --- |
-| Unit | 140/140 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
-| HTTP/PostgreSQL | 24/24 PASS | Database tạm, migration/seed và test host |
+| Unit | 141/141 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
+| HTTP/PostgreSQL | 30/30 PASS | Database tạm, migration/seed và test host |
 | Recovery | 15/15 thuộc tính; 6 mutation detected | Graph hữu hạn, giả định được khai báo |
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |
 | Inventory SMT | 3/3 đúng kỳ vọng | Hai dòng của một sản phẩm |
@@ -906,7 +976,7 @@ database sạch, không thực hiện migration lên database phát triển củ
 
 Gateway mặc định DurableFake lưu journal bền vững; process-kill recovery sau charge
 đã PASS. Audit/admission đã hiện thực và test trong phạm vi local; COMMIT audit đã nguyên tử và Order create có key tùy chọn.
-External audit outbox, retention, distributed quota, callback thật, refund crash và BMC riêng còn mở.
+External audit outbox, retention, distributed quota, callback thật, refund crash windows khác và BMC riêng còn mở.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -919,14 +989,14 @@ Không dùng PASS của suite hiện tại để gọi hệ thống production-r
 | Environment assumption | Gateway cuối cùng trả definitive outcome | Liveness có điều kiện, không cam kết thời hạn hoàn tất |
 | Audit scope | COMMIT nguyên tử với Orders/Payments; BEGIN/RESULT vẫn riêng; DBA có thể disable trigger | Retention/least-privilege và outbox nếu thêm external sink |
 | Tool capability | Scanner syntax-specific; cppcheck false negative | Kết hợp review và dynamic, không lấy zero finding làm proof |
-| Test coverage | Đã kill/restart sau charge; chưa refund crash, network/commit fault đa dạng | PASS hiện tại không bao phủ crash windows ngoài kịch bản |
+| Test coverage | Đã kill/restart sau charge; đã có refund crash sau journal; chưa network/commit fault đa dạng | PASS hiện tại không bao phủ crash windows ngoài kịch bản |
 | Provenance | Hash đóng gói của evidence lịch sử | Không biết source tại thời điểm cũ nếu chưa có run-time hash |
 
 ### 8.2. Ưu tiên cải thiện theo tiêu chí đóng vấn đề
 
 Ưu tiên một đã có kết quả local: cancel UNKNOWN đồng bộ model/source,
 confirmation tự động được đánh dấu DESIGN_EXTENSION; gateway journal bền vững
-và process-kill recovery sau charge PASS. Phần tiếp theo là refund crash, cửa sổ
+và process-kill recovery sau charge PASS. Refund crash sau journal đã có kiểm chứng; phần tiếp theo là cửa sổ
 trước charge và provider sandbox; không suy từ test local sang xác thực gateway thật.
 
 Admission và audit đã có regression: body/item cap, auth/user quotas, durable
@@ -952,10 +1022,23 @@ nâng cấp môi trường có dữ liệu, cần đọc/query vi phạm, xác �
 
 Hai host API đã có kiểm thử hữu hạn tranh 10 đơn vị tồn kho với 16 yêu cầu và retry
 có giới hạn, cùng kiểm thử tám request cùng key. Đây là regression về concurrency
-và consistency, chưa là benchmark throughput/p95, soak test hoặc kiểm chứng cluster
-nhiều máy. Rate quota vẫn local từng process. Runbook backup/restore và chính sách
-retention đề xuất nằm trong [OPERATIONS.md](../OPERATIONS.md); restore drill chưa
-được thực hiện trên môi trường của người dùng.
+và consistency. OS-process probe bổ sung đo throughput/p95 trên workload ngắn;
+chưa là saturation/soak benchmark hoặc kiểm chứng cluster nhiều máy. Rate quota vẫn local từng process. Runbook backup/restore và chính sách
+retention đề xuất nằm trong [OPERATIONS.md](../OPERATIONS.md). Restore drill đã PASS
+trên cluster tạm, chưa thực hiện trên database phát triển/production của người dùng.
+
+Restore local xác minh paired snapshot khi writers dừng, không backup online/PITR,
+external provider, encryption-at-rest job hoặc cam kết RPO/RTO. Load sample còn một
+user và product hot spot, quota write/read nâng cao; chưa capacity sweep, nhiều
+customer/product mix, repetitions hoặc đo payment recovery trong tải liên tục.
+Ưu tiên tiếp theo: bounded same-key retry/backoff cho 409, quan sát backlog/503,
+mở rộng refund crash windows và network/disk faults, rồi đo lại với workload đã công bố.
+
+Health/aggregate metrics và log alert worker đã có, nhưng chưa external exporter,
+notification, least-privilege provisioning hoặc dashboard. PendingSince có durable
+age từ migration trở đi, lịch sử backfill chỉ lower bound. Metrics reset qua restart,
+audit failure counter không bao phủ mọi writer/DB-trigger failure. Dừng DB được kiểm
+chứng live/ready, chưa bật lại DB để đo reconnect/failover và backlog recovery.
 
 
 ## 9. Kết luận

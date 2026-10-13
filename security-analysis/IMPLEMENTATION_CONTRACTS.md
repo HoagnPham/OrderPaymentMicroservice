@@ -47,8 +47,8 @@ reserve. Setting stale phục vụ chọn candidate, không thay đổi outcome 
 
 Evidence: [process_restart.results.json](results/process_restart.results.json).
 Đây là thí nghiệm kill API thật; không là test mất điện hoặc provider sandbox.
-Refund instance restart có unit test; crash giữa refund và finalize chưa có thí
-nghiệm process kill tương tự. Gateway treo, lỗi disk và mọi crash window còn mở.
+Refund process kill sau journal publish đã có RefundRestartTests; worker đối soát
+đúng transaction và release một lần. Các crash window khác chưa được bao phủ. Gateway treo, lỗi disk và mọi crash window còn mở.
 
 ## Tái lập trong phạm vi project
 
@@ -183,3 +183,28 @@ Evidence: AtomicAuditIdempotencyTests, AdmissionAuditTests và
 [checkout_retry.results.json](results/checkout_retry.results.json).
 Lệnh browser: `python3 security-analysis/verify_checkout.py` (cần Chrome/Chromium).
 Hướng dẫn vận hành: [OPERATIONS.md](OPERATIONS.md).
+
+## Restore và đo tải trong môi trường tạm
+
+OperationalDrillTests dùng OS processes và local PostgreSQL cluster riêng. Restore
+snapshot cùng ledger đã PASS cho 9 bảng, 4 audit triggers, identity sequence, order
+receipt và recovery pending charge không thu lại tiền. DB nguồn không đổi; không
+áp dụng restore vào development/production. Timing không là RPO/RTO cam kết.
+Load probe giữ raw samples, nearest-rank p95/p99, status counts và successful/s.
+Hot-product Serializable conflicts là 409 cần retry cùng key; phép đo cố ý one-shot.
+Throttling có scenario riêng, không suy từ quota local thành quota shared.
+Evidence: [backup_restore.results.json](results/backup_restore.results.json),
+[load_probe.results.json](results/load_probe.results.json).
+
+## Giám sát pending và refund crash
+
+PendingSince mới giữ tuổi unresolved operation khi UpdatedAt bị lookup refresh.
+BEFORE trigger giữ mốc cho raw SQL, definitive state xóa mốc. Backfill pending cũ
+lấy UpdatedAt là lower-bound age. Migration chỉ được kiểm chứng trên database tạm.
+Ops health/status/alert contract nằm trong [OPERATIONS.md](OPERATIONS.md#8-health-số-liệu-giám-sát-và-cảnh-báo).
+OperationsTests kiểm quyền Admin, no-store/redaction, unknown reconciliation vẫn
+stuck với clock tiến 10 phút và audit append failure counter. Thí nghiệm clock chỉ
+ảnh hưởng quan sát, không sửa database time hoặc gateway outcome.
+Refund process kill sau journal publish đã PASS: worker giữ charge reference,
+resolve đúng refund transaction, clear PendingSince, release một lần, replay không
+đổi journal. Dừng DB tạm kiểm chứng live/ready khác nhau; chưa reconnect/failover.

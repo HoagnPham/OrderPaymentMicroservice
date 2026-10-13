@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using OrderPaymentMicroservice.Data;
 using OrderPaymentMicroservice.Models;
 using OrderPaymentMicroservice.Services.Interfaces;
+using OrderPaymentMicroservice.Operations;
 
 namespace OrderPaymentMicroservice.Services.Payments;
 
@@ -17,17 +18,19 @@ public sealed class PaymentRecoveryWorker : BackgroundService
     private readonly ILogger<PaymentRecoveryWorker> _logger;
     private readonly PaymentRecoveryOptions _options;
     private readonly IAuditWriter? _audit;
+    private readonly OperationalTelemetry? _telemetry;
 
     public PaymentRecoveryWorker(
         IServiceScopeFactory scopeFactory,
         IOptions<PaymentRecoveryOptions> options,
         ILogger<PaymentRecoveryWorker> logger,
-        IAuditWriter? audit = null)
+        IAuditWriter? audit = null, OperationalTelemetry? telemetry = null)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
         _options = options.Value;
         _audit = audit;
+        _telemetry = telemetry;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -51,12 +54,14 @@ public sealed class PaymentRecoveryWorker : BackgroundService
         try
         {
             await ReconcileBatchAsync(cancellationToken);
+            _telemetry?.ScanCompleted();
         }
         catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
         {
         }
         catch (Exception ex)
         {
+            _telemetry?.ScanFailure();
             _logger.LogError(ex, "Payment recovery scan failed");
         }
     }
@@ -97,6 +102,7 @@ public sealed class PaymentRecoveryWorker : BackgroundService
                     ? await service.ReconcileRefundAsync(candidate.Id, cancellationToken)
                     : await service.ReconcilePaymentAsync(candidate.Id, cancellationToken);
                 if (_audit != null) await _audit.AppendAsync(Entry("RESULT", result.Status));
+                _telemetry?.Attempt(result.Status is "SUCCESS" or "FAILED" or "REFUNDED");
             }
             catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (DbUpdateConcurrencyException)

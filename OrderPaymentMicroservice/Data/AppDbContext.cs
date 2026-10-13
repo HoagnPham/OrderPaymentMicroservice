@@ -120,6 +120,8 @@ public class AppDbContext : DbContext
             entity.Property(p => p.GatewayMessage).HasMaxLength(1000);
             entity.Property(p => p.CreatedAt).IsRequired();
             entity.Property(p => p.UpdatedAt).IsRequired();
+            entity.Property(p => p.PendingSince);
+            entity.HasIndex(p => new { p.Status, p.PendingSince });
             entity.Property(p => p.Version).IsConcurrencyToken().IsRequired();
             entity.HasIndex(p => p.OrderId).IsUnique();
             entity.HasIndex(p => p.IdempotencyKey).IsUnique();

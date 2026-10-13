@@ -44,6 +44,7 @@ public class Payment
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
     public DateTime UpdatedAt { get; set; } = DateTime.UtcNow;
+    public DateTime? PendingSince { get; set; }
 
     public long Version { get; set; }
 

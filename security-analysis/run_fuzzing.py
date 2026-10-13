@@ -83,7 +83,7 @@ def main() -> None:
         "corpus": "OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json",
         "targets": ["InputValidator", "PaymentValidator", "OrderStateMachine", "PaymentStateMachine", "MoneyAmounts"],
         "run_at_utc": datetime.now(timezone.utc).isoformat(),
-        "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT / "OrderPaymentMicroservice/Security/InputValidator.cs", ROOT / "OrderPaymentMicroservice/Security/PaymentValidator.cs", ROOT / "OrderPaymentMicroservice/Security/MoneyAmountAttribute.cs", ROOT / "OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs"]},
+        "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT / "OrderPaymentMicroservice/Security/InputValidator.cs", ROOT / "OrderPaymentMicroservice/Security/PaymentValidator.cs", ROOT / "OrderPaymentMicroservice/Security/OrderStateMachine.cs", ROOT / "OrderPaymentMicroservice/Security/PaymentStateMachine.cs", ROOT / "OrderPaymentMicroservice/Models/Payment.cs", ROOT / "OrderPaymentMicroservice/Security/MoneyAmountAttribute.cs", ROOT / "OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs"]},
         "crash_policy": "ArgumentException is a controlled rejection; timeout, any other exception, invariant mismatch or test failure is a crash.",
         "timeout_seconds": 120,
         "timed_out": timed_out,

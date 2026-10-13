@@ -59,18 +59,19 @@ Kiểm tra migration history và trigger có mặt trước khi bật worker. B�
 gateway snapshot, kiểm tra UNKNOWN/PROCESSING được đối soát bằng key cũ, không phát
 charge mới. Replay create key cũ phải trả cùng order ID/receipt; GET trả live state.
 Kiểm tra stock không âm và mutation mới có COMMIT audit. Ghi thời gian phục hồi và
-đối chiếu counts/checksums. Chưa có RPO/RTO được đo từ restore drill thực tế.
+đối chiếu counts/checksums. Restore drill trong fixture tạm đã đo timing; chưa có
+RPO/RTO được đo/cam kết trên dữ liệu và hạ tầng production.
 
 ## 4. Giám sát và xử lý sự cố
 
 Các query sau chỉ đọc, dành cho operator có quyền phù hợp:
 
 ```sql
--- Processing/UNKNOWN/refund pending quá stale window mặc định 60 giây.
+-- Processing/UNKNOWN/refund pending chờ kết quả quá 300 giây.
 SELECT "Id", "OrderId", "Status", "UpdatedAt"
 FROM "Payments"
 WHERE "Status" IN (4, 5, 6)
-  AND "UpdatedAt" < now() - interval '60 seconds';
+  AND "PendingSince" < now() - interval '300 seconds';
 
 -- HTTP observation thiếu RESULT; COMMIT riêng có thể đã tồn tại.
 SELECT b."CorrelationId", b."Action", b."CreatedAt"
@@ -86,8 +87,8 @@ WHERE tgname IN ('orders_atomic_audit', 'payments_atomic_audit', 'audit_append_o
 ```
 
 Thiết lập cảnh báo cho audit persistence errors/HTTP 503, backlog không giảm qua nhiều
-scan, disk/database gần đầy, trigger bị disable và gateway deadline tăng. Project
-hiện có log và query hỗ trợ; chưa tích hợp exporter/dashboard/notification tự động.
+scan, disk/database gần đầy, trigger bị disable và gateway deadline tăng. Project có health/status endpoint và worker ghi alert-code qua log khi trạng thái
+cảnh báo đổi. Chưa có Prometheus exporter, dashboard hay notification ra ngoài.
 Đối soát payment bằng status/key cũ, không suy timeout thành FAILED. Với order 409
 hoặc mất response, gửi lại đúng creation key/payload; không tạo key mới khi chưa rõ.
 Một BEGIN thiếu RESULT không đủ để kết luận nghiệp vụ thất bại: xem COMMIT và state.
@@ -122,7 +123,70 @@ state sau cancel; xem COMMIT audit cùng correlation; tái lập audit insert fa
 rollback qua test; cho hai host tranh 10 stock; chạy process-kill recovery. Các test
 fault injection dùng DB tạm, không bật failure trigger trên database vận hành.
 
-Số liệu concurrency hiện là regression hữu hạn, chưa có throughput/p95/soak benchmark.
+Số liệu concurrency gồm regression hữu hạn và OS-process load probe có throughput/p95.
+Chưa có saturation sweep/repetitions/soak benchmark hoặc SLA production.
 Hai host trong cùng máy không chứng minh cluster nhiều máy. Quota local vẫn nhân
 theo số process; muốn quota toàn hệ thống cần thiết kế shared limiter/trusted proxy.
 Các lệnh trong runbook không truy cập ATPM.
+
+## 7. Kết quả drill cục bộ đã kiểm chứng
+
+`OperationalDrillTests` tạo cluster PostgreSQL tạm và chạy executable CrashProbe
+trên port loopback. Backup thử dùng pg_dump/pg_restore thật và tar ledger; so sánh
+9 bảng trước worker, xác minh trigger/identity/receipt và recovery một charge đang
+PROCESSING. DB nguồn không đổi, archive dữ liệu test được xóa sau assertions.
+Không truy cập database phát triển, credential thật hoặc ATPM.
+
+Load probe chạy hai process API thật, 200 GET và 96 create (concurrency 8), giữ
+raw status/latency samples và nearest-rank percentiles. Quota read/write nâng lên
+100000 để tách contention, scenario quota riêng 5/phút xác minh 5/20 accepted.
+Không retry write 409 trong phép đo; successful requests/s được ghi riêng với
+requests/s. Đọc số liệu lần mới nhất từ evidence; không lấy chúng làm capacity SLA.
+
+- [Backup/restore evidence](results/backup_restore.results.json)
+- [Load probe evidence](results/load_probe.results.json)
+- [Bảng số liệu báo cáo](report/BAO_CAO.md#69-restore-drill-và-tải-http-qua-hai-os-process)
+
+Chạy riêng: `dotnet test OrderPaymentMicroservice.IntegrationTests/OrderPaymentMicroservice.IntegrationTests.csproj --no-restore --filter FullyQualifiedName~OperationalDrillTests`.
+Cần local PostgreSQL server/client binaries cùng major version và quyền mở socket
+loopback/start process; test được skip rõ ràng nếu không có local tools. Lần kiểm
+chứng hiện tại không skip. Test full có TRX mới rồi package/build report để đồng bộ.
+
+## 8. Health, số liệu giám sát và cảnh báo
+
+- GET /health/live: anonymous, 200 `{status:alive}` khi process phục vụ được request.
+- GET /health/ready: anonymous, SELECT 1 có deadline Operations:QueryTimeoutMilliseconds
+  (mặc định 2000); trả 200 ready hoặc 503 unavailable, không trả exception/connection.
+  Chỉ kiểm chứng DB query, không chứng minh writable schema, gateway hoặc zero backlog.
+- GET /api/operations/status: JWT role Admin, no-store. Chỉ trả aggregate pending,
+  stuck, oldest pending seconds, incomplete audit count, recovery enabled và process
+  counters. Không trả order/payment/user ID, key, token, amount hay exception text.
+
+PendingSince bắt đầu khi PROCESSING/UNKNOWN/REFUND_PENDING, giữ nguyên qua status
+lookup và chuyển UNKNOWN→PROCESSING, xóa khi có definitive outcome. Refund bắt đầu
+window mới sau SUCCESS. State machine và BEFORE INSERT/UPDATE DB trigger bảo vệ mốc.
+Migration backfill pending records bằng UpdatedAt: lịch sử chưa có start time thật,
+nên age của record cũ là lower bound, không suy timestamp này là thời điểm charge.
+UpdatedAt vẫn dùng để chọn candidate stale trong worker, không dùng làm stuck age.
+
+Operations:StuckAfterSeconds=300, IncompleteAuditAfterSeconds=300,
+AlertPollingEnabled=true, AlertPollSeconds=30. Worker chỉ đọc DB, log mã khi tập alert
+đổi: PAYMENT_STUCK, AUDIT_RESULT_MISSING, RECOVERY_DISABLED_WITH_PENDING,
+AUDIT_APPEND_FAILURE_SEEN hoặc OPERATIONS_QUERY_UNAVAILABLE. Log không chứa PII.
+AUDIT_APPEND_FAILURE_SEEN là sự kiện đã xảy ra trong process, không khẳng định store
+vẫn hỏng; counter reset khi restart. Audit counter đếm lỗi AppendAsync của AuditWriter,
+không là bộ đếm mọi COMMIT-trigger failure hoặc mock writer. Worker counters có scan
+failure, số reconciliation hoàn tất và số definitive outcomes; không phải số charge.
+
+Counts là truy vấn tuần tự, không một snapshot transaction nhất quán khi có mutation
+đồng thời. Deadline bảo vệ query chậm. Rate limit của endpoint status vẫn theo policy
+API local. Polling có thể tắt trong test hoặc môi trường dùng external collector.
+Cảnh báo qua log cần hệ thống thu log/notification của deployment để gửi đến operator;
+project chưa tự gửi email/webhook.
+
+RefundRestartTests dừng API sau khi refund journal được publish nhưng local còn
+REFUND_PENDING/RESERVED. Restart worker đối soát đúng refund transaction, giữ charge
+reference, release tồn kho một lần; replay cùng key không refund/release lại. Hai
+journal entries có hash không đổi. Test sau đó dừng cluster tạm: live vẫn 200, ready
+và protected status trả 503. Đây không là failover hoặc reconnect recovery test.
+Evidence: [refund_restart.results.json](results/refund_restart.results.json).

@@ -208,6 +208,8 @@ namespace OrderPaymentMicroservice.Migrations
                         .HasMaxLength(255)
                         .HasColumnType("character varying(255)");
 
+                    b.Property<DateTime?>("PendingSince").HasColumnType("timestamp with time zone");
+
                     b.Property<int>("Status")
                         .HasColumnType("integer");
 
@@ -226,6 +228,8 @@ namespace OrderPaymentMicroservice.Migrations
 
                     b.HasIndex("IdempotencyKey")
                         .IsUnique();
+
+                    b.HasIndex("Status", "PendingSince");
 
                     b.HasIndex("OrderId")
                         .IsUnique();

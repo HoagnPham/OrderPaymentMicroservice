@@ -1,4 +1,5 @@
 using System.Threading.RateLimiting;
+using OrderPaymentMicroservice.Operations;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Mvc.Controllers;
 using Microsoft.AspNetCore.RateLimiting;
@@ -107,6 +108,12 @@ public partial class Program
         builder.WebHost.ConfigureKestrel(server => server.Limits.MaxRequestBodySize =
             builder.Configuration.GetValue<long>("ApiAdmission:MaxBodyBytes", 65536));
         builder.Services.AddSingleton<IAuditWriter, AuditWriter>();
+        builder.Services.AddSingleton<OperationalTelemetry>();
+        builder.Services.AddSingleton<TimeProvider>(TimeProvider.System);
+        builder.Services.AddOptions<OperationsOptions>().Bind(builder.Configuration.GetSection("Operations"))
+            .ValidateDataAnnotations().ValidateOnStart();
+        builder.Services.AddScoped<OperationsSnapshot>();
+        builder.Services.AddHostedService<OperationsAlertWorker>();
         builder.Services.AddRateLimiter(limits =>
         {
             var admission = builder.Configuration.GetSection("ApiAdmission").Get<ApiAdmissionOptions>() ?? new();
@@ -178,6 +185,21 @@ public partial class Program
         app.UseAuthorization();
 
         app.MapControllers();
+        app.MapGet("/health/live", (HttpContext context) =>
+        {
+            context.Response.Headers.CacheControl="no-store";
+            return Results.Json(new { status="alive" });
+        }).AllowAnonymous();
+        app.MapGet("/health/ready", async (AppDbContext db, IOptions<OperationsOptions> options, HttpContext context) =>
+        {
+            context.Response.Headers.CacheControl="no-store";
+            using var budget=CancellationTokenSource.CreateLinkedTokenSource(context.RequestAborted);
+            budget.CancelAfter(options.Value.QueryTimeoutMilliseconds);
+            bool ready;
+            try { ready=await db.Database.SqlQueryRaw<int>("SELECT 1 AS \"Value\"").SingleAsync(budget.Token)==1; }
+            catch { ready=false; }
+            return Results.Json(new {status=ready ? "ready" : "unavailable"},statusCode:ready ? 200 : 503);
+        }).AllowAnonymous();
 
         // Map default file (index.html)
         app.MapFallbackToFile("index.html");

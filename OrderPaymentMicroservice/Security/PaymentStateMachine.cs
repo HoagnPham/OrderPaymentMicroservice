@@ -22,6 +22,8 @@ public static class PaymentStateMachine
         if (!CanTransition(payment.Status, target))
             throw new InvalidOperationException($"Invalid payment state transition: {payment.Status} -> {target}");
 
+        var waiting = target is PaymentStatus.PROCESSING or PaymentStatus.UNKNOWN or PaymentStatus.REFUND_PENDING;
+        payment.PendingSince = waiting ? payment.PendingSince ?? DateTime.UtcNow : null;
         payment.Status = target;
         payment.UpdatedAt = DateTime.UtcNow;
         payment.Version++;

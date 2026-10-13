@@ -208,3 +208,18 @@ Checkout lưu key trước fetch trong sessionStorage, giữ khi mất response/
 đổi payload khi chưa rõ outcome và tránh double submit trong cùng tab. Browser
 mocked-fetch regression PASS; HTTP/PostgreSQL tests kiểm chứng backend riêng.
 Snapshot receipt chứa thông tin giao hàng; phải bảo vệ như dữ liệu order.
+
+### 2.10. Quan sát vận hành và tuổi pending
+
+Health live chỉ phản ánh process, ready chạy SELECT 1 có budget 2 giây. Endpoint
+/api/operations/status yêu cầu Admin, trả aggregates và counters process-local,
+không PII hoặc exception. OperationsAlertWorker đọc số liệu mỗi 30 giây và log
+mã cảnh báo khi tập alert đổi; chưa external notification/Prometheus exporter.
+
+PendingSince lưu thời điểm unresolved operation bắt đầu, độc lập UpdatedAt. Giữ mốc
+qua unknown lookup và reconcile, clear khi SUCCESS/FAILED/REFUNDED; refund mới bắt
+đầu window riêng. State machine và BEFORE Payments trigger bảo vệ mốc. Migration
+backfill record cũ bằng UpdatedAt nên chỉ là lower-bound age của lịch sử. Chỉ số
+stuck ngưỡng mặc định 300 giây, không hứa gateway giải quyết trong 300 giây.
+Counters audit append failures và recovery outcomes reset khi process restart.
+Count queries tuần tự có deadline, không là transactional global snapshot.

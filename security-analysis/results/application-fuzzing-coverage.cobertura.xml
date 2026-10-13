@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<coverage line-rate="0.909" branch-rate="0.9736" version="1.9" timestamp="1791868909" lines-covered="110" lines-valid="121" branches-covered="111" branches-valid="114">
+<coverage line-rate="0.9105" branch-rate="0.9666" version="1.9" timestamp="1791885265" lines-covered="112" lines-valid="123" branches-covered="116" branches-valid="120">
   <sources>
     <source>/home/phamhoang/OrderPaymentMicroservice/OrderPaymentMicroservice/Security/</source>
   </sources>
   <packages>
-    <package name="OrderPaymentMicroservice" line-rate="0.909" branch-rate="0.9736" complexity="116">
+    <package name="OrderPaymentMicroservice" line-rate="0.9105" branch-rate="0.9666" complexity="122">
       <classes>
         <class name="OrderPaymentMicroservice.Security.InputValidator" filename="InputValidator.cs" line-rate="0.8392000000000001" branch-rate="0.9166" complexity="37">
           <methods>
@@ -412,7 +412,7 @@
             <line number="35" hits="2951" branch="False" />
           </lines>
         </class>
-        <class name="OrderPaymentMicroservice.Security.PaymentStateMachine" filename="PaymentStateMachine.cs" line-rate="1" branch-rate="1" complexity="26">
+        <class name="OrderPaymentMicroservice.Security.PaymentStateMachine" filename="PaymentStateMachine.cs" line-rate="1" branch-rate="0.9687" complexity="32">
           <methods>
             <method name="IsTerminal" signature="(OrderPaymentMicroservice.Models.PaymentStatus)" line-rate="1" branch-rate="1" complexity="2">
               <lines>
@@ -448,7 +448,7 @@
                 <line number="18" hits="50000" branch="False" />
               </lines>
             </method>
-            <method name="Transition" signature="(OrderPaymentMicroservice.Models.Payment,OrderPaymentMicroservice.Models.PaymentStatus)" line-rate="1" branch-rate="1" complexity="2">
+            <method name="Transition" signature="(OrderPaymentMicroservice.Models.Payment,OrderPaymentMicroservice.Models.PaymentStatus)" line-rate="1" branch-rate="0.875" complexity="8">
               <lines>
                 <line number="21" hits="25000" branch="False" />
                 <line number="22" hits="25000" branch="True" condition-coverage="100% (2/2)">
@@ -457,10 +457,21 @@
                   </conditions>
                 </line>
                 <line number="23" hits="20855" branch="False" />
-                <line number="25" hits="4145" branch="False" />
-                <line number="26" hits="4145" branch="False" />
+                <line number="25" hits="4145" branch="True" condition-coverage="100% (2/2)">
+                  <conditions>
+                    <condition number="96" type="jump" coverage="100%" />
+                  </conditions>
+                </line>
+                <line number="26" hits="4145" branch="True" condition-coverage="75% (3/4)">
+                  <conditions>
+                    <condition number="110" type="jump" coverage="100%" />
+                    <condition number="139" type="jump" coverage="50%" />
+                  </conditions>
+                </line>
                 <line number="27" hits="4145" branch="False" />
                 <line number="28" hits="4145" branch="False" />
+                <line number="29" hits="4145" branch="False" />
+                <line number="30" hits="4145" branch="False" />
               </lines>
             </method>
           </methods>
@@ -498,10 +509,21 @@
               </conditions>
             </line>
             <line number="23" hits="20855" branch="False" />
-            <line number="25" hits="4145" branch="False" />
-            <line number="26" hits="4145" branch="False" />
+            <line number="25" hits="4145" branch="True" condition-coverage="100% (2/2)">
+              <conditions>
+                <condition number="96" type="jump" coverage="100%" />
+              </conditions>
+            </line>
+            <line number="26" hits="4145" branch="True" condition-coverage="75% (3/4)">
+              <conditions>
+                <condition number="110" type="jump" coverage="100%" />
+                <condition number="139" type="jump" coverage="50%" />
+              </conditions>
+            </line>
             <line number="27" hits="4145" branch="False" />
             <line number="28" hits="4145" branch="False" />
+            <line number="29" hits="4145" branch="False" />
+            <line number="30" hits="4145" branch="False" />
           </lines>
         </class>
         <class name="OrderPaymentMicroservice.Security.PaymentValidator" filename="PaymentValidator.cs" line-rate="0.8946999999999999" branch-rate="1" complexity="15">

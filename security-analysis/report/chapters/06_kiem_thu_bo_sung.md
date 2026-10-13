@@ -92,3 +92,51 @@ cạnh tranh 10 stock với 16 request. AdmissionAuditTests còn mô phỏng RES
 Browser checkout regression kiểm syntax toàn app.js và thực thi hàm checkout với
 mocked fetch cho network loss/503/double submit/payload change/payment cleanup.
 Không gọi browser test là end-to-end HTTP hoặc kết quả chịu tải production.
+
+### 6.9. Restore drill và tải HTTP qua hai OS process
+
+@@OPERATIONAL_TABLE@@
+
+Backup drill khởi tạo PostgreSQL tạm, tạo đơn có receipt, dừng API sau khi gateway
+journal có charge nhưng payment còn PROCESSING. Không còn writer, pg_dump custom
+và tar ledger tạo snapshot cặp. pg_restore vào database tên khác, ledger giải nén
+vào thư mục khác. So sánh hash rows của 9 bảng trước khi bật worker: dữ liệu nghiệp
+vụ, user/product/cart, audit và migration history khớp. Bốn audit triggers enabled.
+Replay trả receipt cũ, tạo đơn mới kiểm tra identity sequence. Worker chốt SUCCESS
+bằng transaction cũ, AttemptCount=1, chỉ một journal entry không đổi; DB nguồn
+không đổi sau restore. Archive có dữ liệu test được cleanup, evidence chỉ giữ hash.
+
+Load probe dùng hai OS process API thật trên loopback, chung PostgreSQL và ledger.
+Đọc 200 request, tạo đơn 96 request cùng một product hot spot, concurrency=8; không
+retry 409 ở workload đo. Quota nâng lên 100000/process để cô lập DB contention.
+Scenario rate riêng dùng host quota=5/phút/subject, 20 requests concurrency=4,
+assert 5 HTTP 200 + 15 HTTP 429. Created order count, stock deduction và ORDER_INSERT
+COMMIT audit khớp. Không có 500/503 trong các scenario đạt assertion.
+
+Percentile dùng nearest-rank; latency đo từ sau khi lấy semaphore đến đọc hết body,
+không bao gồm queue wait. Throughput tính theo wall time cả batch; successful/s
+loại response >=400. Evidence giữ từng sample status/elapsed_ms để tính lại p95.
+Đây là lần đo ngắn có cold-start requests, không benchmark saturation/soak hoặc SLA
+nhiều máy. Recovery timing là riêng, không đo payment backlog dưới tải đồng thời.
+409 cao trong hot spot cho thấy contention và nhu cầu retry bằng key cũ, không là
+bằng chứng bán vượt kho hay một capacity bound của production.
+
+Nguồn: [backup_restore.results.json](../results/backup_restore.results.json),
+[load_probe.results.json](../results/load_probe.results.json),
+[OperationalDrillTests](../../OrderPaymentMicroservice.IntegrationTests/OperationalDrillTests.cs).
+
+### 6.10. Monitoring, pending age và refund process kill
+
+OperationsTests kiểm anonymous live/ready chỉ có status, unauthenticated 401 và
+customer 403 trên operational detail, Admin 200/no-store/không secrets. Clock quan
+sát tiến 10 phút tạo oracle stuck mà không sleep. Lookup UNKNOWN hai lần và raw SQL
+UpdatedAt refresh không đổi PendingSince. BEGIN thiếu RESULT sinh cảnh báo; lỗi
+BEGIN insert tăng process audit counter và không tạo đơn.
+
+RefundRestartTests kill API khi gateway đã ghi refund journal nhưng local chưa
+finalize; worker process mới đối soát thành REFUNDED, preserve charge reference,
+clear PendingSince, release kho một lần. Refund replay giữ hai journal hashes.
+Telemetry recovery_resolved được kiểm chứng. Sau đó dừng PostgreSQL tạm: live 200,
+ready/status 503 không lộ connection string. Cửa sổ kill refund và shutdown DB không
+chứng minh disk failure, network partition, provider thật hoặc reconnect recovery.
+Evidence: [refund_restart.results.json](../results/refund_restart.results.json).
