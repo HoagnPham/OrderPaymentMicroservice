@@ -1,10 +1,18 @@
 # OrderPaymentMicroservice — Bài tập lớn An toàn phần mềm
 
+> Retry tạo đơn: JSON 409 phân biệt transient conflict với hết kho/key mismatch;
+> checkout thử tối đa 4 lần/8 giây, backoff jitter và cùng key/payload. Không auto
+> retry network/503 hoặc lỗi nghiệp vụ; giữ key khi auth/throttle.
+> Kiểm chứng: 148 unit + 32 integration PASS; browser retry PASS.
+> [So sánh tải 8 users/4 products](security-analysis/results/order_retry_load.results.json) ·
+> [Hợp đồng retry](security-analysis/IMPLEMENTATION_CONTRACTS.md#contract-retry-cho-post-apiorders).
+> Số đo một lần local, không là capacity/SLA production.
+
 > Giám sát/refund recovery: health live/ready, Admin-only operations status và
 > log alert worker đã có. PendingSince giữ tuổi chờ kết quả qua các lần lookup.
 > Kill API sau refund journal xác minh đối soát đúng transaction, release kho một
 > lần; dừng DB tạm xác minh live 200, ready/status 503.
-> Kiểm thử cuối: 141 unit + 30 integration PASS, fuzz 3/3 PASS.
+> Kiểm thử cuối: 148 unit + 32 integration PASS, fuzz 3/3 PASS.
 > [Runbook](security-analysis/OPERATIONS.md#8-health-số-liệu-giám-sát-và-cảnh-báo) ·
 > [Refund evidence](security-analysis/results/refund_restart.results.json).
 > Chưa external exporter/notification; migration chỉ chạy trên database tạm.
@@ -12,7 +20,7 @@
 > Kiểm chứng vận hành mới nhất: backup/restore PostgreSQL cùng gateway journal
 > trên môi trường tạm PASS; 9 bảng khớp hash, 4 audit triggers hoạt động, receipt
 > replay và pending-charge recovery không charge lại. Load probe hai OS process
-> giữ raw latency/status samples; 141 unit + 30 integration PASS, không SKIP.
+> giữ raw latency/status samples; 148 unit + 32 integration PASS, không SKIP.
 > [Backup/restore evidence](security-analysis/results/backup_restore.results.json) ·
 > [Load evidence](security-analysis/results/load_probe.results.json) ·
 > [Runbook](security-analysis/OPERATIONS.md). Số đo local chưa là production SLA.
@@ -20,7 +28,7 @@
 > Cập nhật mới nhất: Orders/Payments ghi audit COMMIT nguyên tử bằng PostgreSQL
 > trigger. Tạo đơn hỗ trợ Idempotency-Key theo JWT user, payload binding và receipt
 > gốc; checkout giữ key khi mất response/503. Hai host tranh 10 stock không bán vượt
-> kho; 141 unit + 30 integration PASS, browser retry regression PASS.
+> kho; 148 unit + 32 integration PASS, browser retry regression PASS.
 > [Hợp đồng hiện thực](security-analysis/IMPLEMENTATION_CONTRACTS.md) ·
 > [Vận hành/backup/restore](security-analysis/OPERATIONS.md).
 > Migration mới chỉ được chạy trên database tạm trong kiểm thử.
@@ -29,7 +37,7 @@
 > 10/phút/IP và API quota 120/phút/subject hoặc connection IP. PostgreSQL giữ
 > audit BEGIN/RESULT và chặn UPDATE/DELETE/TRUNCATE. Audit error trả JSON phân biệt
 > action chưa chạy với operation có thể đã commit, cần reconcile.
-> Test mới nhất: 141 unit + 30 integration PASS, không SKIP; fuzz 3/3 PASS.
+> Test mới nhất: 148 unit + 32 integration PASS, không SKIP; fuzz 3/3 PASS.
 > T3/T5 giảm thiểu một phần; retention/DBA/distributed quota còn mở.
 
 
@@ -240,13 +248,13 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 | Database hoạt động | **Đạt trong integration suite** | Tạo PostgreSQL sạch, apply migration/seed và chạy 8/8 test qua Docker hoặc local fallback |
 | Demo hệ thống | **Một phần** | Có frontend và script; chưa có kết quả demo E2E hiện hành |
 | Model và thuộc tính | **Đạt trong phạm vi model** | Kripke đúng + BUGGY + bốn kết quả kiểm chứng |
-| Bằng chứng kiểm thử | **Đạt cho target validator** | 141 unit + 30 integration PASS; InputValidator branch 97,22%, MoneyAmounts 100% |
+| Bằng chứng kiểm thử | **Đạt cho target validator** | 148 unit + 32 integration PASS; InputValidator branch 97,22%, MoneyAmounts 100% |
 | Phát hiện và phân tích lỗi | **Đạt giai đoạn phát hiện** | Năm vulnerability, counterexample, xếp hạng CVSS-lite |
 | SMT/Z3 | **Đạt trong phạm vi số học** | QF_NIA, Z3 5.1.0, 7/7 truy vấn đúng kỳ vọng và có JSON evidence |
 | TLA+/TLC | **Đạt trong phạm vi model** | TLC: 35 state sinh, 20 state phân biệt, depth 9, không phát hiện lỗi safety/liveness |
 | Fuzzing/dynamic testing | **Đạt cho target đã chọn** | 3/3 campaign; seed corpus, timeout/crash policy; target branch 96,66% |
 | Phân tích an toàn bộ nhớ/phương án phù hợp | **Đạt trên mô hình C học tập** | Static scanner phân biệt 5 BUGGY/FIXED, có cppcheck/layout evidence và sanitizer 22/22; không suy rộng sang C# |
-| Sửa lỗi và kiểm chứng lại | **Đạt trong suite hiện tại** | Guard, atomic COMMIT audit và optional order idempotency; 141 unit + 30 integration PASS |
+| Sửa lỗi và kiểm chứng lại | **Đạt trong suite hiện tại** | Guard, atomic COMMIT audit và optional order idempotency; 148 unit + 32 integration PASS |
 | Báo cáo kỹ thuật | **Đã cập nhật theo evidence hiện tại** | 9 chương, phụ lục, traceability, provenance và giới hạn kiểm chứng |
 
 **Kết luận:** Bốn chương đều đã có artifact và bằng chứng tái lập, gồm TLC, fuzzing và PostgreSQL integration. Hệ thống vẫn chưa được coi là production-ready vì gateway thật, hardening vận hành và demo triển khai ngoài test host còn nằm ngoài phạm vi đã xác minh.

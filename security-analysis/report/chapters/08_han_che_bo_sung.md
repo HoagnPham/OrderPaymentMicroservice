@@ -49,7 +49,8 @@ Restore local xác minh paired snapshot khi writers dừng, không backup online
 external provider, encryption-at-rest job hoặc cam kết RPO/RTO. Load sample còn một
 user và product hot spot, quota write/read nâng cao; chưa capacity sweep, nhiều
 customer/product mix, repetitions hoặc đo payment recovery trong tải liên tục.
-Ưu tiên tiếp theo: bounded same-key retry/backoff cho 409, quan sát backlog/503,
+Bounded same-key retry/backoff cho create 409 đã có contract và comparison.
+Ưu tiên tiếp theo: nhiều lần đo/crossover, quan sát backlog/503,
 mở rộng refund crash windows và network/disk faults, rồi đo lại với workload đã công bố.
 
 Health/aggregate metrics và log alert worker đã có, nhưng chưa external exporter,
@@ -57,3 +58,9 @@ notification, least-privilege provisioning hoặc dashboard. PendingSince có du
 age từ migration trở đi, lịch sử backfill chỉ lower bound. Metrics reset qua restart,
 audit failure counter không bao phủ mọi writer/DB-trigger failure. Dừng DB được kiểm
 chứng live/ready, chưa bật lại DB để đo reconnect/failover và backlog recovery.
+
+Retry tăng số HTTP attempts, audit writes và thời gian chờ; 4-attempt/8s bound tránh
+loop vô hạn nhưng không đảm bảo mọi request thắng contention. Metadata retryable
+chỉ áp dụng create order; các client dùng plaintext 409 cần cập nhật. Workload
+mixed-user/product là một sample local, chưa fairness hoặc stability dưới tải dài.
+Tiếp theo đo reconnect PostgreSQL, payment backlog dưới tải, shared quota và exporter.

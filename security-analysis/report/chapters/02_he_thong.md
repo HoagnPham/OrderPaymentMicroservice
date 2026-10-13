@@ -223,3 +223,17 @@ backfill record cũ bằng UpdatedAt nên chỉ là lower-bound age của lịch
 stuck ngưỡng mặc định 300 giây, không hứa gateway giải quyết trong 300 giây.
 Counters audit append failures và recovery outcomes reset khi process restart.
 Count queries tuần tự có deadline, không là transactional global snapshot.
+
+### 2.11. Retry contract cho create order
+
+POST /api/orders dùng JSON 409 code/retryable/message. Chỉ SQLSTATE 40001/40P01,
+DbUpdateConcurrencyException hoặc unique collision đúng customer/key index có thể
+retry khi key hợp lệ. Hết kho, product unavailable, key mismatch và constraint/lỗi
+nghiệp vụ khác nonretryable; legacy không key không auto retry. Wrapped PostgreSQL
+exception được kiểm trong chain trước generic InvalidOperationException.
+
+Frontend giới hạn 4 attempts, backoff equal jitter 100..200/200..400/400..800 ms,
+8 giây cả response body, cùng key/payload. Không auto retry network/503; giữ key khi
+hết budget, auth/throttle hoặc outcome chưa rõ. Mỗi HTTP request có context mới và
+audit riêng, không retry trong transaction đã abort. Chính sách này không tự áp dụng
+lên payment/refund; đích của retry là lấy receipt hoặc tạo đúng một order.

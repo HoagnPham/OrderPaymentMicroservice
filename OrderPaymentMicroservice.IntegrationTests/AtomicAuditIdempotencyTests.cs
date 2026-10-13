@@ -1,6 +1,7 @@
 using System.Net;
 using System.Net.Http.Headers;
 using System.Net.Http.Json;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using OrderPaymentMicroservice.Data;
@@ -15,6 +16,25 @@ namespace OrderPaymentMicroservice.IntegrationTests;
 [Collection(PostgresApiCollection.Name)]
 public sealed class AtomicAuditIdempotencyTests(PostgresApiFixture fixture)
 {
+    [DockerFact]
+    public async Task StockAndInactiveProductConflictsAreNotRetryable()
+    {
+        var user=await Account();using var client=Client(user);int emptyId,inactiveId;
+        await using(var scope=fixture.Services.CreateAsyncScope())
+        {
+            var db=scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            var empty=new Product{Name="Empty fixture",Price=10,Stock=0};var inactive=new Product{Name="Inactive fixture",Price=10,Stock=10,IsActive=false};
+            db.Products.AddRange(empty,inactive);await db.SaveChangesAsync();emptyId=empty.Id;inactiveId=inactive.Id;
+        }
+        foreach(var item in new[]{(Id:emptyId,Code:"OUT_OF_STOCK"),(Id:inactiveId,Code:"PRODUCT_UNAVAILABLE")})
+        {
+            using var response=await Create(client,new(){TotalAmount=10,Items=[new(){ProductId=item.Id,Quantity=1,UnitPrice=10}]},Guid.NewGuid().ToString());
+            Assert.Equal(HttpStatusCode.Conflict,response.StatusCode);using var doc=JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+            Assert.Equal(item.Code,doc.RootElement.GetProperty("code").GetString());Assert.False(doc.RootElement.GetProperty("retryable").GetBoolean());
+        }
+        await using var check=fixture.Services.CreateAsyncScope();Assert.False(await check.ServiceProvider.GetRequiredService<AppDbContext>().Orders.AnyAsync(o=>o.CustomerId==user.Id));
+    }
+
     [DockerFact]
     public async Task TwoApiHostsCompeteForTenUnitsWithoutOverselling()
     {
@@ -78,7 +98,8 @@ public sealed class AtomicAuditIdempotencyTests(PostgresApiFixture fixture)
         var request = await Request(a); var key = Guid.NewGuid().ToString();
         Assert.Equal(HttpStatusCode.Created, (await Create(a, request, key)).StatusCode);
         request.City = "changed-city";
-        Assert.Equal(HttpStatusCode.Conflict, (await Create(a, request, key)).StatusCode);
+        using var mismatch=await Create(a,request,key);Assert.Equal(HttpStatusCode.Conflict,mismatch.StatusCode);
+        using var mismatchDoc=JsonDocument.Parse(await mismatch.Content.ReadAsStringAsync());Assert.Equal("IDEMPOTENCY_PAYLOAD_MISMATCH",mismatchDoc.RootElement.GetProperty("code").GetString());Assert.False(mismatchDoc.RootElement.GetProperty("retryable").GetBoolean());
         // A spoofed CustomerId cannot take over another principal's key namespace.
         request.CustomerId = first.Id;
         Assert.Equal(HttpStatusCode.Created, (await Create(b, request, key)).StatusCode);
@@ -96,6 +117,8 @@ public sealed class AtomicAuditIdempotencyTests(PostgresApiFixture fixture)
         var responses = await Task.WhenAll(Enumerable.Range(0, 8).Select(_ => Create(client, request, key)));
         Assert.Contains(responses, r => r.StatusCode == HttpStatusCode.Created);
         Assert.All(responses, r => Assert.True(r.StatusCode is HttpStatusCode.Created or HttpStatusCode.Conflict, r.StatusCode.ToString()));
+        foreach(var conflict in responses.Where(r=>r.StatusCode==HttpStatusCode.Conflict))
+        {using var doc=JsonDocument.Parse(await conflict.Content.ReadAsStringAsync());Assert.Equal("ORDER_CONCURRENT_WRITE",doc.RootElement.GetProperty("code").GetString());Assert.True(doc.RootElement.GetProperty("retryable").GetBoolean());}
         var replay = await Create(client, request, key); Assert.Equal(HttpStatusCode.Created, replay.StatusCode);
         var id = (await replay.Content.ReadFromJsonAsync<OrderResponse>())!.Id;
         foreach (var response in responses.Where(r => r.StatusCode == HttpStatusCode.Created))

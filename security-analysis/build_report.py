@@ -65,7 +65,13 @@ def chapter_tokens():
     refund = read('results/refund_restart.results.json')
     operational_rows.append(['Refund process kill', str(refund['journal_entries'])+' journal entries giữ hash; charge reference giữ nguyên; stock release một lần', 'PASS; DB outage live=200, ready/status=503'])
     operational = table(['Kịch bản', 'Phạm vi / outcome', 'Timing trong lần chạy'], operational_rows)
-    return {'@@OPERATIONAL_TABLE@@':operational, '@@UNIT_COUNT@@':str(read('results/application_tests.results.json')['suites']['unit']['passed']), '@@PIPELINE_PAIRS@@':str(read('results/model_projection.results.json')['pipeline_state_pairs']), '@@ASSET_TABLE@@':assets, '@@THREAT_TABLE@@':risks, '@@LIVENESS_TABLE@@':liveness,
+    comparison = read('results/order_retry_load.results.json')
+    retry_rows = []
+    for label,key in [('Gửi một lần','baseline'),('Retry tối đa 4 lần','bounded_retry')]:
+        run = comparison[key]
+        retry_rows.append([label, f"{run['created_orders']}/{run['logical_requests']} ({run['success_rate']*100:.1f}%)", run['http_attempts'], f"{run['p95_ms']:.2f} ms", f"{run['successful_orders_per_second']:.2f}"])
+    retry_table = table(['Policy','Đơn thành công','HTTP attempts','p95 logical (gồm backoff)','Đơn thành công/s'],retry_rows)
+    return {'@@ORDER_RETRY_TABLE@@':retry_table, '@@OPERATIONAL_TABLE@@':operational, '@@UNIT_COUNT@@':str(read('results/application_tests.results.json')['suites']['unit']['passed']), '@@PIPELINE_PAIRS@@':str(read('results/model_projection.results.json')['pipeline_state_pairs']), '@@ASSET_TABLE@@':assets, '@@THREAT_TABLE@@':risks, '@@LIVENESS_TABLE@@':liveness,
             '@@MUTATION_TABLE@@':mutations, '@@MEMORY_RUN_TABLE@@':memory_table,
             '@@STATIC_DETECTION_TABLE@@':static_table, '@@LAYOUT_TABLE@@':layout_table}
 

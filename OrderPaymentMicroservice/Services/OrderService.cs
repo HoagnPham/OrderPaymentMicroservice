@@ -53,9 +53,9 @@ public class OrderService : IOrderService
             if (previous != null)
             {
                 if (previous.CreationRequestHash != requestHash)
-                    throw new InvalidOperationException("Idempotency-Key was already used for a different order request");
+                    throw new OrderCreationConflictException("IDEMPOTENCY_PAYLOAD_MISMATCH", "Idempotency-Key was already used for a different order request");
                 return JsonSerializer.Deserialize<OrderResponse>(previous.CreationResponseJson
-                    ?? throw new InvalidOperationException("Order creation receipt is incomplete"))!;
+                    ?? throw new OrderCreationConflictException("ORDER_RECEIPT_UNAVAILABLE", "Order creation receipt is incomplete"))!;
             }
         }
 
@@ -68,7 +68,7 @@ public class OrderService : IOrderService
             .ToDictionaryAsync(product => product.Id);
 
         if (products.Count != productIds.Count)
-            throw new InvalidOperationException("One or more products do not exist");
+            throw new OrderCreationConflictException("PRODUCT_UNAVAILABLE", "One or more products do not exist");
 
         decimal serverTotal = 0;
         foreach (var item in request.Items)
@@ -76,9 +76,9 @@ public class OrderService : IOrderService
             var product = products[item.ProductId];
             MoneyAmounts.RequireCents(product.Price, nameof(product.Price));
             if (!product.IsActive)
-                throw new InvalidOperationException($"Product {product.Id} is not active");
+                throw new OrderCreationConflictException("PRODUCT_UNAVAILABLE", $"Product {product.Id} is not active");
             if (product.Stock < requestedQuantities[item.ProductId])
-                throw new InvalidOperationException($"Not enough stock for product {product.Id}");
+                throw new OrderCreationConflictException("OUT_OF_STOCK", $"Not enough stock for product {product.Id}");
 
             serverTotal = checked(serverTotal + item.Quantity * product.Price);
         }

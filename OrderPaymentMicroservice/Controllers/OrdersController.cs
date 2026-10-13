@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using OrderPaymentMicroservice.DTOs.Orders;
 using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Services.Interfaces;
+using OrderPaymentMicroservice.Services;
 
 namespace OrderPaymentMicroservice.Controllers;
 
@@ -52,18 +53,25 @@ public class OrdersController : ControllerBase
             _logger.LogWarning("Validation error: {Message}", ex.Message);
             return BadRequest(ex.Message);
         }
-        catch (InvalidOperationException ex)
+        catch (OrderCreationConflictException ex)
         {
-            return Conflict(ex.Message);
+            return Conflict(new {code=ex.Code,retryable=false,message=ex.Message});
         }
-        catch (DbUpdateException ex)
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex)||PersistenceConflicts.IsOrderCreationCollision(ex))
         {
-            _logger.LogWarning(ex, "Concurrent order creation conflict");
-            return Conflict("Inventory or order data changed concurrently; reload and retry");
+            var keys=Request.Headers["Idempotency-Key"];
+            var retryable=keys.Count==1 && keys[0] is {Length:>0 and <=128} key && key.All(c=>c>='!'&&c<='~');
+            return Conflict(new {code="ORDER_CONCURRENT_WRITE",retryable,message=retryable
+                ? "Order data changed concurrently; retry with the same Idempotency-Key and payload"
+                : "Order data changed concurrently; reload before submitting again"});
         }
-        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        catch (InvalidOperationException)
         {
-            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
+            return Conflict(new {code="ORDER_REJECTED",retryable=false,message="Order could not be created; check current order and product data"});
+        }
+        catch (DbUpdateException)
+        {
+            return Conflict(new {code="ORDER_PERSISTENCE_REJECTED",retryable=false,message="Order data could not be saved; check current order and product data"});
         }
         catch (Exception ex)
         {

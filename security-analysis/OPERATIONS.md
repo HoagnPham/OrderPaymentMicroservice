@@ -190,3 +190,24 @@ reference, release tồn kho một lần; replay cùng key không refund/release
 journal entries có hash không đổi. Test sau đó dừng cluster tạm: live vẫn 200, ready
 và protected status trả 503. Đây không là failover hoặc reconnect recovery test.
 Evidence: [refund_restart.results.json](results/refund_restart.results.json).
+
+## 9. Retry tạo đơn và đọc kết quả đo
+
+Shop tự retry chỉ đối với 409 code ORDER_CONCURRENT_WRITE/retryable=true, tối đa
+4 attempts/8 giây, luôn dùng cùng key/payload. Hết kho, inactive/missing product,
+key-payload mismatch, database constraint khác không tự retry. 429/401/403 giữ
+attempt để chờ hoặc login lại; 503/network giữ trạng thái chưa rõ để kiểm tra/replay.
+Không dùng backoff của create order để tự charge/refund lại. Mỗi attempt dùng quota
+và tạo HTTP audit; lượng log/request có thể tăng khi contention cao.
+
+[order_retry_load.results.json](results/order_retry_load.results.json) giữ hai
+scenario 96 logical requests với 8 users/4 products/hai OS processes. Logical p95
+gồm network + backoff, không gồm semaphore queue. HTTP attempt latencies và delays
+có raw samples. successful_orders/s tách khỏi HTTP attempts/s; tăng success ratio
+không đồng nghĩa mọi loại latency giảm. API/auth quotas test nâng 100000/10000 để
+đo contention, không chứng minh quota production hoặc cluster shared limiter.
+Baseline chạy trước và dùng product set khác; một lần local không có confidence
+interval hoặc ý nghĩa thống kê. So sánh trên dữ liệu cuối trong báo cáo, không giữ
+số đo cũ làm SLA. Muốn capacity claim cần repetitions, đổi thứ tự phases, tăng tải,
+soak test và workload/provider thật. Retry không thay thế điều tra 500/503 hoặc lỗi
+storage; ngưỡng/alerts đang có vẫn cần được quan sát.

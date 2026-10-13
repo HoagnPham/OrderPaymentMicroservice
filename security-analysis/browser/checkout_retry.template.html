@@ -7,15 +7,34 @@ const goToPayment=()=>{}; window.setTimeout=()=>{}; sessionStorage.clear();
 @@BLOCK@@
 (async()=>{
  const captured=[]; let mode='network';
- window.fetch=async(url, options)=>{captured.push(options);if(mode==='network')throw Error('lost connection');if(mode==='audit')return{ok:false,status:503,json:async()=>({message:'uncertain'})};return{ok:true,json:async()=>({id:42,totalAmount:10})}};
+ window.fetch=async(url, options)=>{captured.push(options);if(mode==='network')throw Error('lost connection');if(mode==='audit')return{ok:false,status:503,json:async()=>({message:'uncertain'})};if(mode==='limited')return{ok:false,status:429,json:async()=>({message:'limited'})};return{ok:true,json:async()=>({id:42,totalAmount:10})}};
  const submit=()=>handleCheckout({preventDefault(){}}); const check=(v,m)=>{if(!v)throw Error(m)};
  await submit();const first=JSON.parse(sessionStorage.getItem('order-create:101'));check(first.key,'key saved before send');
  document.getElementById('address').value='Changed';await submit();check(captured.length===1,'uncertain changed payload blocked');
  document.getElementById('address').value='Original address';mode='audit';await submit();check(JSON.parse(sessionStorage.getItem('order-create:101')).key===first.key,'503 retains key');
+ mode='limited';await submit();check(JSON.parse(sessionStorage.getItem('order-create:101')).key===first.key,'429 retains key after uncertain outcome');
  mode='success';await submit();await submit();check(captured.every(o=>o.headers['Idempotency-Key']===first.key),'all retries reuse key');
  check(JSON.parse(sessionStorage.getItem('order-create:101')).orderId===42,'receipt remembered');
  clearCompletedCheckout(99);check(sessionStorage.getItem('order-create:101'),'unrelated payment does not clear');
  clearCompletedCheckout(42);check(sessionStorage.getItem('order-create:101')===null,'terminal payment clears its checkout');
- document.getElementById('result').textContent='PASS: full script syntax; network retry; 503 retry; changed uncertain payload; repeated success; payment cleanup';
+ const attempts=[]; const waits=[];
+ const transient=()=>new Response(JSON.stringify({code:'ORDER_CONCURRENT_WRITE',retryable:true,message:'conflict'}),{status:409});
+ const eventual=await createOrderWithRetry('fixed-payload','fixed-key',{fetchOrder:async(url,o)=>{attempts.push(o);return attempts.length<3?transient():new Response('{}',{status:201})},wait:async(ms)=>waits.push(ms),random:()=>0});
+ check(eventual.status===201 && attempts.length===3,'transient retry succeeds');
+ check(attempts.every(o=>o.body==='fixed-payload' && o.headers['Idempotency-Key']==='fixed-key'),'automatic retry preserves payload and key');
+ check(JSON.stringify(waits)==='[100,200]','equal jitter lower bounds');
+ let calls=0;const capped=[];
+ const exhausted=await createOrderWithRetry('p','k',{fetchOrder:async()=>{calls++;return transient()},wait:async(ms)=>capped.push(ms),random:()=>.999});
+ check(calls===4 && JSON.stringify(capped)==='[199,399,799]','four attempts with bounded jitter');
+ check((await exhausted.json()).retryable===true,'final response body remains readable');
+ for(const error of [{code:'OUT_OF_STOCK',retryable:false},{code:'PRODUCT_UNAVAILABLE',retryable:false},{code:'IDEMPOTENCY_PAYLOAD_MISMATCH',retryable:false},{code:'OTHER',retryable:true},{code:'ORDER_CONCURRENT_WRITE',retryable:false}]){
+  calls=0;await createOrderWithRetry('p','k',{fetchOrder:async()=>{calls++;return new Response(JSON.stringify(error),{status:409})},wait:async()=>{throw Error('unexpected sleep')}});check(calls===1,'business or unknown conflict is not retried');
+ }
+ calls=0;await createOrderWithRetry('p','k',{fetchOrder:async()=>{calls++;return new Response('{}',{status:503})}});check(calls===1,'503 is not auto retried');
+ const cancellation=new AbortController();calls=0;
+ try{await createOrderWithRetry('p','k',{signal:cancellation.signal,fetchOrder:async()=>{calls++;return transient()},wait:async()=>cancellation.abort()});throw Error('missing cancellation')}catch(e){check(e.name==='AbortError','abort stops retry')}
+ check(calls===1,'no request after abort');
+ document.getElementById('result').textContent='PASS: checkout key persistence; transient retry; stable payload/key; bounded jitter and attempts; no business/503 retry; cancellation';
+
 })().catch(e=>document.getElementById('result').textContent='FAIL: '+e.message);
 </script>

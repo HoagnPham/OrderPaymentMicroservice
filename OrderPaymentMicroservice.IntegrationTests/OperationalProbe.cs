@@ -32,6 +32,7 @@ internal sealed class OperationalProbe : IAsyncDisposable
             ["PaymentGateway__Mode"]="DurableFake",["PaymentGateway__StoreDirectory"]=ledger,
             ["PaymentRecovery__Enabled"]=recovery.ToString(),["PaymentRecovery__StaleAfterSeconds"]="5",
             ["PaymentRecovery__ScanIntervalSeconds"]="5",["ApiAdmission__ApiPermitLimit"]=permits.ToString(),
+            ["ApiAdmission__AuthenticationPermitLimit"]="10000",
             ["ApiAdmission__WindowSeconds"]="60",["Logging__LogLevel__Default"]="Warning"
         }) info.Environment[pair.Key]=pair.Value;
         if(marker!=null)info.Environment["CrashProbe__Marker"]=marker;

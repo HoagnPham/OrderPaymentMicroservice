@@ -140,3 +140,28 @@ Telemetry recovery_resolved được kiểm chứng. Sau đó dừng PostgreSQL 
 ready/status 503 không lộ connection string. Cửa sổ kill refund và shutdown DB không
 chứng minh disk failure, network partition, provider thật hoặc reconnect recovery.
 Evidence: [refund_restart.results.json](../results/refund_restart.results.json).
+
+### 6.11. So sánh retry có giới hạn với gửi một lần
+
+@@ORDER_RETRY_TABLE@@
+
+Cùng 96 logical requests/scenario, 8 users và 4 products, concurrency=8 qua hai OS
+process API. Phases dùng product sets riêng stock 1000/product, request pattern
+phân bố mỗi batch qua bốn products; baseline chạy trước. Retry driver giữ key/body,
+4 attempts/8 giây, jitter seed 20261013+i. Raw samples giữ final/attempt status,
+network latency, backoff và logical latency để tính lại percentile nearest-rank.
+Logical p95 bao gồm backoff, throughput order success khác HTTP attempts/s.
+
+Assertions: HTTP 201/409, không duplicate order, stock deduction và COMMIT insert
+count khớp số success, attempt nằm trong bound. Không assert retry phải nhanh hơn
+hoặc success phải cao hơn: kết quả là quan sát trong lần chạy local. Quota được
+nâng để cô lập database contention. Chưa repetitions/order crossover/soak hoặc
+confidence interval, không gọi số đo này là production capacity.
+
+OrderRetryContractTests kiểm allowlist SQLSTATE/constraint, wrapped 40001 và legacy
+no-key, redaction; HTTP kiểm stock/inactive/mismatch nonretryable. Browser thật
+thực thi helper với mocked fetch, kiểm stable key/body, jitter, 4-attempt cap,
+không retry business/503, cancel và giữ key sau 429. C# workload mô phỏng policy,
+không phải browser-to-API end-to-end measurement.
+Nguồn: [order_retry_load.results.json](../results/order_retry_load.results.json),
+[checkout_retry.results.json](../results/checkout_retry.results.json).

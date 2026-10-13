@@ -30,7 +30,7 @@ chứng cho điều kiện chuyển, thay vì chỉ một happy path.
 | Q6 | Người đọc có thể tái lập và truy vết kết luận không? | Có source/model, command, tool version, outcome, hash và giới hạn từng evidence | Manifest, phụ lục và verifier |
 
 Các tiêu chí này giới hạn kết luận theo phép kiểm. “Đủ sáu nhóm STRIDE” là coverage
-của hoạt động phân tích đe dọa; “141 unit PASS” là outcome của các ca thực thi;
+của hoạt động phân tích đe dọa; “148 unit PASS” là outcome của các ca thực thi;
 “UNSAT” là kết luận trên tập ràng buộc. Ba loại kết quả không thay thế nhau.
 
 ### 1.3. Phạm vi và giả định vận hành
@@ -347,6 +347,20 @@ backfill record cũ bằng UpdatedAt nên chỉ là lower-bound age của lịch
 stuck ngưỡng mặc định 300 giây, không hứa gateway giải quyết trong 300 giây.
 Counters audit append failures và recovery outcomes reset khi process restart.
 Count queries tuần tự có deadline, không là transactional global snapshot.
+
+### 2.11. Retry contract cho create order
+
+POST /api/orders dùng JSON 409 code/retryable/message. Chỉ SQLSTATE 40001/40P01,
+DbUpdateConcurrencyException hoặc unique collision đúng customer/key index có thể
+retry khi key hợp lệ. Hết kho, product unavailable, key mismatch và constraint/lỗi
+nghiệp vụ khác nonretryable; legacy không key không auto retry. Wrapped PostgreSQL
+exception được kiểm trong chain trước generic InvalidOperationException.
+
+Frontend giới hạn 4 attempts, backoff equal jitter 100..200/200..400/400..800 ms,
+8 giây cả response body, cùng key/payload. Không auto retry network/503; giữ key khi
+hết budget, auth/throttle hoặc outcome chưa rõ. Mỗi HTTP request có context mới và
+audit riêng, không retry trong transaction đã abort. Chính sách này không tự áp dụng
+lên payment/refund; đích của retry là lấy receipt hoặc tạo đúng một order.
 
 
 ## 3. Mô hình trạng thái, kiểm chứng và đối chiếu implementation
@@ -735,8 +749,8 @@ model solver được giữ tại Phụ lục D, không đưa verdict suy đoán
 
 ## 6. Kiểm thử động và fuzzing
 
-Bộ test ứng dụng mới nhất ghi nhận 141/141 unit test và
-30/30 integration test PASS, không SKIP.
+Bộ test ứng dụng mới nhất ghi nhận 148/148 unit test và
+32/32 integration test PASS, không SKIP.
 Ba campaign fuzz cũng nằm trong unit suite; đợt này đo lại coverage campaign.
 Branch coverage 96.66% áp dụng InputValidator,
 PaymentValidator, hai state machine và MoneyAmounts. InputValidator có branch coverage 97.22%,
@@ -849,10 +863,10 @@ Không gọi browser test là end-to-end HTTP hoặc kết quả chịu tải pr
 
 | Kịch bản | Phạm vi / outcome | Timing trong lần chạy |
 | --- | --- | --- |
-| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 80.2 ms; restore 183.0 ms; API recovery 1852.6 ms |
-| read | 200 requests; concurrency 8; 200: 200 | 298.33 req/s; successful 298.33/s; p95 47.50 ms |
-| write | 96 requests; concurrency 8; 201: 24, 409: 72 | 60.37 req/s; successful 15.09/s; p95 495.03 ms |
-| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 80.29 req/s; successful 20.07/s; p95 225.85 ms |
+| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 67.5 ms; restore 164.8 ms; API recovery 1864.8 ms |
+| read | 200 requests; concurrency 8; 200: 200 | 352.33 req/s; successful 352.33/s; p95 45.19 ms |
+| write | 96 requests; concurrency 8; 201: 27, 409: 69 | 64.53 req/s; successful 18.15/s; p95 460.72 ms |
+| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 81.46 req/s; successful 20.37/s; p95 235.09 ms |
 | Refund process kill | 2 journal entries giữ hash; charge reference giữ nguyên; stock release một lần | PASS; DB outage live=200, ready/status=503 |
 
 
@@ -900,13 +914,42 @@ ready/status 503 không lộ connection string. Cửa sổ kill refund và shutd
 chứng minh disk failure, network partition, provider thật hoặc reconnect recovery.
 Evidence: [refund_restart.results.json](../results/refund_restart.results.json).
 
+### 6.11. So sánh retry có giới hạn với gửi một lần
+
+| Policy | Đơn thành công | HTTP attempts | p95 logical (gồm backoff) | Đơn thành công/s |
+| --- | --- | --- | --- | --- |
+| Gửi một lần | 37/96 (38.5%) | 96 | 541.31 ms | 21.36 |
+| Retry tối đa 4 lần | 95/96 (99.0%) | 138 | 757.07 ms | 35.41 |
+
+
+Cùng 96 logical requests/scenario, 8 users và 4 products, concurrency=8 qua hai OS
+process API. Phases dùng product sets riêng stock 1000/product, request pattern
+phân bố mỗi batch qua bốn products; baseline chạy trước. Retry driver giữ key/body,
+4 attempts/8 giây, jitter seed 20261013+i. Raw samples giữ final/attempt status,
+network latency, backoff và logical latency để tính lại percentile nearest-rank.
+Logical p95 bao gồm backoff, throughput order success khác HTTP attempts/s.
+
+Assertions: HTTP 201/409, không duplicate order, stock deduction và COMMIT insert
+count khớp số success, attempt nằm trong bound. Không assert retry phải nhanh hơn
+hoặc success phải cao hơn: kết quả là quan sát trong lần chạy local. Quota được
+nâng để cô lập database contention. Chưa repetitions/order crossover/soak hoặc
+confidence interval, không gọi số đo này là production capacity.
+
+OrderRetryContractTests kiểm allowlist SQLSTATE/constraint, wrapped 40001 và legacy
+no-key, redaction; HTTP kiểm stock/inactive/mismatch nonretryable. Browser thật
+thực thi helper với mocked fetch, kiểm stable key/body, jitter, 4-attempt cap,
+không retry business/503, cancel và giữ key sau 429. C# workload mô phỏng policy,
+không phải browser-to-API end-to-end measurement.
+Nguồn: [order_retry_load.results.json](../results/order_retry_load.results.json),
+[checkout_retry.results.json](../results/checkout_retry.results.json).
+
 
 ## 7. Kết quả và truy vết
 
 | Phép kiểm | Kết quả | Phạm vi |
 | --- | --- | --- |
-| Unit | 141/141 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
-| HTTP/PostgreSQL | 30/30 PASS | Database tạm, migration/seed và test host |
+| Unit | 148/148 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
+| HTTP/PostgreSQL | 32/32 PASS | Database tạm, migration/seed và test host |
 | Recovery | 15/15 thuộc tính; 6 mutation detected | Graph hữu hạn, giả định được khai báo |
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |
 | Inventory SMT | 3/3 đúng kỳ vọng | Hai dòng của một sản phẩm |
@@ -1031,7 +1074,8 @@ Restore local xác minh paired snapshot khi writers dừng, không backup online
 external provider, encryption-at-rest job hoặc cam kết RPO/RTO. Load sample còn một
 user và product hot spot, quota write/read nâng cao; chưa capacity sweep, nhiều
 customer/product mix, repetitions hoặc đo payment recovery trong tải liên tục.
-Ưu tiên tiếp theo: bounded same-key retry/backoff cho 409, quan sát backlog/503,
+Bounded same-key retry/backoff cho create 409 đã có contract và comparison.
+Ưu tiên tiếp theo: nhiều lần đo/crossover, quan sát backlog/503,
 mở rộng refund crash windows và network/disk faults, rồi đo lại với workload đã công bố.
 
 Health/aggregate metrics và log alert worker đã có, nhưng chưa external exporter,
@@ -1039,6 +1083,12 @@ notification, least-privilege provisioning hoặc dashboard. PendingSince có du
 age từ migration trở đi, lịch sử backfill chỉ lower bound. Metrics reset qua restart,
 audit failure counter không bao phủ mọi writer/DB-trigger failure. Dừng DB được kiểm
 chứng live/ready, chưa bật lại DB để đo reconnect/failover và backlog recovery.
+
+Retry tăng số HTTP attempts, audit writes và thời gian chờ; 4-attempt/8s bound tránh
+loop vô hạn nhưng không đảm bảo mọi request thắng contention. Metadata retryable
+chỉ áp dụng create order; các client dùng plaintext 409 cần cập nhật. Workload
+mixed-user/product là một sample local, chưa fairness hoặc stability dưới tải dài.
+Tiếp theo đo reconnect PostgreSQL, payment backlog dưới tải, shared quota và exporter.
 
 
 ## 9. Kết luận

@@ -358,6 +358,33 @@ async function removeFromCart(itemId) {
 }
 
 // Checkout & Orders
+function waitForCheckoutRetry(milliseconds, signal) {
+    return new Promise((resolve, reject) => {
+        signal?.throwIfAborted();
+        const aborted = () => { clearTimeout(timer); reject(signal.reason); };
+        const timer = setTimeout(() => { signal?.removeEventListener('abort', aborted); resolve(); }, milliseconds);
+        signal?.addEventListener('abort', aborted, { once: true });
+    });
+}
+
+async function createOrderWithRetry(payload, key, { signal, fetchOrder = window.fetch.bind(window), wait = waitForCheckoutRetry, random = Math.random } = {}) {
+    if (!key) throw new Error('Thiếu mã yêu cầu đặt đơn.');
+    for (let attempt = 0; attempt < 4; attempt++) {
+        signal?.throwIfAborted();
+        const response = await fetchOrder(`${API_BASE_URL}/orders`, {
+            method: 'POST', headers: { ...authHeaders(true), 'Idempotency-Key': key }, body: payload, signal
+        });
+        if (response.status !== 409 || attempt === 3) return response;
+        let error;
+        try { error = await response.clone().json(); } catch (_) { return response; }
+        if (error.code !== 'ORDER_CONCURRENT_WRITE' || error.retryable !== true) return response;
+        // Equal jitter: 100..200, 200..400, 400..800 ms; four attempts total.
+        const ceiling = 200 * (2 ** attempt);
+        const delay = Math.floor(ceiling / 2 + random() * ceiling / 2);
+        await wait(delay, signal);
+    }
+}
+
 let checkoutInFlight = false;
 function clearCompletedCheckout(orderId) {
     const storageKey = `order-create:${currentUser.id}`;
@@ -394,6 +421,7 @@ async function handleCheckout(e) {
         return;
     }
 
+    let deadline;
     try {
         checkoutInFlight = true;
         const payload = JSON.stringify({ customerId: currentUser.id, totalAmount, address, city, items: orderItems });
@@ -408,19 +436,20 @@ async function handleCheckout(e) {
             sessionStorage.setItem(storageKey, JSON.stringify(attempt));
         }
         showMessage('Đang tạo đơn hàng...', 'info');
-        const response = await fetch(`${API_BASE_URL}/orders`, {
-            method: 'POST',
-            headers: { ...authHeaders(true), 'Idempotency-Key': attempt.key },
-            body: payload
-        });
+        const budget = new AbortController();
+        deadline = setTimeout(() => budget.abort(new Error('Chưa nhận được kết quả đặt đơn. Hãy gửi lại đúng yêu cầu cũ hoặc kiểm tra lịch sử đơn.')), 8000);
+        const response = await createOrderWithRetry(payload, attempt.key, { signal: budget.signal });
 
         if (!response.ok) {
-            if ([400, 401, 403, 413, 429].includes(response.status) && !attempt.orderId) {
+            if ([400, 413].includes(response.status) && !attempt.orderId) {
                 sessionStorage.removeItem(storageKey);
             }
             let errMsg = 'Không thể tạo đơn hàng';
             try {
                 const errData = await response.json();
+                if (errData.retryable === false && ['OUT_OF_STOCK', 'PRODUCT_UNAVAILABLE'].includes(errData.code) && !attempt.orderId) {
+                    sessionStorage.removeItem(storageKey);
+                }
                 errMsg = errData.title || errData.message || errData || errMsg;
             } catch (_) { 
                 errMsg = await response.text() || errMsg;
@@ -442,6 +471,7 @@ async function handleCheckout(e) {
     } catch (error) {
         showMessage(error.message, 'error');
     } finally {
+        clearTimeout(deadline);
         checkoutInFlight = false;
     }
 }

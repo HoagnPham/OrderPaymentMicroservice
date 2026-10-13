@@ -40,7 +40,8 @@ public class RequestBoundaryRegressionTests
         }
         else
         {
-            await Assert.ThrowsAsync<InvalidOperationException>(() => service.CreateOrderAsync(request));
+            var conflict=await Assert.ThrowsAsync<OrderCreationConflictException>(() => service.CreateOrderAsync(request));
+            Assert.Equal("OUT_OF_STOCK",conflict.Code);
             Assert.Equal(10, product.Stock);
             Assert.Empty(db.Orders);
         }

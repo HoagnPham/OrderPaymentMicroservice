@@ -208,3 +208,40 @@ stuck với clock tiến 10 phút và audit append failure counter. Thí nghiệ
 Refund process kill sau journal publish đã PASS: worker giữ charge reference,
 resolve đúng refund transaction, clear PendingSince, release một lần, replay không
 đổi journal. Dừng DB tạm kiểm chứng live/ready khác nhau; chưa reconnect/failover.
+
+## Contract retry cho POST /api/orders
+
+409 của create order hiện trả JSON `{code, retryable, message}`. Chỉ
+ORDER_CONCURRENT_WRITE có retryable=true khi caller gửi một key hợp lệ và exception
+chain có DbUpdateConcurrencyException, PostgreSQL 40001/40P01 hoặc 23505 đúng unique
+index IX_Orders_CustomerId_CreationKeyHash. Generic 23505/23514, lỗi audit trigger,
+InvalidOperationException khác không được suy là transient; response không lộ SQL
+exception. Key absent/legacy: ORDER_CONCURRENT_WRITE vẫn retryable=false.
+
+OUT_OF_STOCK, PRODUCT_UNAVAILABLE, IDEMPOTENCY_PAYLOAD_MISMATCH,
+ORDER_RECEIPT_UNAVAILABLE, ORDER_REJECTED, ORDER_PERSISTENCE_REJECTED không retry tự
+động. Điều này chỉ áp dụng POST create; các endpoint cancel/payment/refund có
+contract riêng. Clients cũ đọc plaintext 409 cần chuyển sang JSON message/code.
+
+Shop dùng createOrderWithRetry: tối đa 4 HTTP attempts, cùng chuỗi JSON payload và
+key. Chỉ retry 409 + code ORDER_CONCURRENT_WRITE + retryable===true. Equal jitter
+chờ [100,200), [200,400), [400,800) ms sau ba conflicts đầu. handleCheckout có budget
+8 giây tới đọc body; cancellation dừng fetch/backoff và giữ key. 503/network không
+auto retry vì outcome chưa rõ. 401/403/429 giữ key để login/chờ rồi gửi lại; max
+attempt 409 cũng giữ key. Business stock/product-unavailable cho phép cập nhật giỏ.
+
+Mỗi retry là request mới với DbContext/transaction mới; server không tự loop retry
+trong một context đã lỗi và không tự retry charge/refund. Audit BEGIN/RESULT phát
+sinh theo từng HTTP attempt, COMMIT chỉ gắn mutation đã commit; rate quota tính mỗi
+attempt. Browser kiểm metadata/attempt bound/jitter/cancellation/stable body-key.
+Unit kiểm SQLSTATE allowlist, wrapped 40001, legacy no-key và redaction; PG HTTP kiểm
+stock/inactive/mismatch nonretryable và same-key concurrent conflicts.
+
+OrderRetryLoadTests so sánh 96 logical requests/scenario, 8 users, 4 products, hai
+API process, concurrency=8. Mỗi phase có products riêng stock 1000/product, pattern
+product=(requestIndex+requestIndex/8)%4. C# driver mô phỏng policy 4 attempts/8 giây,
+seed jitter 20261013+requestIndex; không chạy JS qua live API. Browser helper được
+kiểm riêng bằng mocked fetch. Tỷ lệ success/latency là quan sát, assertions bảo vệ
+bounded attempts, không duplicate, conservation stock và COMMIT audit count.
+Evidence giữ raw per-logical/per-attempt samples và backoff. Baseline chạy trước,
+chưa crossover/repetitions/statistical confidence; không suy SLA production.
