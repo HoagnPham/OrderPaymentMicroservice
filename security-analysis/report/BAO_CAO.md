@@ -98,7 +98,7 @@ rotation hay quyền đọc secret trên host.
 Risk dùng thang giáo dục likelihood×impact (mỗi thành phần 1–5). Điểm thể hiện
 **inherent risk trước control**, không phải CVSS hay residual risk đã đo. Một threat
 mang trạng thái VERIFIED_IN_TEST_SCOPE vẫn có giới hạn về endpoint và môi trường.
-T3/T5 đã giảm thiểu một phần với audit/admission; atomicity, retention, distributed
+T3/T5 đã giảm thiểu một phần với audit/admission; retention, DBA governance, distributed
 quota và load verification còn mở. T8 còn mở; T9 mới giảm thiểu một phần. Bộ test quyền đã được mở rộng để kiểm
 Payment chéo user và Customer gọi các đường Admin; chưa kiểm token hết hạn, key
 rotation hay mọi cách giả mạo identity.
@@ -304,12 +304,34 @@ outcome; worker RESULT nói trạng thái nghiệp vụ.
 Trigger PostgreSQL chặn UPDATE/DELETE/TRUNCATE, nhưng DBA có thể disable trigger;
 chưa có retention và audit access governance. BEGIN failure chặn action; RESULT
 failure có thể sau business commit và trả 503 cần reconcile. Create BEGIN có thể
-chưa biết resource ID. Đây không phải atomic business-audit transaction; outbox
-và order-create idempotency còn cần bổ sung.
+chưa biết resource ID. Trigger Orders/Payments ghi COMMIT với ID thật trong cùng
+transaction nghiệp vụ; ghi audit lỗi làm rollback. BEGIN/RESULT vẫn là HTTP events
+riêng, còn outbox chỉ cần khi chuyển audit tới một đích ngoài PostgreSQL.
 
 Admission/audit error dùng JSON message. Audit 503 có requiresReconciliation=false
 khi BEGIN lỗi trước action, true khi RESULT lỗi sau action; correlationId do server
 sinh. CORS expose correlation/retry headers cho origin được cho phép.
+
+### 2.9. Tạo đơn có idempotency và audit COMMIT
+
+POST /api/orders nhận Idempotency-Key tùy chọn; frontend đã gửi key. Server bind
+key hash với customer đã xác thực và payload hash, giữ original response trong
+transaction Serializable cùng reserve/order. Unique index ngăn hai đơn cùng
+customer/key. Cùng key/payload trả lại 201, cùng ID/receipt; khác payload trả 409.
+Race 409 phải retry bằng key cũ. Client không gửi key không có bảo đảm chống trùng.
+Sau cancel, replay vẫn trả receipt ban đầu; GET order trả trạng thái hiện tại.
+
+AFTER INSERT/UPDATE/DELETE trigger trên Orders/Payments ghi COMMIT vào AuditEvents,
+bao gồm resource ID và state integer, trong cùng transaction. Trigger bao phủ cả SQL
+trực tiếp, không chỉ controller. Request có verified actor/correlation qua metadata
+transaction-local; worker/direct SQL ghi SYSTEM khi không có request metadata.
+Rollback cả audit và stock/order đã được fault-injection test. Chưa audit toàn bộ
+Products/Cart/Users hay chứng minh DBA không sửa schema. Không backfill lịch sử cũ.
+
+Checkout lưu key trước fetch trong sessionStorage, giữ khi mất response/503, chặn
+đổi payload khi chưa rõ outcome và tránh double submit trong cùng tab. Browser
+mocked-fetch regression PASS; HTTP/PostgreSQL tests kiểm chứng backend riêng.
+Snapshot receipt chứa thông tin giao hàng; phải bảo vệ như dữ liệu order.
 
 
 ## 3. Mô hình trạng thái, kiểm chứng và đối chiếu implementation
@@ -699,7 +721,7 @@ model solver được giữ tại Phụ lục D, không đưa verdict suy đoán
 ## 6. Kiểm thử động và fuzzing
 
 Bộ test ứng dụng mới nhất ghi nhận 140/140 unit test và
-17/17 integration test PASS, không SKIP.
+24/24 integration test PASS, không SKIP.
 Ba campaign fuzz cũng nằm trong unit suite; đợt này đo lại coverage campaign.
 Branch coverage 97.36% áp dụng InputValidator,
 PaymentValidator, hai state machine và MoneyAmounts. InputValidator có branch coverage 97.22%,
@@ -797,13 +819,24 @@ Begin-failure test xác nhận không có business record; result-failure test x
 503 dù Order đã commit và còn BEGIN durable. Restart test chờ cả worker SUCCESS
 và SYSTEM audit RESULT, không suy chỉ state change là audit đã lưu.
 
+### 6.8. Atomic audit, order replay và concurrency qua hai host
+
+AtomicAuditIdempotencyTests kiểm chứng original receipt sau cancel và qua host mới,
+payload conflict, namespace JWT, malformed/multiple keys, tám request cùng key,
+COMMIT insert failure rollback stock/order, raw SQL commit/rollback và hai host
+cạnh tranh 10 stock với 16 request. AdmissionAuditTests còn mô phỏng RESULT lỗi:
+503 sau business commit vẫn có COMMIT audit và retry key cũ trả đơn ban đầu.
+Browser checkout regression kiểm syntax toàn app.js và thực thi hàm checkout với
+mocked fetch cho network loss/503/double submit/payload change/payment cleanup.
+Không gọi browser test là end-to-end HTTP hoặc kết quả chịu tải production.
+
 
 ## 7. Kết quả và truy vết
 
 | Phép kiểm | Kết quả | Phạm vi |
 | --- | --- | --- |
 | Unit | 140/140 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
-| HTTP/PostgreSQL | 17/17 PASS | Database tạm, migration/seed và test host |
+| HTTP/PostgreSQL | 24/24 PASS | Database tạm, migration/seed và test host |
 | Recovery | 15/15 thuộc tính; 6 mutation detected | Graph hữu hạn, giả định được khai báo |
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |
 | Inventory SMT | 3/3 đúng kỳ vọng | Hai dòng của một sản phẩm |
@@ -872,8 +905,8 @@ cần được kiểm tra và chỉnh có chủ đích trước khi nâng cấp.
 database sạch, không thực hiện migration lên database phát triển của người dùng.
 
 Gateway mặc định DurableFake lưu journal bền vững; process-kill recovery sau charge
-đã PASS. Audit/admission đã hiện thực và test trong phạm vi local; outbox,
-retention, distributed quota, callback thật, refund crash và BMC riêng còn mở.
+đã PASS. Audit/admission đã hiện thực và test trong phạm vi local; COMMIT audit đã nguyên tử và Order create có key tùy chọn.
+External audit outbox, retention, distributed quota, callback thật, refund crash và BMC riêng còn mở.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -884,7 +917,7 @@ Không dùng PASS của suite hiện tại để gọi hệ thống production-r
 | Abstraction | Model không có stock cụ thể, identity hoặc durable gateway | Không suy safety của các phần bị lược bỏ |
 | Thiết kế chưa hiện thực | CONFIRMATION_RETRY tự động; callback authenticity | Cần mapping rõ hoặc thay model để khớp policy source |
 | Environment assumption | Gateway cuối cùng trả definitive outcome | Liveness có điều kiện, không cam kết thời hạn hoàn tất |
-| Audit atomicity | BEGIN/RESULT dùng commit riêng; create BEGIN có thể chưa có resource ID | Cần transactional outbox/durable business binding và Order-create idempotency |
+| Audit scope | COMMIT nguyên tử với Orders/Payments; BEGIN/RESULT vẫn riêng; DBA có thể disable trigger | Retention/least-privilege và outbox nếu thêm external sink |
 | Tool capability | Scanner syntax-specific; cppcheck false negative | Kết hợp review và dynamic, không lấy zero finding làm proof |
 | Test coverage | Đã kill/restart sau charge; chưa refund crash, network/commit fault đa dạng | PASS hiện tại không bao phủ crash windows ngoài kịch bản |
 | Provenance | Hash đóng gói của evidence lịch sử | Không biết source tại thời điểm cũ nếu chưa có run-time hash |
@@ -897,9 +930,10 @@ và process-kill recovery sau charge PASS. Phần tiếp theo là refund crash, 
 trước charge và provider sandbox; không suy từ test local sang xác thực gateway thật.
 
 Admission và audit đã có regression: body/item cap, auth/user quotas, durable
-BEGIN/RESULT, field allowlist và trigger append-only. Phần tiếp theo là atomic
-business-audit outbox, idempotency cho Order create, retention/least-privilege
-audit access và load/distributed quota. Audit RESULT failure có thể sau commit;
+BEGIN/RESULT, COMMIT cùng transaction, field allowlist và trigger append-only.
+Order-create có idempotency tùy chọn và original receipt. Phần tiếp theo là
+retention/least-privilege audit access, load/distributed quota và external outbox
+nếu thêm một đích audit bên ngoài PostgreSQL. Audit RESULT failure có thể sau commit;
 503 không tự chứng minh nghiệp vụ chưa thực hiện.
 
 Precision/scale và timeout/cancellation worker đã có regression; phần tiếp theo
@@ -915,6 +949,13 @@ CHECK mới có thể không apply nếu dữ liệu cũ đã âm hoặc quantit
 Không có script tự xóa dữ liệu vì việc đó có thể phá lịch sử giao dịch. Trước
 nâng cấp môi trường có dữ liệu, cần đọc/query vi phạm, xác định nguồn và phương
 án correction; giữ migration test database sạch riêng khỏi thao tác dữ liệu thật.
+
+Hai host API đã có kiểm thử hữu hạn tranh 10 đơn vị tồn kho với 16 yêu cầu và retry
+có giới hạn, cùng kiểm thử tám request cùng key. Đây là regression về concurrency
+và consistency, chưa là benchmark throughput/p95, soak test hoặc kiểm chứng cluster
+nhiều máy. Rate quota vẫn local từng process. Runbook backup/restore và chính sách
+retention đề xuất nằm trong [OPERATIONS.md](../OPERATIONS.md); restore drill chưa
+được thực hiện trên môi trường của người dùng.
 
 
 ## 9. Kết luận

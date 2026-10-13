@@ -66,7 +66,7 @@ Inventory vì gián đoạn có thể để lại giao dịch chưa xác định
 |---|---|---|---:|---|
 | T1 | Spoofing / TB1 | Không có/giả mạo identity hoặc dùng route id của user khác | 20 CRITICAL | Đã xác minh trong các đường HTTP test |
 | T2 | Tampering / TB1 | Sửa price, total hoặc payment amount | 25 CRITICAL | Đã giảm thiểu |
-| T3 | Repudiation / TB1 | Phủ nhận payment/retry/cancel khi log không bền vững | 12 HIGH | Giảm thiểu một phần: durable audit, chưa atomic/retention |
+| T3 | Repudiation / TB1 | Phủ nhận payment/retry/cancel khi log không bền vững | 12 HIGH | Giảm thiểu một phần: COMMIT audit nguyên tử, còn retention/DBA |
 | T4 | Information disclosure / TB1 | IDOR đọc aggregate của user khác | 16 HIGH | Đã xác minh trong các đường HTTP test |
 | T5 | Denial of service / TB1 | Flood endpoint hoặc order có quá nhiều item | 16 HIGH | Giảm thiểu một phần: local rate/body/item limits |
 | T6 | Elevation of privilege / TB1 | Customer gọi endpoint refund/list của Admin | 15 HIGH | Đã xác minh trong các đường HTTP test |
@@ -158,5 +158,12 @@ mỗi process, không lấy IP từ X-Forwarded-For tùy ý; proxy/distributed/l
 Audit HTTP và worker lưu field allowlist trong PostgreSQL. BEGIN có trước nghiệp
 vụ, RESULT lưu trước transport response; UPDATE/DELETE/TRUNCATE bị trigger chặn.
 BEGIN failure chặn action; RESULT failure có thể đi sau business commit và trả
-503 cần reconcile, có thể chỉ còn BEGIN. Không gọi đây là atomic business-audit
-transaction hoặc protection khỏi DBA. Retention và audit access governance còn mở.
+503 cần reconcile; BEGIN/RESULT có thể chưa đủ. COMMIT mới ghi nguyên tử cùng
+transaction nghiệp vụ, không bảo vệ khỏi DBA sửa schema. Retention và audit access governance còn mở.
+
+Bổ sung COMMIT audit: trigger Orders/Payments ghi cùng transaction, lỗi insert audit
+rollback mutation; rollback transaction cũng xóa audit chưa commit. Order create
+có key/payload hash theo JWT user và original receipt trong transaction. T3 vẫn
+PARTIALLY_MITIGATED do retention/DBA governance còn mở; không giảm risk score bằng
+một residual score chưa có phương pháp đo. Direct SQL/worker thiếu metadata request
+được ghi SYSTEM, không gán actor bằng owner của order.

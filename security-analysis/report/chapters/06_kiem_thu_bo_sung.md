@@ -81,3 +81,14 @@ secret không xuất hiện, và SQL trigger chặn UPDATE/DELETE/TRUNCATE với
 Begin-failure test xác nhận không có business record; result-failure test xác nhận
 503 dù Order đã commit và còn BEGIN durable. Restart test chờ cả worker SUCCESS
 và SYSTEM audit RESULT, không suy chỉ state change là audit đã lưu.
+
+### 6.8. Atomic audit, order replay và concurrency qua hai host
+
+AtomicAuditIdempotencyTests kiểm chứng original receipt sau cancel và qua host mới,
+payload conflict, namespace JWT, malformed/multiple keys, tám request cùng key,
+COMMIT insert failure rollback stock/order, raw SQL commit/rollback và hai host
+cạnh tranh 10 stock với 16 request. AdmissionAuditTests còn mô phỏng RESULT lỗi:
+503 sau business commit vẫn có COMMIT audit và retry key cũ trả đơn ban đầu.
+Browser checkout regression kiểm syntax toàn app.js và thực thi hàm checkout với
+mocked fetch cho network loss/503/double submit/payload change/payment cleanup.
+Không gọi browser test là end-to-end HTTP hoặc kết quả chịu tải production.

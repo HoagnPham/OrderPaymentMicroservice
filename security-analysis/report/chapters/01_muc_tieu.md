@@ -75,7 +75,7 @@ rotation hay quyền đọc secret trên host.
 Risk dùng thang giáo dục likelihood×impact (mỗi thành phần 1–5). Điểm thể hiện
 **inherent risk trước control**, không phải CVSS hay residual risk đã đo. Một threat
 mang trạng thái VERIFIED_IN_TEST_SCOPE vẫn có giới hạn về endpoint và môi trường.
-T3/T5 đã giảm thiểu một phần với audit/admission; atomicity, retention, distributed
+T3/T5 đã giảm thiểu một phần với audit/admission; retention, DBA governance, distributed
 quota và load verification còn mở. T8 còn mở; T9 mới giảm thiểu một phần. Bộ test quyền đã được mở rộng để kiểm
 Payment chéo user và Customer gọi các đường Admin; chưa kiểm token hết hạn, key
 rotation hay mọi cách giả mạo identity.

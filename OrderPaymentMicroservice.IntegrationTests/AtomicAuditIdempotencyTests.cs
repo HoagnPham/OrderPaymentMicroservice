@@ -7,6 +7,7 @@ using OrderPaymentMicroservice.Data;
 using OrderPaymentMicroservice.DTOs.Orders;
 using OrderPaymentMicroservice.DTOs.Products;
 using OrderPaymentMicroservice.DTOs.Users;
+using OrderPaymentMicroservice.Models;
 using Xunit;
 
 namespace OrderPaymentMicroservice.IntegrationTests;
@@ -14,6 +15,42 @@ namespace OrderPaymentMicroservice.IntegrationTests;
 [Collection(PostgresApiCollection.Name)]
 public sealed class AtomicAuditIdempotencyTests(PostgresApiFixture fixture)
 {
+    [DockerFact]
+    public async Task TwoApiHostsCompeteForTenUnitsWithoutOverselling()
+    {
+        var user = await Account();
+        await using var host = fixture.CreateIsolatedFactory(new());
+        using var first = Client(user); using var second = host.CreateClient();
+        second.DefaultRequestHeaders.Authorization = new("Bearer", user.Token);
+        int productId;
+        await using (var setup = fixture.Services.CreateAsyncScope())
+        {
+            var db = setup.ServiceProvider.GetRequiredService<AppDbContext>();
+            var product = new Product { Name="Concurrency fixture",Price=10,Stock=10,IsActive=true };
+            db.Products.Add(product); await db.SaveChangesAsync(); productId=product.Id;
+        }
+        var request = new CreateOrderRequest { TotalAmount=10,Items=[new(){ProductId=productId,Quantity=1,UnitPrice=10}] };
+        var pending = Enumerable.Range(0,16).Select(i => (Client: i%2==0 ? first : second, Key: Guid.NewGuid().ToString())).ToList();
+        var created = new HashSet<int>();
+        // Serializable conflicts are retried with the original key; these are finite safety checks, not a latency benchmark.
+        for (var round=0; round<16 && await Stock(productId)>0; round++)
+        {
+            var batch = await Task.WhenAll(pending.Select(async attempt => (Attempt: attempt, Response: await Create(attempt.Client,request,attempt.Key))));
+            pending.Clear();
+            foreach (var entry in batch)
+            {
+                using var response=entry.Response;
+                Assert.True(response.StatusCode is HttpStatusCode.Created or HttpStatusCode.Conflict,response.StatusCode.ToString());
+                if (response.StatusCode==HttpStatusCode.Created) Assert.True(created.Add((await response.Content.ReadFromJsonAsync<OrderResponse>())!.Id));
+                else pending.Add(entry.Attempt);
+            }
+        }
+        Assert.Equal(10,created.Count); Assert.Equal(0,await Stock(productId));
+        await using var check=fixture.Services.CreateAsyncScope();var context=check.ServiceProvider.GetRequiredService<AppDbContext>();
+        Assert.Equal(10,await context.Orders.CountAsync(o=>o.CustomerId==user.Id));
+        Assert.Equal(10,await context.AuditEvents.CountAsync(e=>e.ActorUserId==user.Id && e.Phase=="COMMIT" && e.Action=="ORDER_INSERT"));
+    }
+
     [DockerFact]
     public async Task ReplayFromAnotherHostReturnsOriginalReceiptEvenAfterCancellation()
     {

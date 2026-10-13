@@ -122,9 +122,9 @@ retention/purge policy hoặc cryptographic integrity. Không có public audit e
 
 BufferedAuditResponse giữ cả transport Start/Complete cho các mutation được audit.
 Nếu BEGIN lỗi, action không chạy và API trả 503. Nếu RESULT lỗi sau business commit,
-API trả 503 và chỉ có BEGIN; caller phải reconcile trước retry, nhất là Order create
-chưa có request idempotency. Correlation không tự làm hai commit atomic: transactional
-outbox và durable binding với business transaction vẫn cần bổ sung. Không audit
+API trả 503 dù nghiệp vụ có thể đã commit. COMMIT audit trong transaction nghiệp vụ
+vẫn còn; BEGIN/RESULT là HTTP observation riêng. Caller tạo đơn có key được gửi lại
+đúng payload/key để lấy receipt cũ, không dùng key mới khi chưa rõ outcome. Không audit
 các request 429/413 trước admission để tránh log amplification; bị authorization
 reject trong đường mutation sau admission vẫn có audit.
 
@@ -135,3 +135,51 @@ process-restart test. Migration chỉ đã chạy trên database tạm của tes
 Lỗi admission/audit trả JSON `message`; audit 503 thêm `requiresReconciliation`
 và correlationId. Flag false khi BEGIN thất bại trước action, true khi RESULT
 thất bại sau action. CORS expose X-Correlation-Id/Retry-After cho origin được phép.
+
+## Atomic COMMIT audit và idempotency tạo đơn
+
+Migration `20261013140000_AddAtomicAuditAndOrderIdempotency` thêm AFTER row triggers
+trên Orders/Payments. Mỗi INSERT/UPDATE/DELETE ghi AuditEvents phase COMMIT cùng
+transaction, với resource ID thật và outcome STATE_<enum integer> hoặc DELETED.
+INSERT audit lỗi làm statement/transaction nghiệp vụ rollback; rollback nghiệp vụ
+cũng rollback audit. Phase COMMIT mô tả durable database mutation sau khi transaction
+commit, không là bằng chứng provider đã thu tiền hay response đã tới client.
+
+Không cần dispatcher/outbox cho đích AuditEvents trong cùng PostgreSQL. Nếu sau này
+đẩy audit tới SIEM/broker ngoài database, cần transactional outbox riêng. Trigger
+không ghi raw payload, địa chỉ, key hoặc snapshot response vào audit. AuditWriter
+vẫn dùng scope riêng cho BEGIN/RESULT và trigger append-only vẫn áp dụng.
+
+SaveChangesAsync của AppDbContext đặt actor/correlation qua set_config transaction-local.
+Request actor lấy từ principal, correlation từ middleware. Worker, synchronous
+SaveChanges và SQL trực tiếp không có metadata request được ghi SYSTEM; không suy
+owner của order là người thực hiện thao tác. Metadata được reset khi transaction kết
+thúc, tránh lẫn actor qua connection pool. Direct SQL rollback/commit có regression.
+Audit COMMIT bảo vệ Orders/Payments, không là audit toàn bộ bảng Products/Users/Cart.
+Không backfill sự kiện cho lịch sử trước migration; DBA vẫn có thể disable trigger.
+
+POST /api/orders nhận Idempotency-Key tùy chọn để tương thích client cũ. Client shop
+đã gửi key. Key phải có 1..128 visible ASCII characters, chỉ một header value; sai
+trả 400. Namespace là customer lấy từ JWT. Database lưu SHA-256 key, SHA-256 payload
+và snapshot OrderResponse, unique(CustomerId, CreationKeyHash). Payload gồm customer,
+total, address/city, danh sách items theo đúng thứ tự và unit price; decimal được
+chuẩn hóa G29. Không tái sử dụng key cho payload khác (409). Replay trả 201 cùng ID,
+Location và original response, kể cả sau cancel hoặc khi catalog thay đổi. Đọc trạng
+thái hiện tại qua GET /api/orders/{id}; receipt không phải live order status.
+
+Serializable transaction gộp reserve, order, receipt và COMMIT audit. Concurrent
+request có thể nhận 409; gửi lại cùng key/payload. Client không có key vẫn tạo đơn
+mới mỗi lần. Receipt tồn tại cùng order, chưa có policy lưu receipt riêng khi order
+bị xóa. Snapshot response chứa thông tin giao hàng vốn có trong order: áp dụng cùng
+access/privacy/backup policy. Không ghi raw key vào audit.
+
+Checkout lưu attempt theo tài khoản trong sessionStorage trước fetch, giữ key khi
+network/503/409, chặn thay payload khi kết quả chưa rõ và giữ form tới khi payment
+terminal. Request lặp trong cùng tab không chạy song song. Payment SUCCESS/FAILED
+xóa attempt của đúng order; UNKNOWN giữ key. Chưa kiểm chứng cross-tab hoặc browser
+storage bị xóa. Browser regression dùng mocked fetch, tách khỏi real HTTP/PG tests.
+
+Evidence: AtomicAuditIdempotencyTests, AdmissionAuditTests và
+[checkout_retry.results.json](results/checkout_retry.results.json).
+Lệnh browser: `python3 security-analysis/verify_checkout.py` (cần Chrome/Chromium).
+Hướng dẫn vận hành: [OPERATIONS.md](OPERATIONS.md).

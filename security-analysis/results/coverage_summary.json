@@ -23,8 +23,8 @@
       "branch_coverage_percent": 100.0
     }
   ],
-  "run_at_utc": "2026-10-13T05:35:55.515829+00:00",
-  "report_sha256": "99579690adc5f29c75ba5acf268046822dde1bdc2fa41a3a44feab7409070a85",
+  "run_at_utc": "2026-10-13T06:51:08.868903+00:00",
+  "report_sha256": "bca84703cb6d2b49d967826f510c8e8a64a0c9127f87be4a1396182caa1eded8",
   "included_helper": {
     "class": "OrderPaymentMicroservice.Security.MoneyAmounts",
     "branch_coverage_percent": 100.0

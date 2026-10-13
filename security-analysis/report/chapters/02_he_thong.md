@@ -180,9 +180,31 @@ outcome; worker RESULT nói trạng thái nghiệp vụ.
 Trigger PostgreSQL chặn UPDATE/DELETE/TRUNCATE, nhưng DBA có thể disable trigger;
 chưa có retention và audit access governance. BEGIN failure chặn action; RESULT
 failure có thể sau business commit và trả 503 cần reconcile. Create BEGIN có thể
-chưa biết resource ID. Đây không phải atomic business-audit transaction; outbox
-và order-create idempotency còn cần bổ sung.
+chưa biết resource ID. Trigger Orders/Payments ghi COMMIT với ID thật trong cùng
+transaction nghiệp vụ; ghi audit lỗi làm rollback. BEGIN/RESULT vẫn là HTTP events
+riêng, còn outbox chỉ cần khi chuyển audit tới một đích ngoài PostgreSQL.
 
 Admission/audit error dùng JSON message. Audit 503 có requiresReconciliation=false
 khi BEGIN lỗi trước action, true khi RESULT lỗi sau action; correlationId do server
 sinh. CORS expose correlation/retry headers cho origin được cho phép.
+
+### 2.9. Tạo đơn có idempotency và audit COMMIT
+
+POST /api/orders nhận Idempotency-Key tùy chọn; frontend đã gửi key. Server bind
+key hash với customer đã xác thực và payload hash, giữ original response trong
+transaction Serializable cùng reserve/order. Unique index ngăn hai đơn cùng
+customer/key. Cùng key/payload trả lại 201, cùng ID/receipt; khác payload trả 409.
+Race 409 phải retry bằng key cũ. Client không gửi key không có bảo đảm chống trùng.
+Sau cancel, replay vẫn trả receipt ban đầu; GET order trả trạng thái hiện tại.
+
+AFTER INSERT/UPDATE/DELETE trigger trên Orders/Payments ghi COMMIT vào AuditEvents,
+bao gồm resource ID và state integer, trong cùng transaction. Trigger bao phủ cả SQL
+trực tiếp, không chỉ controller. Request có verified actor/correlation qua metadata
+transaction-local; worker/direct SQL ghi SYSTEM khi không có request metadata.
+Rollback cả audit và stock/order đã được fault-injection test. Chưa audit toàn bộ
+Products/Cart/Users hay chứng minh DBA không sửa schema. Không backfill lịch sử cũ.
+
+Checkout lưu key trước fetch trong sessionStorage, giữ khi mất response/503, chặn
+đổi payload khi chưa rõ outcome và tránh double submit trong cùng tab. Browser
+mocked-fetch regression PASS; HTTP/PostgreSQL tests kiểm chứng backend riêng.
+Snapshot receipt chứa thông tin giao hàng; phải bảo vệ như dữ liệu order.

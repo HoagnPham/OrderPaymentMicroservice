@@ -316,8 +316,8 @@ cần được kiểm tra và chỉnh có chủ đích trước khi nâng cấp.
 database sạch, không thực hiện migration lên database phát triển của người dùng.
 
 Gateway mặc định DurableFake lưu journal bền vững; process-kill recovery sau charge
-đã PASS. Audit/admission đã hiện thực và test trong phạm vi local; outbox,
-retention, distributed quota, callback thật, refund crash và BMC riêng còn mở.
+đã PASS. Audit/admission đã hiện thực và test trong phạm vi local; COMMIT audit đã nguyên tử và Order create có key tùy chọn.
+External audit outbox, retention, distributed quota, callback thật, refund crash và BMC riêng còn mở.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -427,7 +427,7 @@ của chính project và xuất pipeline JSON vào security-analysis/.
                   ['Gateway bền vững/sandbox','LOCAL_PROCESS_KILL_PASS / REAL_PROVIDER_OPEN','Local charge recovery PASS; refund crash và provider thật còn mở'],
                   ['BMC có bound','OPEN','Ghi tool, k, assumption, verdict và witness'],
                   ['Công cụ Windows giảng viên','NOT_RUN_THIS_SESSION','Lưu manifest/log/export thực tế; checker độc lập không thay thế'],
-                  ['Rate limiting/audit','PARTIALLY_MITIGATED','Admission/audit test PASS; distributed quota, atomic outbox, retention và DBA protection còn mở'],
+                  ['Rate limiting/audit','PARTIALLY_MITIGATED','Admission/audit test PASS; distributed quota, external sink outbox, retention và DBA protection còn mở'],
                   ['API fuzz/network fault injection','OPEN','Target HTTP, corpus, oracle và campaign log'],
                   ['Migration dữ liệu cũ','NOT_TESTED','Kiểm tra dữ liệu vi phạm trước khi apply; không tự xóa/sửa'],
                   ['TLC','HISTORICAL','Giữ source hash/tool/run timestamp khi chạy lại'],

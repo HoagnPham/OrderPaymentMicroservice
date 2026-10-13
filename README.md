@@ -1,11 +1,19 @@
 # OrderPaymentMicroservice — Bài tập lớn An toàn phần mềm
 
+> Cập nhật mới nhất: Orders/Payments ghi audit COMMIT nguyên tử bằng PostgreSQL
+> trigger. Tạo đơn hỗ trợ Idempotency-Key theo JWT user, payload binding và receipt
+> gốc; checkout giữ key khi mất response/503. Hai host tranh 10 stock không bán vượt
+> kho; 140 unit + 24 integration PASS, browser retry regression PASS.
+> [Hợp đồng hiện thực](security-analysis/IMPLEMENTATION_CONTRACTS.md) ·
+> [Vận hành/backup/restore](security-analysis/OPERATIONS.md).
+> Migration mới chỉ được chạy trên database tạm trong kiểm thử.
+
 > Admission/audit bổ sung 13/10/2026: body 64 KiB, tối đa 100 item; auth quota
 > 10/phút/IP và API quota 120/phút/subject hoặc connection IP. PostgreSQL giữ
 > audit BEGIN/RESULT và chặn UPDATE/DELETE/TRUNCATE. Audit error trả JSON phân biệt
 > action chưa chạy với operation có thể đã commit, cần reconcile.
-> Test mới nhất: 140 unit + 17 integration PASS, không SKIP; fuzz 3/3 PASS.
-> T3/T5 giảm thiểu một phần; outbox/retention/distributed quota còn mở.
+> Test mới nhất: 140 unit + 24 integration PASS, không SKIP; fuzz 3/3 PASS.
+> T3/T5 giảm thiểu một phần; retention/DBA/distributed quota còn mở.
 
 
 > Bổ sung 13/10/2026: gateway deadline mặc định 5 giây; worker truyền cancellation,
@@ -215,23 +223,23 @@ Không nên gán một phần trăm hoàn thành duy nhất khi chưa có rubric
 | Database hoạt động | **Đạt trong integration suite** | Tạo PostgreSQL sạch, apply migration/seed và chạy 8/8 test qua Docker hoặc local fallback |
 | Demo hệ thống | **Một phần** | Có frontend và script; chưa có kết quả demo E2E hiện hành |
 | Model và thuộc tính | **Đạt trong phạm vi model** | Kripke đúng + BUGGY + bốn kết quả kiểm chứng |
-| Bằng chứng kiểm thử | **Đạt cho InputValidator** | 34 test, Cobertura, branch coverage > 90% |
+| Bằng chứng kiểm thử | **Đạt cho target validator** | 140 unit + 24 integration PASS; InputValidator branch 97,22%, MoneyAmounts 100% |
 | Phát hiện và phân tích lỗi | **Đạt giai đoạn phát hiện** | Năm vulnerability, counterexample, xếp hạng CVSS-lite |
 | SMT/Z3 | **Đạt trong phạm vi số học** | QF_NIA, Z3 5.1.0, 7/7 truy vấn đúng kỳ vọng và có JSON evidence |
 | TLA+/TLC | **Đạt trong phạm vi model** | TLC: 35 state sinh, 20 state phân biệt, depth 9, không phát hiện lỗi safety/liveness |
-| Fuzzing/dynamic testing | **Đạt cho target đã chọn** | 3/3 campaign, seed corpus cố định, 50.000 iteration, timeout/crash policy, branch 99,07% |
+| Fuzzing/dynamic testing | **Đạt cho target đã chọn** | 3/3 campaign; seed corpus, timeout/crash policy; target branch 97,36% |
 | Phân tích an toàn bộ nhớ/phương án phù hợp | **Đạt trên mô hình C học tập** | Static scanner phân biệt 5 BUGGY/FIXED, có cppcheck/layout evidence và sanitizer 22/22; không suy rộng sang C# |
-| Sửa lỗi và kiểm chứng lại | **Đạt trong suite hiện tại** | Guard đã có; 108 unit và 8 PostgreSQL integration test đều PASS |
-| Báo cáo kỹ thuật | **Đang hoàn thiện** | Đã có báo cáo tiến độ và tài liệu chi tiết; cần cập nhật sau sửa lỗi |
+| Sửa lỗi và kiểm chứng lại | **Đạt trong suite hiện tại** | Guard, atomic COMMIT audit và optional order idempotency; 140 unit + 24 integration PASS |
+| Báo cáo kỹ thuật | **Đã cập nhật theo evidence hiện tại** | 9 chương, phụ lục, traceability, provenance và giới hạn kiểm chứng |
 
 **Kết luận:** Bốn chương đều đã có artifact và bằng chứng tái lập, gồm TLC, fuzzing và PostgreSQL integration. Hệ thống vẫn chưa được coi là production-ready vì gateway thật, hardening vận hành và demo triển khai ngoài test host còn nằm ngoài phạm vi đã xác minh.
 
 ## 6. Các lỗi còn tồn tại và thứ tự xử lý
 
 1. Thay `FakePaymentGateway` bằng adapter sandbox/production có xác minh callback; giữ nguyên hợp đồng reconciliation theo idempotency key.
-2. Bổ sung transactional outbox cho side effect; background worker reconcile state bị kẹt đã có.
+2. Bổ sung external outbox nếu có side effect tới broker/SIEM; COMMIT audit trong cùng PostgreSQL đã nguyên tử.
 3. Chạy và lưu transcript `test-api.ps1` trên môi trường demo PostgreSQL sạch.
-4. Bổ sung rate limiting, audit log, health check và metrics cho các state bị kẹt.
+4. Mở rộng quota local thành shared limiter khi chạy nhiều instance; triển khai health/metrics, retention và cảnh báo theo runbook.
 5. Mở rộng fuzz/integration sang lỗi mạng, restart process và gateway sandbox.
 
 ## 7. Cách chạy
