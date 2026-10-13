@@ -5,6 +5,10 @@ public class Order
 {
     public int Id { get; set; }
 
+    public string? CreationKeyHash { get; set; }
+    public string? CreationRequestHash { get; set; }
+    public string? CreationResponseJson { get; set; }
+
     /// <summary>
     /// User ID (khách hàng)
     /// </summary>

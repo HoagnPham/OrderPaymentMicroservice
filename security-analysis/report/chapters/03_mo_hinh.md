@@ -101,7 +101,7 @@ model mutated, chưa phải trace HTTP/PostgreSQL của ứng dụng đang tri�
 ### 3.7. Phép chiếu recovery sang workbook
 
 Graph recovery có 37 event transition. Workbook bỏ event/action/kind và gộp các
-cặp (from,to) trùng, còn 32 cặp; phép đối chiếu hai tập cạnh cho kết quả bằng nhau.
+cặp (from,to) trùng, còn @@PIPELINE_PAIRS@@ cặp; phép đối chiếu hai tập cạnh cho kết quả bằng nhau.
 Nhiều event như request trùng và amount sai cùng giữ PAYMENT_PENDING sẽ hợp thành
 một cạnh self-loop. Do đó phép chiếu giữ quan hệ state đích nhưng làm mất lý do,
 biện pháp xử lý và assumption gắn trên event.
@@ -117,8 +117,8 @@ counter nên 20 trạng thái reachable của TLC không mâu thuẫn 15 aggrega
 | CREATED→VALIDATED→PAYMENT_PENDING | CreateOrderAsync chuyển trong cùng thao tác trước persist | Ánh xạ thiết kế; không phải ba commit riêng |
 | Retry cuối có bound | MaxChargeAttempts=2; UNKNOWN giữ logical payment/key | Có unit; chưa chứng minh mọi crash window |
 | CONFIRMATION_RETRY→refund sau exhaustion | Source cho Admin gọi confirm/refund; không có retry counter tự động cho confirmation | MODEL_ONLY cho cơ chế retry tự động |
-| Cancel khi gateway chứng minh chưa charge ở PAYMENT_RETRY | CancelOrderAsync chặn Payment UNKNOWN; decline dẫn FAILED | Nhánh thiết kế chưa có endpoint tương đương trực tiếp |
-| Gateway callback xác thực | IPaymentGateway synchronous calls, FakePaymentGateway | ASSUMPTION_ONLY cho xác thực callback thật |
+| Cancel tại PAYMENT_RETRY khi outcome UNKNOWN | Model đã giữ PAYMENT_RETRY; CancelOrderAsync từ chối, giữ reservation | IMPLEMENTED_POLICY; regression cancel UNKNOWN |
+| Gateway persistence và callback xác thực | DurableFake journal; process restart test có worker bật | Persistence local đã test; callback authenticity vẫn ASSUMPTION_ONLY |
 | Atomic payment-cancel | Serializable, Version và unique payment per order | PostgreSQL test cho interleaving đã chạy; chưa refinement proof |
 | Không vượt tồn kho | Model lifecycle chỉ có RESERVED/RELEASED/CONSUMED | Cần SMT quantity và regression riêng |
 
@@ -140,3 +140,19 @@ Nguồn: [recovery model](../order_payment_recovery_model.json),
 [checker](../verify_recovery_model.py), [audit](../results/liveness_audit.results.json),
 [TLA+](../../OrderPaymentMicroservice/Security/OrderPayment.tla),
 [Phụ lục B](PHU_LUC_A_G.md#phụ-lục-b--model-và-thuộc-tính).
+
+### 3.10. Contract hiện thực và crash-recovery đã bổ sung
+
+`implementation_scope` trong recovery JSON phân biệt IMPLEMENTED_POLICY,
+DESIGN_EXTENSION và EXTERNAL_ASSUMPTION. Event cancel_during_retry giờ giữ
+PAYMENT_RETRY khi outcome UNKNOWN, trùng policy source; regression xác minh
+CancelOrderAsync không đổi stock/reservation. Không bổ sung một policy hủy dựa
+trên outcome chưa rõ chỉ để đóng liveness.
+
+Gateway DurableFake và process-kill test bổ sung evidence cho một crash window:
+provider ledger đã ghi, API chưa finalize. RecoveryWorker trong process mới hỏi
+lại cùng key, nhận transaction cũ và lưu PAID/SUCCESS. Evidence này hỗ trợ mapping
+F3, không chứng minh chữ ký provider, mất điện hoặc mọi interleaving.
+
+[Hợp đồng hiện thực](../IMPLEMENTATION_CONTRACTS.md) và
+[evidence restart](../results/process_restart.results.json) ghi phạm vi cụ thể.

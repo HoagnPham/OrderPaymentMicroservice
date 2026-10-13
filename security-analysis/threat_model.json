@@ -263,7 +263,7 @@
       ],
       "threat_agent": "authenticated_customer",
       "threat": "Deny having initiated a payment, retry or cancellation",
-      "vulnerability": "Application logs are not a durable, append-only audit trail and do not define correlation/retention guarantees",
+      "vulnerability": "Durable allowlisted BEGIN/RESULT audit exists, but business/audit commits are not atomic; retention and protection from the database owner are not established.",
       "attack": "Dispute a state-changing request after logs rotate or lack sufficient actor and correlation context",
       "cia": [
         "INTEGRITY"
@@ -271,20 +271,27 @@
       "likelihood": 3,
       "impact": 4,
       "risk_score": 12,
-      "status": "OPEN",
+      "status": "PARTIALLY_MITIGATED",
       "controls": [
-        "structured application logging",
-        "JWT subject",
-        "payment idempotency key"
+        "Durable PostgreSQL audit BEGIN/RESULT",
+        "Allowlisted fields and server-generated correlation ID",
+        "Buffered audited response until RESULT persistence",
+        "Triggers reject UPDATE/DELETE/TRUNCATE",
+        "SYSTEM worker reconciliation audit"
       ],
-      "recommendation": "Persist an append-only audit event containing actor, action, resource, correlation id, timestamp and outcome; protect integrity and define retention.",
+      "recommendation": "Add a transactional outbox or equivalent atomic business/audit record, define retention and least-privilege access; protect against privileged database tampering.",
       "evidence": [
         "NFR-3",
         "REQ-7",
         "TC-8"
       ],
       "kripke_properties": [],
-      "property_refs": []
+      "property_refs": [],
+      "runtime_evidence": {
+        "path": "security-analysis/results/application_tests.results.json",
+        "test": "PaymentCancelRefundAuditPersistsWithoutSecretsAndRejectsMutation",
+        "limits": "Separate commits; incomplete BEGIN can remain after a crash/failure; no DBA-proof integrity or retention."
+      }
     },
     {
       "id": "T4",
@@ -335,7 +342,7 @@
       ],
       "threat_agent": "anonymous_client",
       "threat": "Exhaust API, database or recovery capacity",
-      "vulnerability": "Repository has no explicit rate limit and no documented maximum order-item collection size",
+      "vulnerability": "Per-process rate, body and item limits exist; distributed quotas, proxy configuration, many-user abuse and load capacity remain unverified.",
       "attack": "Flood authentication/business endpoints or submit repeatedly large order payloads",
       "cia": [
         "AVAILABILITY"
@@ -343,12 +350,15 @@
       "likelihood": 4,
       "impact": 4,
       "risk_score": 16,
-      "status": "OPEN",
+      "status": "PARTIALLY_MITIGATED",
       "controls": [
-        "bounded per-item numeric fields",
-        "bounded payment retry state machine"
+        "Authentication IP bucket",
+        "Verified-user API bucket, anonymous connection-IP bucket",
+        "Bounded body before JSON binding, including streaming bodies",
+        "Maximum order item count",
+        "Gateway deadline and bounded charge retry"
       ],
-      "recommendation": "Add request/body and item-count limits, per-identity/IP rate limiting, gateway timeout and load tests.",
+      "recommendation": "Validate load, distributed quotas and trusted proxy address handling; establish audit storage capacity and retention.",
       "evidence": [
         "REQ-16",
         "CON-7",
@@ -368,7 +378,12 @@
           "model": "recovery",
           "id": "P14"
         }
-      ]
+      ],
+      "runtime_evidence": {
+        "path": "security-analysis/results/application_tests.results.json",
+        "test": "RateLimitsUseSeparateAuthBucketAndSeparateVerifiedUserBuckets",
+        "limits": "Fixed-window local-process limiter; not distributed/load verification."
+      }
     },
     {
       "id": "T6",

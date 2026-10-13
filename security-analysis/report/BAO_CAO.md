@@ -1,6 +1,6 @@
 # Báo cáo kiểm chứng an toàn OrderPaymentMicroservice
 
-Ngày tổng hợp: 12/10/2026. Các thời điểm thực thi cụ thể nằm trong evidence.
+Ngày tổng hợp: 13/10/2026. Các thời điểm thực thi cụ thể nằm trong evidence.
 
 ## 1. Mục tiêu, phương pháp và mô hình đe dọa
 
@@ -30,7 +30,7 @@ chứng cho điều kiện chuyển, thay vì chỉ một happy path.
 | Q6 | Người đọc có thể tái lập và truy vết kết luận không? | Có source/model, command, tool version, outcome, hash và giới hạn từng evidence | Manifest, phụ lục và verifier |
 
 Các tiêu chí này giới hạn kết luận theo phép kiểm. “Đủ sáu nhóm STRIDE” là coverage
-của hoạt động phân tích đe dọa; “108 unit PASS” là outcome của các ca thực thi;
+của hoạt động phân tích đe dọa; “140 unit PASS” là outcome của các ca thực thi;
 “UNSAT” là kết luận trên tập ràng buộc. Ba loại kết quả không thay thế nhau.
 
 ### 1.3. Phạm vi và giả định vận hành
@@ -44,8 +44,10 @@ mô hình học tập ownership/lifetime, không phải bản dịch của imple
 Phạm vi xác minh gồm request validation, authorization ở đường đã test, lifecycle,
 reservation, số học model và một số cạnh tranh database. Chưa bao gồm bảo mật
 thiết bị client, cấu hình cloud, gateway thật, audit bền vững, throughput mục tiêu
-hay tất cả interleaving. Gateway mock mặc định luôn trả thành công và lưu trạng
-thái trong process; test dùng gateway có kịch bản riêng mới quan sát được UNKNOWN.
+hay tất cả interleaving. Gateway mặc định DurableFake trả thành công và lưu journal ngoài memory của process.
+MemoryFake vẫn được chọn rõ ràng trong fixture thông thường; test gateway có kịch
+bản riêng quan sát UNKNOWN. Process-kill recovery đã được xác minh với local journal,
+chưa phải provider thật hoặc mất điện.
 
 ### 1.4. Asset và ưu tiên CIA
 
@@ -84,9 +86,9 @@ rotation hay quyền đọc secret trên host.
 | --- | --- | --- | --- | --- |
 | T1 | SPOOFING / TB1 | Forge or omit identity and act as another customer | 4×5=20 | VERIFIED_IN_TEST_SCOPE |
 | T2 | TAMPERING / TB1 | Change client-supplied price, total or payment amount | 5×5=25 | MITIGATED |
-| T3 | REPUDIATION / TB1 | Deny having initiated a payment, retry or cancellation | 3×4=12 | OPEN |
+| T3 | REPUDIATION / TB1 | Deny having initiated a payment, retry or cancellation | 3×4=12 | PARTIALLY_MITIGATED |
 | T4 | INFORMATION_DISCLOSURE / TB1 | Read another customer's order, cart or payment | 4×4=16 | VERIFIED_IN_TEST_SCOPE |
-| T5 | DENIAL_OF_SERVICE / TB1 | Exhaust API, database or recovery capacity | 4×4=16 | OPEN |
+| T5 | DENIAL_OF_SERVICE / TB1 | Exhaust API, database or recovery capacity | 4×4=16 | PARTIALLY_MITIGATED |
 | T6 | ELEVATION_OF_PRIVILEGE / TB1 | Invoke administrator-only listing or refund operations | 3×5=15 | VERIFIED_IN_TEST_SCOPE |
 | T7 | TAMPERING / TB2 | Exploit concurrent payment/cancel or invalid transitions to corrupt workflow state | 4×5=20 | VERIFIED_IN_TEST_SCOPE |
 | T8 | SPOOFING / TB3 | Supply a forged or replayed successful gateway result | 3×5=15 | OPEN_FOR_REAL_GATEWAY |
@@ -96,7 +98,8 @@ rotation hay quyền đọc secret trên host.
 Risk dùng thang giáo dục likelihood×impact (mỗi thành phần 1–5). Điểm thể hiện
 **inherent risk trước control**, không phải CVSS hay residual risk đã đo. Một threat
 mang trạng thái VERIFIED_IN_TEST_SCOPE vẫn có giới hạn về endpoint và môi trường.
-T3/T5/T8 còn mở; T9 mới giảm thiểu một phần. Bộ test quyền đã được mở rộng để kiểm
+T3/T5 đã giảm thiểu một phần với audit/admission; atomicity, retention, distributed
+quota và load verification còn mở. T8 còn mở; T9 mới giảm thiểu một phần. Bộ test quyền đã được mở rộng để kiểm
 Payment chéo user và Customer gọi các đường Admin; chưa kiểm token hết hạn, key
 rotation hay mọi cách giả mạo identity.
 
@@ -125,9 +128,14 @@ Nguồn: [mục tiêu gốc](../../OrderPaymentMicroservice/readme.md),
 
 ```mermaid
 flowchart TD
-    Client[Shop / Customer / Admin] -->|TB1: HTTP, JWT, JSON| API[Controllers: authentication, role, ownership]
+    Client[Shop / Customer / Admin] -->|TB1: HTTP, JWT, JSON| Auth[Routing / JWT authentication]
+    Auth --> Admission[Rate limiter / Body limit]
+    Admission --> API[Audit middleware / Authorization / Controllers]
     API --> Services[User / Product / Cart / Order / Payment Services]
     Services --> Guards[Validation / State machines]
+    API --> Audit[AuditWriter: independent DbContext]
+    Audit --> DB
+    Worker --> Audit
     Services -->|TB2: EF Core, transaction| DB[(PostgreSQL)]
     Services -->|TB3: charge, refund, status| Gateway[IPaymentGateway / FakePaymentGateway]
     Config[Host config / Secrets] -->|TB4| API
@@ -141,7 +149,7 @@ runtime. Z3, checker Kripke và sanitizer không phải thành phần mà API g�
 mỗi request. State machine chỉ kiểm cặp trạng thái; service bổ sung điều kiện như
 payment SUCCESS, amount equality và inventory RESERVED.
 
-`Program.cs` đăng ký service scoped theo request, DbContext scoped, gateway mock
+`Program.cs` đăng ký service scoped theo request, DbContext scoped, gateway mô phỏng
 singleton và recovery worker. Khởi động yêu cầu connection string và JWT key dài
 ít nhất 32 ký tự; `Data.DbInitializer` chạy migration và seed Product nếu chưa có.
 Môi trường Development có OpenAPI và developer exception page; test host dùng
@@ -232,14 +240,31 @@ hoàn tiền cho Order đã COMPLETED; không suy rộng sang chính sách trả
 
 Worker mặc định quét mỗi 30 giây, chọn payment cũ ít nhất 60 giây, batch 50; source
 áp dụng mức tối thiểu 5 giây và giới hạn batch 1..500. Worker chỉ hỏi lại charge
-hoặc refund, không tự phát charge retry. CancellationToken được dùng cho timer và
-query; service gateway calls chưa truyền token/timeout policy của worker xuống
-mọi lời gọi. Gateway treo vô hạn vì vậy chưa được chứng minh bị cắt timeout.
+hoặc refund, không tự phát charge retry. TimeoutPaymentGateway áp deadline cho
+cả charge/refund/status; mặc định 5.000 ms, cấu hình hợp lệ 50..60.000 ms.
 
-Integration fixture tắt worker để test HTTP xác định. Unit test reconciliation
-xác minh lời gọi service trên aggregate đã lưu, không chứng minh scheduler worker,
-process restart hay recovery qua một gateway bền vững. Mock memory mất dữ liệu khi
-restart; cần phân biệt “có cơ chế reconcile” với “đã demo khôi phục toàn hệ thống”.
+Status reconciliation nhận stopping token của worker qua gateway lookup, load,
+save và finalize transaction. Shutdown cancellation được truyền ra ngoài, không
+biến thành UNKNOWN mới. Worker xóa tracker trước mỗi candidate để không mang
+mutation chưa commit của candidate lỗi sang candidate tiếp theo.
+
+WaitAsync giới hạn thời gian chờ ngay cả khi adapter không tuân cancellation;
+late task fault được observe và late result không tự finalize. Timeout vẫn có
+thể đã charge ở provider nên giữ UNKNOWN/reservation; refund giữ REFUND_PENDING.
+Deadline giới hạn caller waiting, không thể cưỡng chế dừng adapter hoặc chứng
+minh provider không thu tiền. Task không hợp tác và overload/backpressure còn cần
+kiểm thêm cho môi trường thực tế.
+
+Fixture HTTP thông thường tắt worker để test xác định. ProcessRestartTests dùng
+hai OS process riêng: process đầu bị kill sau khi gateway publish journal nhưng
+trước finalize, process mới bật worker và tự chuyển payment SUCCESS/Order PAID,
+không tăng attempt hay release stock. Đây là evidence cho một cửa sổ crash với
+local ledger; chưa chứng minh mọi scheduler/network fault hoặc provider thật.
+
+DurableFake là mode mặc định, lưu journal trong App_Data/payment-gateway và bind
+key với payload; ghi file tạm, flush rồi rename dưới file lock. Unit test kiểm
+replay/mismatch và instance restart cho cả charge/refund. Không coi atomic file
+publication là distributed transaction hoặc bảo đảm mất điện.
 
 ### 2.7. Input contract, attack surface và HTTP outcome
 
@@ -251,11 +276,15 @@ là không thay đổi, không phải đã có chính sách xóa mọi field.
 
 401 biểu thị thiếu identity hợp lệ; 403 biểu thị thiếu quyền; 400 là input sai;
 409 là conflict nghiệp vụ hoặc persistence cạnh tranh được xử lý; 500 vẫn là lỗi
-ngoài hợp đồng xử lý của endpoint. Việc source có catch DbUpdateException không
-chứng minh mọi SQLSTATE/network exception đều thành 409.
+ngoài hợp đồng xử lý của endpoint. Classifier mới nhận SQLSTATE 40001/40P01 cả khi Npgsql execution strategy bọc
+exception, trả 409 thay vì 500 ở catch tương ứng. Các SQLSTATE/network exception
+khác không được tự coi là conflict cạnh tranh.
 
-Giới hạn numeric từng item chưa giới hạn số item trong collection; chưa có rate
-limit riêng. API đọc danh sách chưa có pagination. Chi tiết endpoint và requirement
+Order hiện giới hạn tối đa 100 item và body 64 KiB mặc định. Auth login/register
+dùng IP quota 10/phút; API dùng subject đã xác thực hoặc connection IP quota
+120/phút. Fixed windows nằm trong process, không distributed. Request 429/413
+bị chặn trước JSON binding và trước audit để tránh log amplification. API đọc
+danh sách vẫn chưa có pagination. Chi tiết endpoint và requirement
 được giữ trong [Phụ lục A](PHU_LUC_A_G.md#phụ-lục-a--hệ-thống).
 
 Nguồn: [Program](../../OrderPaymentMicroservice/Program.cs),
@@ -263,6 +292,24 @@ Nguồn: [Program](../../OrderPaymentMicroservice/Program.cs),
 [PaymentService](../../OrderPaymentMicroservice/Services/PaymentService.cs),
 [DbContext](../../OrderPaymentMicroservice/Data/AppDbContext.cs),
 [recovery worker](../../OrderPaymentMicroservice/Services/Payments/PaymentRecoveryWorker.cs).
+
+### 2.8. Audit durable và chính sách khi ghi log lỗi
+
+AuditWriter dùng DbContext riêng để insert BEGIN/RESULT, không SaveChanges trên
+tracker nghiệp vụ. Middleware giữ transport response tới khi RESULT đã lưu;
+worker reconciliation lưu SYSTEM events. Field allowlist không có body, header,
+password, JWT, idempotency key hay exception message. HTTP_SUCCESS chỉ nói HTTP
+outcome; worker RESULT nói trạng thái nghiệp vụ.
+
+Trigger PostgreSQL chặn UPDATE/DELETE/TRUNCATE, nhưng DBA có thể disable trigger;
+chưa có retention và audit access governance. BEGIN failure chặn action; RESULT
+failure có thể sau business commit và trả 503 cần reconcile. Create BEGIN có thể
+chưa biết resource ID. Đây không phải atomic business-audit transaction; outbox
+và order-create idempotency còn cần bổ sung.
+
+Admission/audit error dùng JSON message. Audit 503 có requiresReconciliation=false
+khi BEGIN lỗi trước action, true khi RESULT lỗi sau action; correlationId do server
+sinh. CORS expose correlation/retry headers cho origin được cho phép.
 
 
 ## 3. Mô hình trạng thái, kiểm chứng và đối chiếu implementation
@@ -381,7 +428,7 @@ model mutated, chưa phải trace HTTP/PostgreSQL của ứng dụng đang tri�
 ### 3.7. Phép chiếu recovery sang workbook
 
 Graph recovery có 37 event transition. Workbook bỏ event/action/kind và gộp các
-cặp (from,to) trùng, còn 32 cặp; phép đối chiếu hai tập cạnh cho kết quả bằng nhau.
+cặp (from,to) trùng, còn 31 cặp; phép đối chiếu hai tập cạnh cho kết quả bằng nhau.
 Nhiều event như request trùng và amount sai cùng giữ PAYMENT_PENDING sẽ hợp thành
 một cạnh self-loop. Do đó phép chiếu giữ quan hệ state đích nhưng làm mất lý do,
 biện pháp xử lý và assumption gắn trên event.
@@ -397,8 +444,8 @@ counter nên 20 trạng thái reachable của TLC không mâu thuẫn 15 aggrega
 | CREATED→VALIDATED→PAYMENT_PENDING | CreateOrderAsync chuyển trong cùng thao tác trước persist | Ánh xạ thiết kế; không phải ba commit riêng |
 | Retry cuối có bound | MaxChargeAttempts=2; UNKNOWN giữ logical payment/key | Có unit; chưa chứng minh mọi crash window |
 | CONFIRMATION_RETRY→refund sau exhaustion | Source cho Admin gọi confirm/refund; không có retry counter tự động cho confirmation | MODEL_ONLY cho cơ chế retry tự động |
-| Cancel khi gateway chứng minh chưa charge ở PAYMENT_RETRY | CancelOrderAsync chặn Payment UNKNOWN; decline dẫn FAILED | Nhánh thiết kế chưa có endpoint tương đương trực tiếp |
-| Gateway callback xác thực | IPaymentGateway synchronous calls, FakePaymentGateway | ASSUMPTION_ONLY cho xác thực callback thật |
+| Cancel tại PAYMENT_RETRY khi outcome UNKNOWN | Model đã giữ PAYMENT_RETRY; CancelOrderAsync từ chối, giữ reservation | IMPLEMENTED_POLICY; regression cancel UNKNOWN |
+| Gateway persistence và callback xác thực | DurableFake journal; process restart test có worker bật | Persistence local đã test; callback authenticity vẫn ASSUMPTION_ONLY |
 | Atomic payment-cancel | Serializable, Version và unique payment per order | PostgreSQL test cho interleaving đã chạy; chưa refinement proof |
 | Không vượt tồn kho | Model lifecycle chỉ có RESERVED/RELEASED/CONSUMED | Cần SMT quantity và regression riêng |
 
@@ -420,6 +467,22 @@ Nguồn: [recovery model](../order_payment_recovery_model.json),
 [checker](../verify_recovery_model.py), [audit](../results/liveness_audit.results.json),
 [TLA+](../../OrderPaymentMicroservice/Security/OrderPayment.tla),
 [Phụ lục B](PHU_LUC_A_G.md#phụ-lục-b--model-và-thuộc-tính).
+
+### 3.10. Contract hiện thực và crash-recovery đã bổ sung
+
+`implementation_scope` trong recovery JSON phân biệt IMPLEMENTED_POLICY,
+DESIGN_EXTENSION và EXTERNAL_ASSUMPTION. Event cancel_during_retry giờ giữ
+PAYMENT_RETRY khi outcome UNKNOWN, trùng policy source; regression xác minh
+CancelOrderAsync không đổi stock/reservation. Không bổ sung một policy hủy dựa
+trên outcome chưa rõ chỉ để đóng liveness.
+
+Gateway DurableFake và process-kill test bổ sung evidence cho một crash window:
+provider ledger đã ghi, API chưa finalize. RecoveryWorker trong process mới hỏi
+lại cùng key, nhận transaction cũ và lưu PAID/SUCCESS. Evidence này hỗ trợ mapping
+F3, không chứng minh chữ ký provider, mất điện hoặc mọi interleaving.
+
+[Hợp đồng hiện thực](../IMPLEMENTATION_CONTRACTS.md) và
+[evidence restart](../results/process_restart.results.json) ghi phạm vi cụ thể.
 
 
 ## 4. Phân tích mã nguồn, ownership và an toàn bộ nhớ
@@ -597,10 +660,17 @@ hình hóa equality không qua số thực. Trong runtime, Order chấp nhận t
 ở boundary client nhưng lưu serverTotal; Payment yêu cầu equality chính xác với
 số tiền đã lưu. Vì vậy tolerance của Order không phải quyền trả thiếu ở Payment.
 
-Cần phân biệt giới hạn input với precision storage. Guard hiện cho phép decimal
-nhiều hơn hai chữ số thập phân; PostgreSQL numeric(19,2) có hành vi làm tròn khi
-lưu. Suite chưa có thí nghiệm riêng cho mọi tình huống giá/total có scale lớn hơn
-hai. Chưa tuyên bố mapping decimal→integer cents bảo toàn mọi request khả dĩ.
+Mọi price/total/payment amount ở boundary hiện phải là bội của 0,01. MoneyAmounts
+so sánh giá trị với decimal.Round(value,2) để từ chối fractional cent mà không
+nhân gây overflow; MoneyAmountAttribute áp vào Product DTO và service validation.
+25,0100 hợp lệ vì có cùng giá trị số với 25,01; 25,005 bị từ chối, không round
+âm thầm. Order còn kiểm Product.Price ở service để guard dữ liệu bất thường.
+
+HTTP/PostgreSQL test xác minh Product 25,0100 lưu 25,01; update 25,005 bị 400 và
+không đổi giá; Order total sai scale không được lưu; payment sai scale không tạo
+record; amount hợp lệ round-trip 25,01. Database vẫn có khả năng round khi một
+writer ngoài API gửi trực tiếp numeric nhiều scale; policy này bảo vệ các boundary
+application đã kiểm, không thay quyền kiểm soát mọi database writer.
 
 ### 5.2. SAT/UNSAT theo mục đích truy vấn
 
@@ -620,7 +690,7 @@ chứng minh mọi collection size hay transaction interleaving.
 ### 5.3. Traceability và khoảng trống
 
 Mỗi query phải liên kết assumption, guard source, sample test và outcome. SMT
-UNSAT không kiểm entity tracking, rollback hoặc phản hồi gateway. Precision/scale,
+UNSAT không kiểm entity tracking, rollback hoặc phản hồi gateway. Precision/scale boundary đã có regression;
 subtotal consistency trong database, refund amount và retry counter arithmetic
 cần phép kiểm riêng nếu được đưa thành yêu cầu nghiệm thu. Danh sách query và
 model solver được giữ tại Phụ lục D, không đưa verdict suy đoán vào bảng tổng hợp.
@@ -628,11 +698,11 @@ model solver được giữ tại Phụ lục D, không đưa verdict suy đoán
 
 ## 6. Kiểm thử động và fuzzing
 
-Bộ test ứng dụng mới nhất ghi nhận 108/108 unit test và
-8/8 integration test PASS, không SKIP.
-Ba campaign fuzz cũng nằm trong unit suite; đợt này không đo lại coverage campaign.
-Evidence coverage lịch sử 99,07% chỉ áp dụng InputValidator, PaymentValidator và hai
-state machine. InputValidator có branch coverage 96.87%,
+Bộ test ứng dụng mới nhất ghi nhận 140/140 unit test và
+17/17 integration test PASS, không SKIP.
+Ba campaign fuzz cũng nằm trong unit suite; đợt này đo lại coverage campaign.
+Branch coverage 97.36% áp dụng InputValidator,
+PaymentValidator, hai state machine và MoneyAmounts. InputValidator có branch coverage 97.22%,
 không phải coverage toàn ứng dụng.
 
 Regression mới kiểm tra sản phẩm trùng trong Order, quantity âm/0/quá lớn, cộng dồn
@@ -641,7 +711,7 @@ xác minh status trả về và dữ liệu lưu; test PostgreSQL kiểm constra
 không lệch migration, và cập nhật/xóa giỏ giữ tổng tiền nhất quán.
 
 Các campaign chưa fuzz toàn HTTP API, chưa dùng gateway sandbox và chưa thực hiện
-kill/restart process. Cấu hình và danh sách test: [Phụ lục E](PHU_LUC_A_G.md#phụ-lục-e--fuzzing-và-test).
+mọi cửa sổ crash; process-kill sau charge đã có evidence riêng. Cấu hình và danh sách test: [Phụ lục E](PHU_LUC_A_G.md#phụ-lục-e--fuzzing-và-test).
 
 ### 6.1. Thiết kế oracle và lớp test
 
@@ -674,8 +744,9 @@ Test ownership đã thêm read/retry/reconcile Payment của owner khác; test r
 thêm Customer gọi global Order listing, confirm/complete, refund/refund retry và
 Product create/update/delete. Các đường này phải trả 403 trước thay đổi nghiệp
 vụ. Token hết hạn, forged issuer/audience/signature và việc revoke role khi JWT
-còn hạn chưa có đầy đủ scenario. Recovery worker được fixture tắt, nên bộ HTTP
-PASS không được dùng để xác nhận worker chạy nền đúng thời điểm.
+còn hạn chưa có đầy đủ scenario. Fixture HTTP thường tắt worker; test process-kill riêng bật worker trong OS process
+khởi động lại. PASS đó xác nhận một stale charge được reconcile tự động, không
+chứng minh scheduler trong mọi tải hoặc mọi lỗi mạng.
 
 ### 6.4. Coverage và ca lỗi môi trường
 
@@ -686,18 +757,58 @@ ngoài sandbox PASS được phân biệt bằng môi trường thực thi, gi�
 Nếu timeout, tool error hoặc build error xuất hiện, lưu outcome đó riêng; không
 chuyển sang controlled rejection bằng catch quá rộng trong harness.
 
+### 6.5. Process-kill recovery đã thực hiện
+
+Test chặn sau journal charge, xác nhận database còn PROCESSING/PAYMENT_PENDING,
+kill process đầu rồi start process mới cùng PostgreSQL và ledger. Worker phải tự
+khôi phục SUCCESS/PAID; transaction code giữ nguyên, AttemptCount=1, một payment,
+một journal entry byte-for-byte không đổi và stock không được hoàn.
+
+[Evidence restart](../results/process_restart.results.json) ghi verdict, PID khác
+nhau và cửa sổ kill. Test host riêng chèn barrier, API sản phẩm không có crash
+endpoint. Test chủ động đặt UpdatedAt stale để worker chọn candidate; chưa là
+thí nghiệm crash giữa refund và finalize hay lỗi disk/power loss.
+
+### 6.6. Timeout, shutdown và precision đã bổ sung
+
+GatewayTimeoutTests kiểm cả bốn lời gọi với adapter không tuân cancellation,
+late charge success chỉ được áp qua reconciliation, và refund timeout chỉ hoàn
+kho sau definitive refund. WorkerContinuesAfterHungStatusLookupAndStopsPromptly
+xác nhận một candidate treo không chặn candidate tiếp theo. Test shutdown trong
+lookup đang chạy xác nhận dừng trước budget shutdown và giữ PROCESSING cho lượt
+khôi phục sau, không invent outcome.
+
+MoneyPrecisionTests và HTTP/PostgreSQL regression kiểm fractional cent, trailing
+zeroes và persistence. Fuzz random bổ sung 25,005 và oracle kiểm amount là cent;
+coverage campaign được đo lại, bao gồm MoneyAmounts. Wrapper PostgreSQL 40001
+được quan sát trong race test; classifier có regression riêng cho 40001/40P01,
+không nhận 23514/23505 là loại concurrency này.
+
+### 6.7. Admission và audit regression
+
+Test rate dùng host riêng permit nhỏ: login lần hai trả 429/Retry-After, verified
+user A bị throttle nhưng user B vẫn dùng bucket riêng. Body tests kiểm cả header
+Content-Length và stream thiếu length; exact cap được rewind cho reader. Item
+count bị chặn trước vòng xử lý và không có Order persisted.
+
+Audit regression kiểm payment/cancel/refund, correlation server sinh, sentinel
+secret không xuất hiện, và SQL trigger chặn UPDATE/DELETE/TRUNCATE với P0001.
+Begin-failure test xác nhận không có business record; result-failure test xác nhận
+503 dù Order đã commit và còn BEGIN durable. Restart test chờ cả worker SUCCESS
+và SYSTEM audit RESULT, không suy chỉ state change là audit đã lưu.
+
 
 ## 7. Kết quả và truy vết
 
 | Phép kiểm | Kết quả | Phạm vi |
 | --- | --- | --- |
-| Unit | 108/108 PASS | Source hiện tại; gồm 21 regression mới |
-| HTTP/PostgreSQL | 8/8 PASS | Database tạm, migration/seed và test host |
+| Unit | 140/140 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
+| HTTP/PostgreSQL | 17/17 PASS | Database tạm, migration/seed và test host |
 | Recovery | 15/15 thuộc tính; 6 mutation detected | Graph hữu hạn, giả định được khai báo |
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |
 | Inventory SMT | 3/3 đúng kỳ vọng | Hai dòng của một sản phẩm |
 | Workbook checker | 10 sheet; 7 CTL PASS | Checker độc lập, không chạy công cụ Windows giảng viên |
-| Model projection | 37 event → 32 cặp | Tập cạnh sau phép chiếu bằng nhau |
+| Model projection | 37 event → 31 cặp | Tập cạnh sau phép chiếu bằng nhau |
 
 Bảng truy vết máy đọc được nằm ở ../results/traceability_matrix.csv. Manifest ghi
 hash artifact và base commit; working tree còn thay đổi chưa commit nên không gán
@@ -760,8 +871,9 @@ Migration không tự sửa/xóa dữ liệu cũ vi phạm constraint: database 
 cần được kiểm tra và chỉnh có chủ đích trước khi nâng cấp. Kiểm chứng hiện dùng
 database sạch, không thực hiện migration lên database phát triển của người dùng.
 
-Gateway mặc định vẫn mất dữ liệu khi restart vì lưu trong memory. Audit trail,
-rate limit, gateway xác thực callback, thí nghiệm restart và BMC có bound còn mở.
+Gateway mặc định DurableFake lưu journal bền vững; process-kill recovery sau charge
+đã PASS. Audit/admission đã hiện thực và test trong phạm vi local; outbox,
+retention, distributed quota, callback thật, refund crash và BMC riêng còn mở.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -770,25 +882,30 @@ Không dùng PASS của suite hiện tại để gọi hệ thống production-r
 | Loại | Ví dụ hiện tại | Hệ quả |
 | --- | --- | --- |
 | Abstraction | Model không có stock cụ thể, identity hoặc durable gateway | Không suy safety của các phần bị lược bỏ |
-| Thiết kế chưa hiện thực | CONFIRMATION_RETRY tự động; cancel UNKNOWN nếu có proof chưa charge | Cần mapping rõ hoặc thay model để khớp policy source |
+| Thiết kế chưa hiện thực | CONFIRMATION_RETRY tự động; callback authenticity | Cần mapping rõ hoặc thay model để khớp policy source |
 | Environment assumption | Gateway cuối cùng trả definitive outcome | Liveness có điều kiện, không cam kết thời hạn hoàn tất |
+| Audit atomicity | BEGIN/RESULT dùng commit riêng; create BEGIN có thể chưa có resource ID | Cần transactional outbox/durable business binding và Order-create idempotency |
 | Tool capability | Scanner syntax-specific; cppcheck false negative | Kết hợp review và dynamic, không lấy zero finding làm proof |
-| Test coverage | Chưa kill/restart; worker tắt trong fixture; chưa fault injection commit | PASS hiện tại không bao phủ crash windows ngoài kịch bản |
+| Test coverage | Đã kill/restart sau charge; chưa refund crash, network/commit fault đa dạng | PASS hiện tại không bao phủ crash windows ngoài kịch bản |
 | Provenance | Hash đóng gói của evidence lịch sử | Không biết source tại thời điểm cũ nếu chưa có run-time hash |
 
 ### 8.2. Ưu tiên cải thiện theo tiêu chí đóng vấn đề
 
-Ưu tiên một là làm rõ contract thiết kế–source cho UNKNOWN/cancel/confirmation,
-và kiểm restart với gateway bền vững hoặc sandbox. Tiêu chí đóng là charge trước
-khi crash vẫn reconcile cùng key ra cùng kết quả sau restart, không phát khoản
-thu mới và không release kho sai.
+Ưu tiên một đã có kết quả local: cancel UNKNOWN đồng bộ model/source,
+confirmation tự động được đánh dấu DESIGN_EXTENSION; gateway journal bền vững
+và process-kill recovery sau charge PASS. Phần tiếp theo là refund crash, cửa sổ
+trước charge và provider sandbox; không suy từ test local sang xác thực gateway thật.
 
-Ưu tiên hai là giới hạn body/item count, rate limit và audit bền vững: cần test
-resource budget, actor/action/resource/outcome và redaction. Bounded charge attempt
-không thay rate limit API; console logging không thay audit integrity/retention.
+Admission và audit đã có regression: body/item cap, auth/user quotas, durable
+BEGIN/RESULT, field allowlist và trigger append-only. Phần tiếp theo là atomic
+business-audit outbox, idempotency cho Order create, retention/least-privilege
+audit access và load/distributed quota. Audit RESULT failure có thể sau commit;
+503 không tự chứng minh nghiệp vụ chưa thực hiện.
 
-Ưu tiên ba là kiểm precision/scale tiền, network/commit fault injection, worker
-scheduler và liên kết historical evidence với run-time hashes. BMC riêng chỉ bổ
+Precision/scale và timeout/cancellation worker đã có regression; phần tiếp theo
+là network/commit fault injection đa dạng, worker scheduler trên tải thực tế và
+backpressure khi provider không tuân cancellation. Historical evidence cần liên
+kết run-time hashes khi chạy lại. BMC riêng chỉ bổ
 sung nếu tiêu chí học phần yêu cầu, với bound và semantics công bố. Không thêm
 Kafka/Kubernetes chỉ để tăng số công nghệ khi chưa có nghĩa vụ nghiệp vụ cần nó.
 
@@ -811,7 +928,7 @@ mở được giữ rõ trong bảng truy vết để tránh suy rộng ngoài p
 
 Q1 có source guard và HTTP evidence trên đường đã kiểm; chưa bao phủ toàn bộ vòng
 đời token. Q2 có model mutation và PostgreSQL race test; không là proof mọi
-interleaving. Q3 có safety cho UNKNOWN/compensation ở model và unit; liveness vẫn
+interleaving. Q3 có safety cho UNKNOWN/compensation và một process-kill charge recovery với worker; liveness vẫn
 phụ thuộc môi trường. Q4 có witness cụ thể, bản sửa theo tổng quantity và evidence
 SMT/test/database. Q5 có 22 case memory cùng static false-negative analysis,
 không suy rộng sang C#. Q6 có report, phụ lục, traceability và manifest; evidence

@@ -5,7 +5,7 @@
   "sheet_count": 10,
   "requirements": 18,
   "states": 15,
-  "transitions": 32,
+  "transitions": 31,
   "reachable_states": 15,
   "ctl": {
     "AG(no_invalid_transition)": true,

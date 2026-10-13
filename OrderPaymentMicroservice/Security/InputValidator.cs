@@ -1,3 +1,4 @@
+using Microsoft.Extensions.Options;
 using OrderPaymentMicroservice.DTOs.Orders;
 
 namespace OrderPaymentMicroservice.Security;
@@ -11,6 +12,8 @@ namespace OrderPaymentMicroservice.Security;
 /// </summary>
 public class InputValidator
 {
+    private readonly int _maxItems;
+    public InputValidator(IOptions<ApiAdmissionOptions>? options = null) => _maxItems = options?.Value.MaxOrderItems ?? 100;
     // Validation constants
     private const decimal MIN_ORDER_AMOUNT = 0.01m;
     private const decimal MAX_ORDER_AMOUNT = 999999.99m;
@@ -43,9 +46,14 @@ public class InputValidator
         if (request.TotalAmount > MAX_ORDER_AMOUNT)
             throw new ArgumentException($"TotalAmount cannot exceed {MAX_ORDER_AMOUNT}", nameof(request.TotalAmount));
 
+        MoneyAmounts.RequireCents(request.TotalAmount, nameof(request.TotalAmount));
+
         // Validate items
         if (request.Items == null || request.Items.Count == 0)
             throw new ArgumentException("Order must contain at least one item", nameof(request.Items));
+
+        if (request.Items.Count > _maxItems)
+            throw new ArgumentException($"Order may contain at most {_maxItems} items", nameof(request.Items));
 
         decimal calculatedTotal = 0;
 
@@ -93,6 +101,8 @@ public class InputValidator
 
         if (item.UnitPrice > MAX_PRICE)
             throw new ArgumentException($"UnitPrice cannot exceed {MAX_PRICE}", nameof(item.UnitPrice));
+
+        MoneyAmounts.RequireCents(item.UnitPrice, nameof(item.UnitPrice));
 
         // Check for overflow in subtotal calculation
         try

@@ -1,14 +1,8 @@
 {
   "class": "OrderPaymentMicroservice.Security.InputValidator",
-  "branch_coverage_percent": 96.87,
-  "line_coverage_percent": 84.31,
-  "uncovered_branches": [
-    {
-      "line": 101,
-      "hits": 14,
-      "condition_coverage": "50% (1/2)"
-    }
-  ],
+  "branch_coverage_percent": 97.22,
+  "line_coverage_percent": 85.71,
+  "uncovered_branches": [],
   "threshold_percent": 90,
   "passed": true,
   "methods": [
@@ -21,8 +15,21 @@
       "branch_coverage_percent": 92.85
     },
     {
+      "name": ".ctor",
+      "branch_coverage_percent": 100.0
+    },
+    {
       "name": ".cctor",
       "branch_coverage_percent": 100.0
     }
+  ],
+  "run_at_utc": "2026-10-13T05:35:55.515829+00:00",
+  "report_sha256": "99579690adc5f29c75ba5acf268046822dde1bdc2fa41a3a44feab7409070a85",
+  "included_helper": {
+    "class": "OrderPaymentMicroservice.Security.MoneyAmounts",
+    "branch_coverage_percent": 100.0
+  },
+  "limitations": [
+    "InputValidator and cents helper only; not whole-application coverage."
   ]
 }

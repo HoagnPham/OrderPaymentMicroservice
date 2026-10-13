@@ -2,4 +2,5 @@
   <Project Path="OrderPaymentMicroservice/OrderPaymentMicroservice.csproj" />
   <Project Path="OrderPaymentMicroservice.IntegrationTests/OrderPaymentMicroservice.IntegrationTests.csproj" />
   <Project Path="OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj" />
+  <Project Path="OrderPaymentMicroservice.CrashProbe/OrderPaymentMicroservice.CrashProbe.csproj" />
 </Solution>

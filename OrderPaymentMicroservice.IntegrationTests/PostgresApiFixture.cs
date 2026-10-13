@@ -1,3 +1,4 @@
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
@@ -11,6 +12,8 @@ public sealed class PostgresApiFixture : IAsyncLifetime
     private PostgreSqlContainer? _container;
     private LocalPostgresServer? _localDatabase;
     private WebApplicationFactory<Program>? _factory;
+
+    public string ConnectionString { get; private set; } = string.Empty;
 
     public IServiceProvider Services => _factory?.Services
         ?? throw new InvalidOperationException("Fixture has not been initialized.");
@@ -34,6 +37,7 @@ public sealed class PostgresApiFixture : IAsyncLifetime
             connectionString = _localDatabase.ConnectionString;
         }
 
+        ConnectionString = connectionString;
         _factory = new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
         {
             builder.UseEnvironment("Testing");
@@ -44,6 +48,9 @@ public sealed class PostgresApiFixture : IAsyncLifetime
             builder.UseSetting("Jwt:Issuer", "OrderPaymentIntegrationTests");
             builder.UseSetting("Jwt:Audience", "OrderPaymentIntegrationTests");
             builder.UseSetting("PaymentRecovery:Enabled", "false");
+            builder.UseSetting("PaymentGateway:Mode", "MemoryFake");
+            builder.UseSetting("ApiAdmission:AuthenticationPermitLimit", "10000");
+            builder.UseSetting("ApiAdmission:ApiPermitLimit", "10000");
             builder.ConfigureAppConfiguration((_, configuration) =>
             {
                 configuration.AddInMemoryCollection(new Dictionary<string, string?>
@@ -52,7 +59,10 @@ public sealed class PostgresApiFixture : IAsyncLifetime
                     ["Jwt:Key"] = "integration-test-key-at-least-32-characters-long",
                     ["Jwt:Issuer"] = "OrderPaymentIntegrationTests",
                     ["Jwt:Audience"] = "OrderPaymentIntegrationTests",
-                    ["PaymentRecovery:Enabled"] = "false"
+                    ["PaymentRecovery:Enabled"] = "false",
+                    ["PaymentGateway:Mode"] = "MemoryFake",
+                    ["ApiAdmission:AuthenticationPermitLimit"] = "10000",
+                    ["ApiAdmission:ApiPermitLimit"] = "10000"
                 });
             });
         });
@@ -62,6 +72,14 @@ public sealed class PostgresApiFixture : IAsyncLifetime
         using var startupClient = CreateClient();
         _ = startupClient.BaseAddress;
     }
+
+    public WebApplicationFactory<Program> CreateIsolatedFactory(Dictionary<string, string?> settings, Action<IServiceCollection>? services = null) =>
+        (_factory ?? throw new InvalidOperationException("Fixture not initialized")).WithWebHostBuilder(builder =>
+        {
+            foreach (var setting in settings) builder.UseSetting(setting.Key, setting.Value);
+            builder.ConfigureAppConfiguration((_, configuration) => configuration.AddInMemoryCollection(settings));
+            if (services != null) builder.ConfigureServices(services);
+        });
 
     public HttpClient CreateClient() => (_factory
         ?? throw new InvalidOperationException("Fixture has not been initialized."))

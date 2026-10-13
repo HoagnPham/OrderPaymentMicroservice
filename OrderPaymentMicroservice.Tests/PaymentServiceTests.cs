@@ -119,6 +119,9 @@ public class PaymentServiceTests
         Assert.Equal(InventoryReservationStatus.RESERVED, order.InventoryStatus);
         Assert.Equal(8, product.Stock);
         Assert.Equal(2, gateway.ChargeCalls);
+        Assert.False(await new OrderService(context, new InputValidator()).CancelOrderAsync(order.Id));
+        Assert.Equal(8, product.Stock);
+        Assert.Equal(InventoryReservationStatus.RESERVED, order.InventoryStatus);
     }
 
     [Fact]

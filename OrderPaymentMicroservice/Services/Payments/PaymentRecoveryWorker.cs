@@ -1,3 +1,4 @@
+using OrderPaymentMicroservice.Auditing;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using OrderPaymentMicroservice.Data;
@@ -15,15 +16,18 @@ public sealed class PaymentRecoveryWorker : BackgroundService
     private readonly IServiceScopeFactory _scopeFactory;
     private readonly ILogger<PaymentRecoveryWorker> _logger;
     private readonly PaymentRecoveryOptions _options;
+    private readonly IAuditWriter? _audit;
 
     public PaymentRecoveryWorker(
         IServiceScopeFactory scopeFactory,
         IOptions<PaymentRecoveryOptions> options,
-        ILogger<PaymentRecoveryWorker> logger)
+        ILogger<PaymentRecoveryWorker> logger,
+        IAuditWriter? audit = null)
     {
         _scopeFactory = scopeFactory;
         _logger = logger;
         _options = options.Value;
+        _audit = audit;
     }
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
@@ -78,13 +82,23 @@ public sealed class PaymentRecoveryWorker : BackgroundService
 
         foreach (var candidate in candidates)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            context.ChangeTracker.Clear();
             try
             {
-                if (candidate.Status == PaymentStatus.REFUND_PENDING)
-                    await service.ReconcileRefundAsync(candidate.Id);
-                else
-                    await service.ReconcilePaymentAsync(candidate.Id);
+                var correlation = Guid.NewGuid();
+                AuditEvent Entry(string phase, string outcome) => new()
+                {
+                    CorrelationId = correlation, ActorKind = "SYSTEM", ResourceType = "PAYMENT", ResourceId = candidate.Id,
+                    Action = candidate.Status == PaymentStatus.REFUND_PENDING ? "REFUND_RECONCILE" : "PAYMENT_RECONCILE", Phase = phase, Outcome = outcome
+                };
+                if (_audit != null) await _audit.AppendAsync(Entry("BEGIN", "STARTED"));
+                var result = candidate.Status == PaymentStatus.REFUND_PENDING
+                    ? await service.ReconcileRefundAsync(candidate.Id, cancellationToken)
+                    : await service.ReconcilePaymentAsync(candidate.Id, cancellationToken);
+                if (_audit != null) await _audit.AppendAsync(Entry("RESULT", result.Status));
             }
+            catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
             catch (DbUpdateConcurrencyException)
             {
                 _logger.LogDebug("Payment {PaymentId} changed during recovery; it will be re-evaluated later", candidate.Id);

@@ -3,25 +3,30 @@
 | Loại | Ví dụ hiện tại | Hệ quả |
 | --- | --- | --- |
 | Abstraction | Model không có stock cụ thể, identity hoặc durable gateway | Không suy safety của các phần bị lược bỏ |
-| Thiết kế chưa hiện thực | CONFIRMATION_RETRY tự động; cancel UNKNOWN nếu có proof chưa charge | Cần mapping rõ hoặc thay model để khớp policy source |
+| Thiết kế chưa hiện thực | CONFIRMATION_RETRY tự động; callback authenticity | Cần mapping rõ hoặc thay model để khớp policy source |
 | Environment assumption | Gateway cuối cùng trả definitive outcome | Liveness có điều kiện, không cam kết thời hạn hoàn tất |
+| Audit atomicity | BEGIN/RESULT dùng commit riêng; create BEGIN có thể chưa có resource ID | Cần transactional outbox/durable business binding và Order-create idempotency |
 | Tool capability | Scanner syntax-specific; cppcheck false negative | Kết hợp review và dynamic, không lấy zero finding làm proof |
-| Test coverage | Chưa kill/restart; worker tắt trong fixture; chưa fault injection commit | PASS hiện tại không bao phủ crash windows ngoài kịch bản |
+| Test coverage | Đã kill/restart sau charge; chưa refund crash, network/commit fault đa dạng | PASS hiện tại không bao phủ crash windows ngoài kịch bản |
 | Provenance | Hash đóng gói của evidence lịch sử | Không biết source tại thời điểm cũ nếu chưa có run-time hash |
 
 ### 8.2. Ưu tiên cải thiện theo tiêu chí đóng vấn đề
 
-Ưu tiên một là làm rõ contract thiết kế–source cho UNKNOWN/cancel/confirmation,
-và kiểm restart với gateway bền vững hoặc sandbox. Tiêu chí đóng là charge trước
-khi crash vẫn reconcile cùng key ra cùng kết quả sau restart, không phát khoản
-thu mới và không release kho sai.
+Ưu tiên một đã có kết quả local: cancel UNKNOWN đồng bộ model/source,
+confirmation tự động được đánh dấu DESIGN_EXTENSION; gateway journal bền vững
+và process-kill recovery sau charge PASS. Phần tiếp theo là refund crash, cửa sổ
+trước charge và provider sandbox; không suy từ test local sang xác thực gateway thật.
 
-Ưu tiên hai là giới hạn body/item count, rate limit và audit bền vững: cần test
-resource budget, actor/action/resource/outcome và redaction. Bounded charge attempt
-không thay rate limit API; console logging không thay audit integrity/retention.
+Admission và audit đã có regression: body/item cap, auth/user quotas, durable
+BEGIN/RESULT, field allowlist và trigger append-only. Phần tiếp theo là atomic
+business-audit outbox, idempotency cho Order create, retention/least-privilege
+audit access và load/distributed quota. Audit RESULT failure có thể sau commit;
+503 không tự chứng minh nghiệp vụ chưa thực hiện.
 
-Ưu tiên ba là kiểm precision/scale tiền, network/commit fault injection, worker
-scheduler và liên kết historical evidence với run-time hashes. BMC riêng chỉ bổ
+Precision/scale và timeout/cancellation worker đã có regression; phần tiếp theo
+là network/commit fault injection đa dạng, worker scheduler trên tải thực tế và
+backpressure khi provider không tuân cancellation. Historical evidence cần liên
+kết run-time hashes khi chạy lại. BMC riêng chỉ bổ
 sung nếu tiêu chí học phần yêu cầu, với bound và semantics công bố. Không thêm
 Kafka/Kubernetes chỉ để tăng số công nghệ khi chưa có nghĩa vụ nghiệp vụ cần nó.
 

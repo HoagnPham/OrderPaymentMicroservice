@@ -6,10 +6,17 @@ hình hóa equality không qua số thực. Trong runtime, Order chấp nhận t
 ở boundary client nhưng lưu serverTotal; Payment yêu cầu equality chính xác với
 số tiền đã lưu. Vì vậy tolerance của Order không phải quyền trả thiếu ở Payment.
 
-Cần phân biệt giới hạn input với precision storage. Guard hiện cho phép decimal
-nhiều hơn hai chữ số thập phân; PostgreSQL numeric(19,2) có hành vi làm tròn khi
-lưu. Suite chưa có thí nghiệm riêng cho mọi tình huống giá/total có scale lớn hơn
-hai. Chưa tuyên bố mapping decimal→integer cents bảo toàn mọi request khả dĩ.
+Mọi price/total/payment amount ở boundary hiện phải là bội của 0,01. MoneyAmounts
+so sánh giá trị với decimal.Round(value,2) để từ chối fractional cent mà không
+nhân gây overflow; MoneyAmountAttribute áp vào Product DTO và service validation.
+25,0100 hợp lệ vì có cùng giá trị số với 25,01; 25,005 bị từ chối, không round
+âm thầm. Order còn kiểm Product.Price ở service để guard dữ liệu bất thường.
+
+HTTP/PostgreSQL test xác minh Product 25,0100 lưu 25,01; update 25,005 bị 400 và
+không đổi giá; Order total sai scale không được lưu; payment sai scale không tạo
+record; amount hợp lệ round-trip 25,01. Database vẫn có khả năng round khi một
+writer ngoài API gửi trực tiếp numeric nhiều scale; policy này bảo vệ các boundary
+application đã kiểm, không thay quyền kiểm soát mọi database writer.
 
 ### 5.2. SAT/UNSAT theo mục đích truy vấn
 
@@ -29,7 +36,7 @@ chứng minh mọi collection size hay transaction interleaving.
 ### 5.3. Traceability và khoảng trống
 
 Mỗi query phải liên kết assumption, guard source, sample test và outcome. SMT
-UNSAT không kiểm entity tracking, rollback hoặc phản hồi gateway. Precision/scale,
+UNSAT không kiểm entity tracking, rollback hoặc phản hồi gateway. Precision/scale boundary đã có regression;
 subtotal consistency trong database, refund amount và retry counter arithmetic
 cần phép kiểm riêng nếu được đưa thành yêu cầu nghiệm thu. Danh sách query và
 model solver được giữ tại Phụ lục D, không đưa verdict suy đoán vào bảng tổng hợp.

@@ -358,8 +358,18 @@ async function removeFromCart(itemId) {
 }
 
 // Checkout & Orders
+let checkoutInFlight = false;
+function clearCompletedCheckout(orderId) {
+    const storageKey = `order-create:${currentUser.id}`;
+    const attempt = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+    if (attempt && attempt.orderId === orderId) {
+        sessionStorage.removeItem(storageKey);
+        document.getElementById('checkoutForm').reset();
+    }
+}
 async function handleCheckout(e) {
     e.preventDefault();
+    if (checkoutInFlight) return;
 
     if (!cart.items || cart.items.length === 0) {
         showMessage('Giỏ hàng trống!', 'error');
@@ -385,20 +395,29 @@ async function handleCheckout(e) {
     }
 
     try {
+        checkoutInFlight = true;
+        const payload = JSON.stringify({ customerId: currentUser.id, totalAmount, address, city, items: orderItems });
+        const storageKey = `order-create:${currentUser.id}`;
+        let attempt = JSON.parse(sessionStorage.getItem(storageKey) || 'null');
+        if (attempt && attempt.payload !== payload && !attempt.orderId) {
+            showMessage('Yêu cầu đặt đơn trước chưa rõ kết quả. Hãy kiểm tra lịch sử đơn hoặc gửi lại đúng nội dung cũ trước khi đổi đơn.', 'error');
+            return;
+        }
+        if (!attempt || attempt.payload !== payload) {
+            attempt = { key: crypto.randomUUID(), payload };
+            sessionStorage.setItem(storageKey, JSON.stringify(attempt));
+        }
         showMessage('Đang tạo đơn hàng...', 'info');
         const response = await fetch(`${API_BASE_URL}/orders`, {
             method: 'POST',
-            headers: authHeaders(true),
-            body: JSON.stringify({
-                customerId: currentUser.id,
-                totalAmount,
-                address,
-                city,
-                items: orderItems
-            })
+            headers: { ...authHeaders(true), 'Idempotency-Key': attempt.key },
+            body: payload
         });
 
         if (!response.ok) {
+            if ([400, 401, 403, 413, 429].includes(response.status) && !attempt.orderId) {
+                sessionStorage.removeItem(storageKey);
+            }
             let errMsg = 'Không thể tạo đơn hàng';
             try {
                 const errData = await response.json();
@@ -410,10 +429,11 @@ async function handleCheckout(e) {
         }
 
         const order = await response.json();
+        attempt.orderId = order.id;
+        sessionStorage.setItem(storageKey, JSON.stringify(attempt));
         showMessage('Tạo đơn hàng thành công!', 'success');
 
-        // Clear form
-        document.getElementById('checkoutForm').reset();
+        // Keep the original payload until payment settles so a second submit reuses its key.
 
         // Go to payment
         setTimeout(() => {
@@ -421,6 +441,8 @@ async function handleCheckout(e) {
         }, 1000);
     } catch (error) {
         showMessage(error.message, 'error');
+    } finally {
+        checkoutInFlight = false;
     }
 }
 
@@ -477,6 +499,7 @@ async function handlePayment(e) {
         const paymentStatus = String(payment.status || '').toUpperCase();
         if (paymentStatus === 'FAILED') {
             sessionStorage.removeItem(paymentKeyStorage);
+            clearCompletedCheckout(orderId);
             showMessage('Thanh toán bị từ chối. Đơn đã chuyển sang thất bại và tồn kho được hoàn lại.', 'error');
             return;
         }
@@ -487,6 +510,7 @@ async function handlePayment(e) {
 
         if (paymentStatus === 'SUCCESS') {
             sessionStorage.removeItem(paymentKeyStorage);
+            clearCompletedCheckout(orderId);
             showMessage('Thanh toán thành công!', 'success');
         } else {
             showMessage('Chưa xác định được kết quả thanh toán. Hệ thống sẽ đối soát bằng mã yêu cầu cũ; không thanh toán lại.', 'info');

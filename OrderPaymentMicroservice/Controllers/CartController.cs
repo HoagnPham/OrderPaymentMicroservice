@@ -1,3 +1,4 @@
+using OrderPaymentMicroservice.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -34,6 +35,10 @@ public class CartController : ControllerBase
         {
             return Conflict("Cart changed concurrently; reload and retry");
         }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching cart for user {UserId}", userId);
@@ -58,6 +63,10 @@ public class CartController : ControllerBase
         catch (DbUpdateException)
         {
             return Conflict("Cart changed concurrently; reload and retry");
+        }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
         }
         catch (Exception ex)
         {
@@ -86,6 +95,10 @@ public class CartController : ControllerBase
         {
             return Conflict("Cart changed concurrently; reload and retry");
         }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error updating cart item");
@@ -113,6 +126,10 @@ public class CartController : ControllerBase
         {
             return Conflict("Cart changed concurrently; reload and retry");
         }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error removing item from cart");
@@ -134,6 +151,10 @@ public class CartController : ControllerBase
         catch (DbUpdateException)
         {
             return Conflict("Cart changed concurrently; reload and retry");
+        }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
         }
         catch (Exception ex)
         {

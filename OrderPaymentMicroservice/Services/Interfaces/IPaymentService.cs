@@ -19,11 +19,11 @@ public interface IPaymentService
 
     Task<PaymentResponse> RetryPaymentAsync(int paymentId);
 
-    Task<PaymentResponse> ReconcilePaymentAsync(int paymentId);
+    Task<PaymentResponse> ReconcilePaymentAsync(int paymentId, CancellationToken cancellationToken = default);
 
     Task<PaymentResponse> RefundPaymentAsync(int paymentId, string refundIdempotencyKey);
 
     Task<PaymentResponse> RetryRefundAsync(int paymentId);
 
-    Task<PaymentResponse> ReconcileRefundAsync(int paymentId);
+    Task<PaymentResponse> ReconcileRefundAsync(int paymentId, CancellationToken cancellationToken = default);
 }

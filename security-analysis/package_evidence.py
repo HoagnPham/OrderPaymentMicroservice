@@ -49,7 +49,7 @@ def collect_tests():
             'suites': suites,
             'command': "dotnet test OrderPaymentMicroservice.slnx --no-restore --nologo --logger 'trx;LogFilePrefix=verification' --results-directory security-analysis/results/dotnet --blame-hang-timeout 60s",
             'limitations': ['TRX raw logs remain local; this file retains every case outcome and the raw log hash.',
-                            'These tests do not prove gateway behavior across an actual OS process restart.']}
+                            'ProcessRestartTests covers one abrupt API kill window with a local durable simulator, not power loss or a real provider.']}
 
 def compare_models():
     path = ROOT / 'security-analysis/verify_recovery_model.py'
@@ -69,6 +69,11 @@ def compare_models():
             'limitations': ['Matching edges does not make the seven workbook CTL properties equivalent to all fifteen recovery properties.']}
 
 TRACE = [
+    ('SEC-ADMISSION-01', 'Reject oversized body/items; auth IP and verified-user quotas', 'ApiAdmissionOptions; RequestBodyLimitMiddleware; ASP.NET RateLimiter; InputValidator', 'AdmissionBoundaryTests; BodyLimitTests; RateLimitsUseSeparateAuthBucketAndSeparateVerifiedUserBuckets; BodyAndItemLimitsRejectBeforeOrderPersistence; StreamingBodyWithoutLengthIsRejectedBeforeJsonBinding', 'application_tests.results.json', 'UNIT_HTTP_POSTGRES', 'Single-process fixed windows; no load/distributed guarantees'),
+    ('SEC-AUDIT-01', 'Durable allowlisted audit; mutation forbidden; audit failure cannot masquerade as completed success', 'AuditWriter; AuditTrailMiddleware; BufferedAuditResponse; audit triggers', 'AuditMiddlewareTests; PaymentCancelRefundAuditPersistsWithoutSecretsAndRejectsMutation; MissingAuditStorePreventsBusinessOperation; MissingAuditResultReturns503WithDurableBeginAndCommittedOrder', 'application_tests.results.json', 'UNIT_HTTP_POSTGRES', 'Separate business/audit commits; incomplete BEGIN possible; DBA/retention remain open'),
+    ('SEC-TIMEOUT-01', 'Gateway deadline giữ UNKNOWN/refund pending; worker tiếp tục và shutdown đúng', 'TimeoutPaymentGateway; PaymentService; PaymentRecoveryWorker', 'GatewayTimeoutTests', 'application_tests.results.json', 'UNIT_WORKER', 'Bound caller waiting, không cưỡng chế adapter hay provider outcome'),
+    ('SEC-MONEY-01', 'Reject fractional cents; cent values round-trip PostgreSQL', 'MoneyAmounts; MoneyAmountAttribute; request validators', 'MoneyPrecisionTests; Fractional_cents_are_rejected_before_persistence_and_cent_values_round_trip', 'application_tests.results.json', 'UNIT_HTTP_POSTGRES', 'Không kiểm soát raw SQL writer ngoài API'),
+    ('SEC-RECOVERY-01', 'Khôi phục charge sau kill API mà không charge/release lại', 'DurableFakePaymentGateway; PaymentRecoveryWorker', 'Killed_API_recovers_committed_gateway_charge_without_charging_or_releasing_again', 'process_restart.results.json; application_tests.results.json', 'OS_PROCESS_HTTP_POSTGRES', 'Một crash window; local filesystem; không power loss, refund crash hoặc provider thật'),
     ('REQ-1 / REQ-2', 'JWT, role và ownership', 'Controller authorization', 'Authentication_and_resource_ownership_are_enforced', 'application_tests.results.json', 'HTTP_POSTGRES', 'Không chứng minh role thu hồi tức thời'),
     ('REQ-3', 'Giá server và kho đủ cho tổng dòng cùng sản phẩm', 'OrderService.CreateOrderAsync', 'DuplicateProductLinesRespectCombinedStock; Invalid_payloads_are_rejected_without_changing_persisted_data', 'application_tests.results.json', 'UNIT_HTTP_POSTGRES', 'Model lifecycle không mã hóa stock số học'),
     ('SEC-STOCK-01', 'Stock sau reserve không âm', 'InventoryVerification.z3; CK_Products_Stock_Nonnegative', 'AGGREGATED_STOCK_CANNOT_BE_NEGATIVE; Database_rejects_negative_stock_and_nonpositive_quantity', 'inventory_verification.results.json; application_tests.results.json', 'SMT_POSTGRES', 'SMT hai dòng cùng sản phẩm, không chứng minh concurrency'),
@@ -78,9 +83,9 @@ TRACE = [
     ('REQ-4 / REQ-6', 'Bất biến tiền', 'PaymentVerification.z3; InputValidator; PaymentValidator', 'TEST1..TEST7; PaymentAmountMustEqualOrderTotal', 'payment_verification.results.json; application_tests.results.json', 'SMT_UNIT', 'Integer cents và decimal có miền biểu diễn khác nhau'),
     ('REQ-5 / REQ-14', 'Chuyển trạng thái đúng và liveness có giả định', 'Recovery P1/P10/P12; OrderPayment.tla', '6 negative mutations; state-machine tests', 'order_payment_recovery_model.results.json; tlc/OrderPayment.tlc.results.json; application_tests.results.json', 'MODEL_UNIT', 'TLC là evidence cũ; không chạy lại trong đợt này'),
     ('REQ-7 / REQ-18', 'Một logical payment và payment-cancel nhất quán', 'PaymentService; unique indexes; Version', 'Concurrent_payment_requests_create_only_one_charge_record; Concurrent_payment_and_cancellation_end_in_one_consistent_outcome', 'application_tests.results.json', 'HTTP_POSTGRES', 'Gateway mock trong process'),
-    ('REQ-16 / REQ-17', 'UNKNOWN giữ kho; refund giữ dấu vết charge', 'Recovery P13/P14; PaymentService', 'ExhaustedUnknownPaymentRemainsReservedUntilOutcomeIsKnown; SuccessfulRefundCompensatesOrderAndReleasesInventory', 'order_payment_recovery_model.results.json; application_tests.results.json', 'MODEL_UNIT', 'Không có evidence kill/restart process với gateway bền vững'),
+    ('REQ-16 / REQ-17', 'UNKNOWN giữ kho; refund giữ dấu vết charge', 'Recovery P13/P14; PaymentService', 'ExhaustedUnknownPaymentRemainsReservedUntilOutcomeIsKnown; SuccessfulRefundCompensatesOrderAndReleasesInventory', 'order_payment_recovery_model.results.json; application_tests.results.json', 'MODEL_UNIT', 'Process-kill charge recovery đã có; refund process-kill và gateway thật chưa xác minh'),
     ('REQ-9..REQ-13', 'Ownership/lifetime trong mô hình C', 'c-memory/modules/*.c', 'BUGGY/FIXED; scanner; sanitizer', 'c-memory/evidence/static-analysis.json; c-memory/evidence/dynamic-analysis.json', 'HISTORICAL_C', 'Không chạy lại; không chứng minh C# an toàn bộ nhớ'),
-    ('NFR-2', 'Coverage và fuzz cho target cụ thể', 'SecurityFuzzingTests', '3 fuzz campaigns', 'application_fuzzing.results.json; coverage_summary.json', 'HISTORICAL_TARGET_COVERAGE', '99,07% chỉ target fuzz; không phải toàn API'),
+    ('NFR-2', 'Coverage và fuzz cho target cụ thể', 'SecurityFuzzingTests', '3 fuzz campaigns', 'application_fuzzing.results.json; coverage_summary.json', 'TARGET_COVERAGE', 'Chỉ target fuzz và validator; không phải toàn API'),
 ]
 
 def main():
@@ -89,12 +94,12 @@ def main():
     write(RESULTS / 'application_tests.results.json', tests)
     write(RESULTS / 'model_projection.results.json', comparison)
     with (RESULTS / 'traceability_matrix.csv').open('w', newline='', encoding='utf-8') as stream:
-        writer = csv.writer(stream)
+        writer = csv.writer(stream, lineterminator="\n")
         writer.writerow(['requirement', 'property', 'implementation_or_model', 'test_or_check', 'evidence', 'level', 'limitations'])
         writer.writerows(TRACE)
     artifacts = []
     # Only these project roots are traversed; ATPM is never visited.
-    for folder in ('OrderPaymentMicroservice', 'OrderPaymentMicroservice.Tests', 'OrderPaymentMicroservice.IntegrationTests', 'security-analysis'):
+    for folder in ('OrderPaymentMicroservice', 'OrderPaymentMicroservice.Tests', 'OrderPaymentMicroservice.IntegrationTests', 'OrderPaymentMicroservice.CrashProbe', 'security-analysis'):
         for path in sorted((ROOT / folder).rglob('*')):
             relative = path.relative_to(ROOT)
             if not path.is_file() or any(part in {'bin', 'obj', '__pycache__', 'dotnet', 'build', 'TestResults'} for part in relative.parts):
@@ -110,8 +115,8 @@ def main():
         'schema_version': 1, 'packaged_at_utc': datetime.now(timezone.utc).isoformat(),
         'git_base_commit': revision, 'working_tree_dirty': dirty,
         'dotnet_version': subprocess.run(['dotnet', '--version'], capture_output=True, text=True, check=True).stdout.strip(),
-        'fresh_checks': ['application_tests.results.json', 'model_projection.results.json', 'inventory_verification.results.json', 'payment_verification.results.json', 'order_payment_recovery_model.results.json', 'teacher_spec_verification.json', 'liveness_audit.results.json', 'threat_model_results.json', 'chapter4_run.results.json', 'c-memory/evidence/static-analysis.json', 'c-memory/evidence/dynamic-analysis.json'],
-        'historical_checks_not_rerun': ['tlc/OrderPayment.tlc.results.json', 'application_fuzzing.results.json', 'coverage_summary.json'],
+        'fresh_checks': ['application_tests.results.json', 'application_fuzzing.results.json', 'coverage_summary.json', 'model_projection.results.json', 'inventory_verification.results.json', 'payment_verification.results.json', 'order_payment_recovery_model.results.json', 'teacher_spec_verification.json', 'liveness_audit.results.json', 'process_restart.results.json', 'threat_model_results.json', 'chapter4_run.results.json', 'c-memory/evidence/static-analysis.json', 'c-memory/evidence/dynamic-analysis.json'],
+        'historical_checks_not_rerun': ['tlc/OrderPayment.tlc.results.json'],
         'artifacts': artifacts,
         'limitations': ['Hash captures packaging-time bytes, not historical tool-run provenance.',
                         'Base commit plus dirty working-tree artifact hashes identify uncommitted changes.',

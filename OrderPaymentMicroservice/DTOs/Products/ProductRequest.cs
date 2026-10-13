@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using OrderPaymentMicroservice.Security;
 
 namespace OrderPaymentMicroservice.DTOs.Products;
 
@@ -8,6 +9,7 @@ public class CreateProductRequest
     public string Name { get; set; } = string.Empty;
     [StringLength(1000)]
     public string Description { get; set; } = string.Empty;
+    [MoneyAmount]
     [Range(typeof(decimal), "0.01", "999999.99")]
     public decimal Price { get; set; }
     [Range(0, int.MaxValue)]
@@ -24,6 +26,7 @@ public class UpdateProductRequest
     public string? Name { get; set; }
     [StringLength(1000)]
     public string? Description { get; set; }
+    [MoneyAmount]
     [Range(typeof(decimal), "0.01", "999999.99")]
     public decimal? Price { get; set; }
     [Range(0, int.MaxValue)]

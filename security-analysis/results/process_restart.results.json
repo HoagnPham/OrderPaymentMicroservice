@@ -1,0 +1,16 @@
+{
+  "passed": true,
+  "run_at_utc": "2026-10-13T06:09:17.7305436Z",
+  "first_pid": 24573,
+  "restarted_pid": 24627,
+  "kill_window": "Gateway journal published; API payment still PROCESSING before finalize",
+  "recovered_by": "PaymentRecoveryWorker in restarted OS process",
+  "charge_records": 1,
+  "attempt_count": 1,
+  "inventory_released": false,
+  "journal_unchanged": true,
+  "limitations": [
+    "Local durable simulator on one filesystem; no real money or provider callback verification.",
+    "Abrupt API process kill, not power-loss/disk failure or distributed storage."
+  ]
+}

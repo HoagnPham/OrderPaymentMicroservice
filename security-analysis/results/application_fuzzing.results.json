@@ -7,20 +7,28 @@
     "InputValidator",
     "PaymentValidator",
     "OrderStateMachine",
-    "PaymentStateMachine"
+    "PaymentStateMachine",
+    "MoneyAmounts"
   ],
+  "run_at_utc": "2026-10-13T05:21:49.400392+00:00",
+  "source_sha256": {
+    "OrderPaymentMicroservice/Security/InputValidator.cs": "373a995295dfd0e76d26545b9f6f19c3381d21df7d3df3750edae300f288796c",
+    "OrderPaymentMicroservice/Security/PaymentValidator.cs": "63bfa1321a2ad0f8ae47bb60913448cac3e498ea4d8b752481c5b976ae758abb",
+    "OrderPaymentMicroservice/Security/MoneyAmountAttribute.cs": "9f9d3cb4dd396b2d0db750d596ce5bc5df308132a8cfea5f16eb3ffb64fa224d",
+    "OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs": "a7a273b6b889a5eb5fda70c0e331d4b0fd0fd32b5a1a2890cce8fb499b9606e6"
+  },
   "crash_policy": "ArgumentException is a controlled rejection; timeout, any other exception, invariant mismatch or test failure is a crash.",
   "timeout_seconds": 120,
   "timed_out": false,
-  "duration_seconds": 2.964,
+  "duration_seconds": 8.625,
   "tests": {
     "passed": 3,
     "failed": 0,
     "total": 3
   },
   "coverage": {
-    "line_percent": 90.99,
-    "branch_percent": 99.07,
+    "line_percent": 90.9,
+    "branch_percent": 97.36,
     "file": "security-analysis/results/application-fuzzing-coverage.cobertura.xml"
   },
   "branch_coverage_threshold_percent": 90.0,
@@ -38,6 +46,6 @@
     "/p:CollectCoverage=true",
     "/p:CoverletOutput=/home/phamhoang/OrderPaymentMicroservice/security-analysis/results/application-fuzzing-coverage",
     "/p:CoverletOutputFormat=cobertura",
-    "/p:Include=[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.InputValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.OrderStateMachine%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentStateMachine"
+    "/p:Include=[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.InputValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.OrderStateMachine%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentStateMachine%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.MoneyAmounts"
   ]
 }

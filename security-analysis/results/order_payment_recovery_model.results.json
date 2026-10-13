@@ -484,12 +484,12 @@
       "payment_status": "UNKNOWN",
       "case": "INCIDENT",
       "event": "cancel_during_retry",
-      "problem": "Customer cancels while no confirmed charge exists",
-      "guard_or_detection": "Gateway reconciliation confirms no successful charge",
-      "solution": "Cancel and release inventory",
-      "next_state": "CANCELLED",
+      "problem": "Customer requests cancellation while the charge outcome is UNKNOWN",
+      "guard_or_detection": "CancelOrderAsync rejects cancellation when a Payment is UNKNOWN",
+      "solution": "Reject cancellation and keep the reservation; reconcile the existing payment instead",
+      "next_state": "PAYMENT_RETRY",
       "guarantees": "Only an authenticated definitive decline may end the payment flow as FAILED. | An UNKNOWN outcome keeps inventory reserved and is reconciled with the same idempotency key. | A successful charge is committed at most once.",
-      "kind": "progress"
+      "kind": "stutter"
     },
     {
       "function": "F3_EXECUTE_AND_RECONCILE_PAYMENT",

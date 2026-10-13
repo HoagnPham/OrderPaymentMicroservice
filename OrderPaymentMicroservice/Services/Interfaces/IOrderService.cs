@@ -9,7 +9,7 @@ public interface IOrderService
     /// Create a new order
     /// TODO: Fuzzing target - validate all inputs
     /// </summary>
-    Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request);
+    Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request, string? idempotencyKey = null);
 
     /// <summary>
     /// Get all orders

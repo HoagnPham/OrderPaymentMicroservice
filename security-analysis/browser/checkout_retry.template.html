@@ -1,0 +1,21 @@
+<!doctype html><input id="address" value="Original address"><input id="city" value="Original city"><form id="checkoutForm"></form><pre id="result">RUNNING</pre><script>
+new Function(@@SOURCE@@);
+const cart={items:[{productId:1,quantity:1,priceAtAdd:10}],totalPrice:10};
+const currentUser={id:101}; const API_BASE_URL='/api';
+const authHeaders=()=>({'Content-Type':'application/json'}); const showMessage=()=>{};
+const goToPayment=()=>{}; window.setTimeout=()=>{}; sessionStorage.clear();
+@@BLOCK@@
+(async()=>{
+ const captured=[]; let mode='network';
+ window.fetch=async(url, options)=>{captured.push(options);if(mode==='network')throw Error('lost connection');if(mode==='audit')return{ok:false,status:503,json:async()=>({message:'uncertain'})};return{ok:true,json:async()=>({id:42,totalAmount:10})}};
+ const submit=()=>handleCheckout({preventDefault(){}}); const check=(v,m)=>{if(!v)throw Error(m)};
+ await submit();const first=JSON.parse(sessionStorage.getItem('order-create:101'));check(first.key,'key saved before send');
+ document.getElementById('address').value='Changed';await submit();check(captured.length===1,'uncertain changed payload blocked');
+ document.getElementById('address').value='Original address';mode='audit';await submit();check(JSON.parse(sessionStorage.getItem('order-create:101')).key===first.key,'503 retains key');
+ mode='success';await submit();await submit();check(captured.every(o=>o.headers['Idempotency-Key']===first.key),'all retries reuse key');
+ check(JSON.parse(sessionStorage.getItem('order-create:101')).orderId===42,'receipt remembered');
+ clearCompletedCheckout(99);check(sessionStorage.getItem('order-create:101'),'unrelated payment does not clear');
+ clearCompletedCheckout(42);check(sessionStorage.getItem('order-create:101')===null,'terminal payment clears its checkout');
+ document.getElementById('result').textContent='PASS: full script syntax; network retry; 503 retry; changed uncertain payload; repeated success; payment cleanup';
+})().catch(e=>document.getElementById('result').textContent='FAIL: '+e.message);
+</script>

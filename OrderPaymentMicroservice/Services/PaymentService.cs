@@ -130,18 +130,19 @@ public sealed class PaymentService : IPaymentService
         return await FinalizeChargeAsync(payment.Id, result);
     }
 
-    public async Task<PaymentResponse> ReconcilePaymentAsync(int paymentId)
+    public async Task<PaymentResponse> ReconcilePaymentAsync(int paymentId, CancellationToken cancellationToken = default)
     {
-        var payment = await LoadPaymentAggregateAsync(paymentId)
+        var payment = await LoadPaymentAggregateAsync(paymentId, cancellationToken)
             ?? throw new InvalidOperationException($"Payment {paymentId} not found");
         if (payment.Status is not (PaymentStatus.PROCESSING or PaymentStatus.UNKNOWN))
             return MapToResponse(payment);
 
-        var result = await GetChargeStatusSafelyAsync(payment);
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = await GetChargeStatusSafelyAsync(payment, cancellationToken);
         if (payment.Status == PaymentStatus.UNKNOWN && result.Outcome != GatewayOutcome.Unknown)
         {
             PaymentStateMachine.Transition(payment, PaymentStatus.PROCESSING);
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
         }
         else if (payment.Status == PaymentStatus.UNKNOWN)
         {
@@ -151,11 +152,11 @@ public sealed class PaymentService : IPaymentService
             payment.GatewayMessage = result.Message;
             payment.UpdatedAt = DateTime.UtcNow;
             payment.Version++;
-            await _context.SaveChangesAsync();
+            await _context.SaveChangesAsync(cancellationToken);
             return MapToResponse(payment);
         }
 
-        return await FinalizeChargeAsync(payment.Id, result);
+        return await FinalizeChargeAsync(payment.Id, result, cancellationToken);
     }
 
     public async Task<PaymentResponse> RefundPaymentAsync(int paymentId, string refundIdempotencyKey)
@@ -211,17 +212,18 @@ public sealed class PaymentService : IPaymentService
         return await FinalizeRefundAsync(payment.Id, result);
     }
 
-    public async Task<PaymentResponse> ReconcileRefundAsync(int paymentId)
+    public async Task<PaymentResponse> ReconcileRefundAsync(int paymentId, CancellationToken cancellationToken = default)
     {
-        var payment = await LoadPaymentAggregateAsync(paymentId)
+        var payment = await LoadPaymentAggregateAsync(paymentId, cancellationToken)
             ?? throw new InvalidOperationException($"Payment {paymentId} not found");
         if (payment.Status != PaymentStatus.REFUND_PENDING)
             return MapToResponse(payment);
         if (payment.Order?.Status != OrderStatus.REFUND_PENDING)
             throw new InvalidOperationException("Pending refund has an inconsistent order state");
 
-        var result = await GetRefundStatusSafelyAsync(payment);
-        return await FinalizeRefundAsync(payment.Id, result);
+        cancellationToken.ThrowIfCancellationRequested();
+        var result = await GetRefundStatusSafelyAsync(payment, cancellationToken);
+        return await FinalizeRefundAsync(payment.Id, result, cancellationToken);
     }
 
     public async Task<PaymentResponse?> GetPaymentByIdAsync(int paymentId)
@@ -237,6 +239,10 @@ public sealed class PaymentService : IPaymentService
             return await _gateway.ChargeAsync(new GatewayPaymentRequest(
                 payment.Id, payment.OrderId, payment.Amount, payment.IdempotencyKey!, payment.TransactionCode));
         }
+        catch (TimeoutException ex)
+        {
+            return new GatewayResult(GatewayOutcome.Unknown, ErrorCode: "GATEWAY_TIMEOUT", Message: ex.Message);
+        }
         catch (Exception ex)
         {
             return new GatewayResult(GatewayOutcome.Unknown, payment.TransactionCode, "GATEWAY_EXCEPTION", ex.Message);
@@ -250,18 +256,27 @@ public sealed class PaymentService : IPaymentService
             return await _gateway.RefundAsync(new GatewayPaymentRequest(
                 payment.Id, payment.OrderId, payment.Amount, payment.RefundIdempotencyKey!, payment.TransactionCode));
         }
+        catch (TimeoutException ex)
+        {
+            return new GatewayResult(GatewayOutcome.Unknown, ErrorCode: "REFUND_GATEWAY_TIMEOUT", Message: ex.Message);
+        }
         catch (Exception ex)
         {
             return new GatewayResult(GatewayOutcome.Unknown, payment.TransactionCode, "REFUND_GATEWAY_EXCEPTION", ex.Message);
         }
     }
 
-    private async Task<GatewayResult> GetChargeStatusSafelyAsync(Payment payment)
+    private async Task<GatewayResult> GetChargeStatusSafelyAsync(Payment payment, CancellationToken cancellationToken)
     {
         try
         {
             return await _gateway.GetChargeStatusAsync(new GatewayPaymentRequest(
-                payment.Id, payment.OrderId, payment.Amount, payment.IdempotencyKey!, payment.TransactionCode));
+                payment.Id, payment.OrderId, payment.Amount, payment.IdempotencyKey!, payment.TransactionCode), cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (TimeoutException ex)
+        {
+            return new GatewayResult(GatewayOutcome.Unknown, ErrorCode: "RECONCILIATION_TIMEOUT", Message: ex.Message);
         }
         catch (Exception ex)
         {
@@ -269,12 +284,17 @@ public sealed class PaymentService : IPaymentService
         }
     }
 
-    private async Task<GatewayResult> GetRefundStatusSafelyAsync(Payment payment)
+    private async Task<GatewayResult> GetRefundStatusSafelyAsync(Payment payment, CancellationToken cancellationToken)
     {
         try
         {
             return await _gateway.GetRefundStatusAsync(new GatewayPaymentRequest(
-                payment.Id, payment.OrderId, payment.Amount, payment.RefundIdempotencyKey!, payment.RefundTransactionCode));
+                payment.Id, payment.OrderId, payment.Amount, payment.RefundIdempotencyKey!, payment.TransactionCode), cancellationToken);
+        }
+        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested) { throw; }
+        catch (TimeoutException ex)
+        {
+            return new GatewayResult(GatewayOutcome.Unknown, ErrorCode: "REFUND_RECONCILIATION_TIMEOUT", Message: ex.Message);
         }
         catch (Exception ex)
         {
@@ -282,12 +302,12 @@ public sealed class PaymentService : IPaymentService
         }
     }
 
-    private async Task<PaymentResponse> FinalizeChargeAsync(int paymentId, GatewayResult result)
+    private async Task<PaymentResponse> FinalizeChargeAsync(int paymentId, GatewayResult result, CancellationToken cancellationToken = default)
     {
         await using var transaction = _context.Database.IsRelational()
-            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
             : null;
-        var payment = await LoadPaymentAggregateAsync(paymentId)
+        var payment = await LoadPaymentAggregateAsync(paymentId, cancellationToken)
             ?? throw new InvalidOperationException($"Payment {paymentId} disappeared during processing");
 
         if (payment.Status != PaymentStatus.PROCESSING)
@@ -317,18 +337,18 @@ public sealed class PaymentService : IPaymentService
                 throw new ArgumentOutOfRangeException(nameof(result));
         }
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
         if (transaction != null)
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(cancellationToken);
         return MapToResponse(payment);
     }
 
-    private async Task<PaymentResponse> FinalizeRefundAsync(int paymentId, GatewayResult result)
+    private async Task<PaymentResponse> FinalizeRefundAsync(int paymentId, GatewayResult result, CancellationToken cancellationToken = default)
     {
         await using var transaction = _context.Database.IsRelational()
-            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
+            ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken)
             : null;
-        var payment = await LoadPaymentAggregateAsync(paymentId)
+        var payment = await LoadPaymentAggregateAsync(paymentId, cancellationToken)
             ?? throw new InvalidOperationException($"Payment {paymentId} disappeared during refund");
 
         if (payment.Status != PaymentStatus.REFUND_PENDING)
@@ -354,9 +374,9 @@ public sealed class PaymentService : IPaymentService
             payment.Version++;
         }
 
-        await _context.SaveChangesAsync();
+        await _context.SaveChangesAsync(cancellationToken);
         if (transaction != null)
-            await transaction.CommitAsync();
+            await transaction.CommitAsync(cancellationToken);
         return MapToResponse(payment);
     }
 
@@ -368,10 +388,10 @@ public sealed class PaymentService : IPaymentService
         await InventoryReservation.ReleaseAsync(_context, order);
     }
 
-    private Task<Payment?> LoadPaymentAggregateAsync(int paymentId) => _context.Payments
+    private Task<Payment?> LoadPaymentAggregateAsync(int paymentId, CancellationToken cancellationToken = default) => _context.Payments
         .Include(payment => payment.Order)!
             .ThenInclude(order => order!.OrderItems)
-        .FirstOrDefaultAsync(payment => payment.Id == paymentId);
+        .FirstOrDefaultAsync(payment => payment.Id == paymentId, cancellationToken);
 
     private static PaymentResponse MapToResponse(Payment payment) => new()
     {

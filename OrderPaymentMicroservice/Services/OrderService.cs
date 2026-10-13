@@ -4,6 +4,10 @@ using OrderPaymentMicroservice.DTOs.Orders;
 using OrderPaymentMicroservice.Models;
 using OrderPaymentMicroservice.Security;
 using OrderPaymentMicroservice.Services.Interfaces;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
+using System.Globalization;
 
 namespace OrderPaymentMicroservice.Services;
 
@@ -23,13 +27,37 @@ public class OrderService : IOrderService
     /// Create a new order
     /// TODO: Fuzzing target - test with invalid inputs
     /// </summary>
-    public async Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request)
+    public async Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request, string? idempotencyKey = null)
     {
         _validator.ValidateCreateOrderRequest(request);
+        if (idempotencyKey != null && (idempotencyKey.Length is < 1 or > 128 ||
+            idempotencyKey.Any(c => c < '!' || c > '~')))
+            throw new ArgumentException("Idempotency-Key must contain 1 to 128 visible ASCII characters");
+        static string Hash(string value) => Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(value)));
+        var keyHash = idempotencyKey == null ? null : Hash(idempotencyKey);
+        var requestHash = keyHash == null ? null : Hash(JsonSerializer.Serialize(new
+        {
+            request.CustomerId, TotalAmount = request.TotalAmount.ToString("G29", CultureInfo.InvariantCulture),
+            request.Address, request.City,
+            Items = request.Items.Select(i => new { i.ProductId, i.Quantity, UnitPrice = i.UnitPrice.ToString("G29", CultureInfo.InvariantCulture) })
+        }));
 
         await using var transaction = _context.Database.IsRelational()
             ? await _context.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable)
             : null;
+
+        if (keyHash != null)
+        {
+            var previous = await _context.Orders.AsNoTracking().FirstOrDefaultAsync(o =>
+                o.CustomerId == request.CustomerId && o.CreationKeyHash == keyHash);
+            if (previous != null)
+            {
+                if (previous.CreationRequestHash != requestHash)
+                    throw new InvalidOperationException("Idempotency-Key was already used for a different order request");
+                return JsonSerializer.Deserialize<OrderResponse>(previous.CreationResponseJson
+                    ?? throw new InvalidOperationException("Order creation receipt is incomplete"))!;
+            }
+        }
 
         // Stock must cover the sum of all lines for a product, not each line separately.
         var requestedQuantities = request.Items.GroupBy(item => item.ProductId)
@@ -46,6 +74,7 @@ public class OrderService : IOrderService
         foreach (var item in request.Items)
         {
             var product = products[item.ProductId];
+            MoneyAmounts.RequireCents(product.Price, nameof(product.Price));
             if (!product.IsActive)
                 throw new InvalidOperationException($"Product {product.Id} is not active");
             if (product.Stock < requestedQuantities[item.ProductId])
@@ -68,6 +97,8 @@ public class OrderService : IOrderService
         var order = new Order
         {
             CustomerId = request.CustomerId,
+            CreationKeyHash = keyHash,
+            CreationRequestHash = requestHash,
             UserId = request.CustomerId,   // Controller overwrites CustomerId from the authenticated principal.
             TotalAmount = serverTotal,
             Address = request.Address,
@@ -97,10 +128,16 @@ public class OrderService : IOrderService
 
         _context.Orders.Add(order);
         await _context.SaveChangesAsync();
+        var response = MapToResponse(order);
+        if (keyHash != null)
+        {
+            order.CreationResponseJson = JsonSerializer.Serialize(response);
+            await _context.SaveChangesAsync();
+        }
         if (transaction != null)
             await transaction.CommitAsync();
 
-        return MapToResponse(order);
+        return response;
     }
 
     /// <summary>

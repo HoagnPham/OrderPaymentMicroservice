@@ -53,7 +53,7 @@ stateDiagram-v2
     PAYMENT_PROCESSING --> PAYMENT_RETRY: charged/unknown, reconcile by key
     PAYMENT_RETRY --> PAYMENT_PROCESSING_FINAL: final bounded attempt
     PAYMENT_RETRY --> PAYMENT_RETRY: retry exhausted, reconcile/manual review
-    PAYMENT_RETRY --> CANCELLED: cancel before charge
+    PAYMENT_RETRY --> PAYMENT_RETRY: UNKNOWN cancel rejected
     PAYMENT_PROCESSING_FINAL --> PAID: final success
     PAYMENT_PROCESSING_FINAL --> FAILED: definitive decline
     PAYMENT_PROCESSING_FINAL --> PAYMENT_RETRY: final outcome unknown
@@ -79,7 +79,7 @@ stateDiagram-v2
 | VALIDATED | Lưu Order và item nguyên tử → PAYMENT_PENDING | Sai tổng tiền, overflow, commit lỗi | Rollback và nhả tồn kho → PRE_PAYMENT_REJECTED; Payment vẫn NONE |
 | PAYMENT_PENDING | Nhận payment hợp lệ → PAYMENT_PROCESSING | Hủy đơn; trùng idempotency key; sai amount | Hủy → CANCELLED; request trùng/sai giữ nguyên PAYMENT_PENDING |
 | PAYMENT_PROCESSING | Gateway thành công và commit được → PAID | Timeout; decline; đã charge nhưng commit lỗi; race với cancel | Reconcile/retry cùng idempotency key → PAYMENT_RETRY; decline → FAILED; race được serialize |
-| PAYMENT_RETRY | Còn ngân sách retry → PAYMENT_PROCESSING_FINAL | Hết retry nhưng kết quả vẫn unknown; người dùng hủy khi đã xác nhận chưa charge | Giữ UNKNOWN để reconcile/manual review; chỉ CANCELLED khi có bằng chứng chưa charge |
+| PAYMENT_RETRY | Còn ngân sách retry → PAYMENT_PROCESSING_FINAL | Hết retry nhưng kết quả vẫn unknown; người dùng yêu cầu hủy khi outcome UNKNOWN | Giữ UNKNOWN và reservation để reconcile/manual review; từ chối cancel |
 | PAYMENT_PROCESSING_FINAL | Gateway thành công → PAID | Decline cuối cùng; timeout cuối cùng | Decline xác thực → FAILED; timeout → giữ UNKNOWN và reconcile, không charge mới |
 | PAID | Xác nhận fulfillment → CONFIRMED | Callback trùng; xác nhận lỗi tạm thời; không thể fulfillment | Giữ PAID; → CONFIRMATION_RETRY; hoặc → REFUND_PENDING |
 | CONFIRMATION_RETRY | Retry thành công → CONFIRMED | Hết retry | Bù trừ → REFUND_PENDING |
@@ -187,3 +187,5 @@ python security-analysis/verify_recovery_model.py
 
 Kết quả máy đọc được lưu tại
 `security-analysis/results/order_payment_recovery_model.results.json`.
+
+Chi tiết contract cập nhật 13/10/2026: [IMPLEMENTATION_CONTRACTS.md](IMPLEMENTATION_CONTRACTS.md). Confirmation retry tự động vẫn là DESIGN_EXTENSION; local durable gateway và process-kill charge recovery có evidence riêng.

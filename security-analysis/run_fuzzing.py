@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import hashlib
+from datetime import datetime, timezone
 from pathlib import Path
 import re
 import subprocess
@@ -27,7 +29,7 @@ def main() -> None:
         "/p:CollectCoverage=true",
         f"/p:CoverletOutput={COVERAGE_PREFIX}",
         "/p:CoverletOutputFormat=cobertura",
-        "/p:Include=[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.InputValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.OrderStateMachine%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentStateMachine",
+        "/p:Include=[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.InputValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentValidator%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.OrderStateMachine%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.PaymentStateMachine%2c[OrderPaymentMicroservice]OrderPaymentMicroservice.Security.MoneyAmounts",
     ]
     started = time.monotonic()
     timed_out = False
@@ -79,7 +81,9 @@ def main() -> None:
         "seed": 20261009,
         "iterations_per_random_campaign": 25000,
         "corpus": "OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json",
-        "targets": ["InputValidator", "PaymentValidator", "OrderStateMachine", "PaymentStateMachine"],
+        "targets": ["InputValidator", "PaymentValidator", "OrderStateMachine", "PaymentStateMachine", "MoneyAmounts"],
+        "run_at_utc": datetime.now(timezone.utc).isoformat(),
+        "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest() for p in [ROOT / "OrderPaymentMicroservice/Security/InputValidator.cs", ROOT / "OrderPaymentMicroservice/Security/PaymentValidator.cs", ROOT / "OrderPaymentMicroservice/Security/MoneyAmountAttribute.cs", ROOT / "OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs"]},
         "crash_policy": "ArgumentException is a controlled rejection; timeout, any other exception, invariant mismatch or test failure is a crash.",
         "timeout_seconds": 120,
         "timed_out": timed_out,

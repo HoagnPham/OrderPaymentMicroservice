@@ -51,7 +51,7 @@ def chapter_tokens():
     layout_table = table(['Struct', 'sizeof', '_Alignof', 'Môi trường'], [
         [name, value['size'], value['alignment'], static['environment']['platform']]
         for name,value in static['layout'].items() if name != 'offsets'])
-    return {'@@ASSET_TABLE@@':assets, '@@THREAT_TABLE@@':risks, '@@LIVENESS_TABLE@@':liveness,
+    return {'@@UNIT_COUNT@@':str(read('results/application_tests.results.json')['suites']['unit']['passed']), '@@PIPELINE_PAIRS@@':str(read('results/model_projection.results.json')['pipeline_state_pairs']), '@@ASSET_TABLE@@':assets, '@@THREAT_TABLE@@':risks, '@@LIVENESS_TABLE@@':liveness,
             '@@MUTATION_TABLE@@':mutations, '@@MEMORY_RUN_TABLE@@':memory_table,
             '@@STATIC_DETECTION_TABLE@@':static_table, '@@LAYOUT_TABLE@@':layout_table}
 
@@ -266,9 +266,9 @@ interleaving nhiều transaction. Evidence PostgreSQL bổ sung kiểm tra const
 
 Bộ test ứng dụng mới nhất ghi nhận {unit['passed']}/{unit['total']} unit test và
 {integration['passed']}/{integration['total']} integration test PASS, không SKIP.
-Ba campaign fuzz cũng nằm trong unit suite; đợt này không đo lại coverage campaign.
-Evidence coverage lịch sử 99,07% chỉ áp dụng InputValidator, PaymentValidator và hai
-state machine. InputValidator có branch coverage {coverage['branch_coverage_percent']}%,
+Ba campaign fuzz cũng nằm trong unit suite; đợt này đo lại coverage campaign.
+Branch coverage {fuzz['coverage']['branch_percent']}% áp dụng InputValidator,
+PaymentValidator, hai state machine và MoneyAmounts. InputValidator có branch coverage {coverage['branch_coverage_percent']}%,
 không phải coverage toàn ứng dụng.
 
 Regression mới kiểm tra sản phẩm trùng trong Order, quantity âm/0/quá lớn, cộng dồn
@@ -277,12 +277,12 @@ xác minh status trả về và dữ liệu lưu; test PostgreSQL kiểm constra
 không lệch migration, và cập nhật/xóa giỏ giữ tổng tiền nhất quán.
 
 Các campaign chưa fuzz toàn HTTP API, chưa dùng gateway sandbox và chưa thực hiện
-kill/restart process. Cấu hình và danh sách test: [Phụ lục E](PHU_LUC_A_G.md#phụ-lục-e--fuzzing-và-test).
+mọi cửa sổ crash; process-kill sau charge đã có evidence riêng. Cấu hình và danh sách test: [Phụ lục E](PHU_LUC_A_G.md#phụ-lục-e--fuzzing-và-test).
 
 ## 7. Kết quả và truy vết
 
 {table(['Phép kiểm', 'Kết quả', 'Phạm vi'], [
-    ['Unit', f"{unit['passed']}/{unit['total']} PASS", 'Source hiện tại; gồm 21 regression mới'],
+    ['Unit', f"{unit['passed']}/{unit['total']} PASS", 'Source hiện tại; regression lifecycle, timeout, precision và conflict'],
     ['HTTP/PostgreSQL', f"{integration['passed']}/{integration['total']} PASS", 'Database tạm, migration/seed và test host'],
     ['Recovery', '15/15 thuộc tính; 6 mutation detected', 'Graph hữu hạn, giả định được khai báo'],
     ['Payment SMT', '7/7 đúng kỳ vọng', 'Số học integer cents'],
@@ -315,8 +315,9 @@ Migration không tự sửa/xóa dữ liệu cũ vi phạm constraint: database 
 cần được kiểm tra và chỉnh có chủ đích trước khi nâng cấp. Kiểm chứng hiện dùng
 database sạch, không thực hiện migration lên database phát triển của người dùng.
 
-Gateway mặc định vẫn mất dữ liệu khi restart vì lưu trong memory. Audit trail,
-rate limit, gateway xác thực callback, thí nghiệm restart và BMC có bound còn mở.
+Gateway mặc định DurableFake lưu journal bền vững; process-kill recovery sau charge
+đã PASS. Audit/admission đã hiện thực và test trong phạm vi local; outbox,
+retention, distributed quota, callback thật, refund crash và BMC riêng còn mở.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -369,7 +370,7 @@ thay thế trực tiếp state Order.
               '### B.4. Thuộc tính\n', table(['ID','Loại','Nội dung'], [[p['id'],p['type'],p['description']] for p in model['properties']]),
               '### B.5. Đối chiếu và counterexample\n',
               'Model cơ sở có witness CREATED → CANCELLED → PAID_AFTER_CANCELLED. Sáu negative mutation của recovery và witness đầy đủ nằm trong ../results/order_payment_recovery_model.results.json.\n',
-              '37 event → 32 cặp state; hai tập cạnh sau phép chiếu bằng nhau. Property workbook có ngữ nghĩa riêng; EF(terminal) chỉ chứng minh tồn tại đường tới terminal.\n',
+              f"37 event → {mapping['pipeline_state_pairs']} cặp state; hai tập cạnh sau phép chiếu bằng nhau. Property workbook có ngữ nghĩa riêng; EF(terminal) chỉ chứng minh tồn tại đường tới terminal.\n",
               '## Phụ lục C — Static và bộ nhớ\n',
               '### C.1. CWE và phạm vi\n', table(['Module','Lỗi BUGGY','CWE'], [['Order','Owned allocation leak','CWE-401'],['Payment','Double free','CWE-415'],['Cart','Use after free','CWE-416'],['Product','Heap buffer copy','CWE-120'],['User','Stack buffer copy','CWE-120']]),
               'GCC/cppcheck version, finding và layout: ../c-memory/evidence/static-analysis.json. Pattern rules là scanner riêng; cppcheck có false negative được ghi rõ trong ../c-memory/README.md. Không tuyên bố Clang-Tidy/Clang Analyzer đã chạy.\n',
@@ -381,10 +382,20 @@ thay thế trực tiếp state Order.
               'Stock=10/q1=q2=6 minh họa baseline sai. Guard tổng quantity loại stock âm. Biên 5+5 vẫn được chấp nhận, và regression kiểm cancel trả lại đúng 10.\n',
               '### D.3. BMC\n', 'Chưa có thí nghiệm BMC riêng với bound k trong đợt này. Không thay bằng kết quả TLC hay gọi duyệt graph hữu hạn là BMC.\n',
               '## Phụ lục E — Fuzzing và test\n',
-              table(['Cấu hình lịch sử','Giá trị'], [['Seed',fuzz['seed']],['Iterations mỗi campaign random',fuzz['iterations_per_random_campaign']],['Timeout giây',fuzz['timeout_seconds']],['Targets',', '.join(fuzz['targets'])],['Crash policy',fuzz['crash_policy']],['Branch coverage target',fuzz['coverage']['branch_percent']]]),
+              table(['Cấu hình campaign mới nhất','Giá trị'], [['Seed',fuzz['seed']],['Iterations mỗi campaign random',fuzz['iterations_per_random_campaign']],['Timeout giây',fuzz['timeout_seconds']],['Targets',', '.join(fuzz['targets'])],['Crash policy',fuzz['crash_policy']],['Branch coverage target',fuzz['coverage']['branch_percent']]]),
               'Corpus: ../../OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json. Oracle thực thi: ../../OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs. Coverage XML: ../results/application-fuzzing-coverage.cobertura.xml. Campaign có random xác định, không chứng minh mọi input hoặc coverage-guided native fuzzing.\n',
               '## Phụ lục F — Evidence và truy vết\n',
               '### F.1. Kết quả từng test (lần chạy mới nhất)\n']
+    restart_path = BASE / 'results/process_restart.results.json'
+    if restart_path.exists():
+        restart = read('results/process_restart.results.json')
+        annex += ['### F.1a. Process-kill charge recovery\n',
+                  table(['Chỉ số', 'Kết quả'], [['PASS', restart['passed']], ['Kill window', restart['kill_window']],
+                        ['Recovered by', restart['recovered_by']], ['Charge records', restart['charge_records']],
+                        ['AttemptCount', restart['attempt_count']], ['Inventory released', restart['inventory_released']],
+                        ['Journal unchanged', restart['journal_unchanged']]]),
+                  '[Evidence restart](../results/process_restart.results.json); [Hợp đồng hiện thực](../IMPLEMENTATION_CONTRACTS.md).\n']
+
     for suite_name,suite in tests['suites'].items():
         annex += [f'#### {suite_name}: {suite["passed"]}/{suite["total"]}\n',table(['Case','Outcome','Duration'], [[c['name'],c['outcome'],c['duration']] for c in suite['cases']])]
     annex += ['### F.2. Ma trận truy vết\n',
@@ -413,13 +424,13 @@ của chính project và xuất pipeline JSON vào security-analysis/.
 ''',
               '## Phụ lục G — Hạn chế và công việc còn mở\n',
               table(['Hạng mục','Trạng thái','Điều kiện nghiệm thu'], [
-                  ['Gateway bền vững/sandbox','OPEN','Charge rồi kill/restart process; reconcile cùng key ra kết quả gốc'],
+                  ['Gateway bền vững/sandbox','LOCAL_PROCESS_KILL_PASS / REAL_PROVIDER_OPEN','Local charge recovery PASS; refund crash và provider thật còn mở'],
                   ['BMC có bound','OPEN','Ghi tool, k, assumption, verdict và witness'],
                   ['Công cụ Windows giảng viên','NOT_RUN_THIS_SESSION','Lưu manifest/log/export thực tế; checker độc lập không thay thế'],
-                  ['Rate limiting/audit','OPEN','Test giới hạn request; audit có actor/action/result và redaction'],
+                  ['Rate limiting/audit','PARTIALLY_MITIGATED','Admission/audit test PASS; distributed quota, atomic outbox, retention và DBA protection còn mở'],
                   ['API fuzz/network fault injection','OPEN','Target HTTP, corpus, oracle và campaign log'],
                   ['Migration dữ liệu cũ','NOT_TESTED','Kiểm tra dữ liệu vi phạm trước khi apply; không tự xóa/sửa'],
-                  ['TLC/fuzz coverage','HISTORICAL','Giữ source hash/tool/run timestamp khi chạy lại'],
+                  ['TLC','HISTORICAL','Giữ source hash/tool/run timestamp khi chạy lại'],
                   ['Model→implementation','PARTIAL','Traceability và test hỗ trợ; chưa có refinement proof'],
               ]),
               'INCONCLUSIVE, TOOL_ERROR, BUILD_ERROR hoặc SKIP không được chuyển thành PASS. Evidence thiếu phải được ghi rõ, không điền ID/hash giả.\n']

@@ -1,13 +1,38 @@
 using Microsoft.EntityFrameworkCore;
 using OrderPaymentMicroservice.Models;
+using System.Security.Claims;
 
 namespace OrderPaymentMicroservice.Data;
 
 /// <summary>Entity Framework Core persistence model and database invariants.</summary>
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
+    private readonly IHttpContextAccessor? _http;
+    public AppDbContext(DbContextOptions<AppDbContext> options, IHttpContextAccessor? http = null) : base(options)
     {
+        _http = http;
+    }
+
+    // PostgreSQL row triggers write COMMIT audit in the same transaction as the mutation.
+    // Transaction-local metadata cannot bleed into a pooled connection's next request.
+    public override async Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken cancellationToken = default)
+    {
+        var changes = ChangeTracker.Entries().Any(e => (e.Entity is Order or Payment) &&
+            e.State is EntityState.Added or EntityState.Modified or EntityState.Deleted);
+        if (!changes || Database.ProviderName != "Npgsql.EntityFrameworkCore.PostgreSQL")
+            return await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+
+        await using var owned = Database.CurrentTransaction == null
+            ? await Database.BeginTransactionAsync(cancellationToken) : null;
+        var http = _http?.HttpContext;
+        var correlation = http?.Items["AuditCorrelationId"] is Guid id ? id : Guid.NewGuid();
+        var claim = http?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        var actor = int.TryParse(claim, out var userId) && userId > 0 ? userId.ToString(System.Globalization.CultureInfo.InvariantCulture) : "";
+        var kind = http == null ? "SYSTEM" : actor.Length > 0 ? "USER" : "ANONYMOUS";
+        await Database.ExecuteSqlInterpolatedAsync($"SELECT set_config('app.audit_correlation', {correlation.ToString()}, true), set_config('app.audit_actor', {actor}, true), set_config('app.audit_kind', {kind}, true)", cancellationToken);
+        var saved = await base.SaveChangesAsync(acceptAllChangesOnSuccess, cancellationToken);
+        if (owned != null) await owned.CommitAsync(cancellationToken);
+        return saved;
     }
 
     public DbSet<Order> Orders { get; set; } = null!;
@@ -18,13 +43,31 @@ public class AppDbContext : DbContext
     public DbSet<ShoppingCart> ShoppingCarts { get; set; } = null!;
     public DbSet<CartItem> CartItems { get; set; } = null!;
 
+    public DbSet<AuditEvent> AuditEvents { get; set; } = null!;
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
 
+        modelBuilder.Entity<AuditEvent>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.Property(e => e.ActorKind).HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Action).HasMaxLength(64).IsRequired();
+            entity.Property(e => e.ResourceType).HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Phase).HasMaxLength(16).IsRequired();
+            entity.Property(e => e.Outcome).HasMaxLength(32).IsRequired();
+            entity.HasIndex(e => e.CorrelationId);
+            entity.HasIndex(e => e.CreatedAt);
+        });
+
         // Configure Order entity
         modelBuilder.Entity<Order>(entity =>
         {
+            entity.Property(o => o.CreationKeyHash).HasMaxLength(64);
+            entity.Property(o => o.CreationRequestHash).HasMaxLength(64);
+            entity.Property(o => o.CreationResponseJson).HasColumnType("jsonb");
+            entity.HasIndex(o => new { o.CustomerId, o.CreationKeyHash }).IsUnique();
             entity.HasKey(o => o.Id);
             entity.Property(o => o.CustomerId).IsRequired();
             entity.Property(o => o.TotalAmount).HasPrecision(19, 2).IsRequired();

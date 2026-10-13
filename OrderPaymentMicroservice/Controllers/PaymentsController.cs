@@ -1,3 +1,4 @@
+using OrderPaymentMicroservice.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -74,6 +75,10 @@ public class PaymentsController : ControllerBase
             _logger.LogWarning(ex, "Concurrent payment conflict");
             return Conflict("Payment or order state changed concurrently; reload and reconcile");
         }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error creating payment");
@@ -107,6 +112,10 @@ public class PaymentsController : ControllerBase
                 return Forbid();
 
             return Ok(payment);
+        }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
         }
         catch (Exception ex)
         {

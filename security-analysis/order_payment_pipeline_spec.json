@@ -303,10 +303,6 @@
         "PAYMENT_RETRY"
       ],
       [
-        "PAYMENT_RETRY",
-        "CANCELLED"
-      ],
-      [
         "PAYMENT_PROCESSING_FINAL",
         "PAID"
       ],

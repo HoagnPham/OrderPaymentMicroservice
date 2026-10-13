@@ -312,6 +312,38 @@ public sealed class OrderPaymentApiTests(PostgresApiFixture fixture)
         Assert.False(await db.CartItems.AnyAsync(i => i.CartId == cart.Id));
     }
 
+    [DockerFact]
+    public async Task Fractional_cents_are_rejected_before_persistence_and_cent_values_round_trip()
+    {
+        var account = await RegisterAndLoginAsync("money-scale");
+        await PromoteToAdminAsync(account.UserId);
+        using var client = AuthorizedClient((await LoginAsync(account.Email)).Token);
+        var created = await client.PostAsJsonAsync("api/products", new CreateProductRequest
+            { Name = "Exact cents", Price = 25.0100m, Stock = 10 });
+        Assert.Equal(HttpStatusCode.Created, created.StatusCode);
+        var product = await ReadAsync<ProductResponse>(created);
+        var badUpdate = await client.PutAsJsonAsync($"api/products/{product.Id}", new UpdateProductRequest { Price = 25.005m });
+        Assert.Equal(HttpStatusCode.BadRequest, badUpdate.StatusCode);
+        var badOrder = await client.PostAsJsonAsync("api/orders", new CreateOrderRequest
+        { TotalAmount = 25.005m, Items = [new() { ProductId = product.Id, Quantity = 1, UnitPrice = 25.01m }] });
+        Assert.Equal(HttpStatusCode.BadRequest, badOrder.StatusCode);
+        var order = await CreateOrderAsync(client, product, 1);
+        using var request = new HttpRequestMessage(HttpMethod.Post, "api/payments")
+        { Content = JsonContent.Create(new CreatePaymentRequest { OrderId = order.Id, Amount = 25.005m }) };
+        request.Headers.Add("Idempotency-Key", "fractional-" + order.Id);
+        Assert.Equal(HttpStatusCode.BadRequest, (await client.SendAsync(request)).StatusCode);
+        await using (var scope = fixture.Services.CreateAsyncScope())
+        {
+            var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            Assert.Equal(25.01m, (await db.Products.FindAsync(product.Id))!.Price);
+            Assert.Equal(25.01m, (await db.Orders.FindAsync(order.Id))!.TotalAmount);
+            Assert.False(await db.Payments.AnyAsync(p => p.OrderId == order.Id));
+            Assert.Equal(1, await db.Orders.CountAsync(o => o.CustomerId == account.UserId));
+        }
+        var payment = await CreateSuccessfulPaymentAsync(client, order);
+        Assert.Equal(25.01m, payment.Amount);
+    }
+
     private async Task<(int UserId, string Email, string Token)> RegisterAndLoginAsync(string prefix)
     {
         var email = $"{prefix}-{Guid.NewGuid():N}@example.test";

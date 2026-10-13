@@ -1,5 +1,28 @@
 # OrderPaymentMicroservice — Bài tập lớn An toàn phần mềm
 
+> Admission/audit bổ sung 13/10/2026: body 64 KiB, tối đa 100 item; auth quota
+> 10/phút/IP và API quota 120/phút/subject hoặc connection IP. PostgreSQL giữ
+> audit BEGIN/RESULT và chặn UPDATE/DELETE/TRUNCATE. Audit error trả JSON phân biệt
+> action chưa chạy với operation có thể đã commit, cần reconcile.
+> Test mới nhất: 140 unit + 17 integration PASS, không SKIP; fuzz 3/3 PASS.
+> T3/T5 giảm thiểu một phần; outbox/retention/distributed quota còn mở.
+
+
+> Bổ sung 13/10/2026: gateway deadline mặc định 5 giây; worker truyền cancellation,
+> tiếp tục sau lookup treo và không invent outcome khi shutdown. Input tiền phải
+> là bội 0,01; không round âm thầm. Test: 131 unit + 11 integration PASS;
+> fuzz 3/3, branch coverage target 99,09% (gồm MoneyAmounts).
+> Các số liệu trước đó bên dưới là lịch sử; xem báo cáo/evidence mới nhất.
+
+
+> Cập nhật 13/10/2026: gateway mặc định `DurableFake` giữ journal qua restart;
+> test kill API sau charge xác minh worker khôi phục mà không charge/release lại.
+> Cancel UNKNOWN đã đồng bộ giữa model/source. Chi tiết và cấu hình:
+> [Hợp đồng hiện thực](security-analysis/IMPLEMENTATION_CONTRACTS.md).
+> Số test hiện hành lấy từ [evidence](security-analysis/results/application_tests.results.json);
+> các số liệu ngày 12/10 bên dưới giữ như kết quả lịch sử.
+
+
 > Cập nhật 12/10/2026: đã sửa tồn kho khi Order có dòng sản phẩm trùng, validation
 > Cart/User/Product và transaction giỏ hàng; migration bổ sung CHECK stock/price/quantity.
 > Kết quả mới: 108 unit + 8 PostgreSQL integration PASS, không SKIP.

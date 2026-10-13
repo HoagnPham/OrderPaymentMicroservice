@@ -38,6 +38,8 @@ public class PaymentValidator
         if (request.Amount > MAX_PAYMENT_AMOUNT)
             throw new ArgumentException($"Amount cannot exceed {MAX_PAYMENT_AMOUNT}", nameof(request.Amount));
 
+        MoneyAmounts.RequireCents(request.Amount, nameof(request.Amount));
+
         if (string.IsNullOrWhiteSpace(request.IdempotencyKey))
             throw new ArgumentException("IdempotencyKey is required", nameof(request.IdempotencyKey));
 

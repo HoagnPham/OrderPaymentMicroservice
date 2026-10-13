@@ -4,9 +4,14 @@
 
 ```mermaid
 flowchart TD
-    Client[Shop / Customer / Admin] -->|TB1: HTTP, JWT, JSON| API[Controllers: authentication, role, ownership]
+    Client[Shop / Customer / Admin] -->|TB1: HTTP, JWT, JSON| Auth[Routing / JWT authentication]
+    Auth --> Admission[Rate limiter / Body limit]
+    Admission --> API[Audit middleware / Authorization / Controllers]
     API --> Services[User / Product / Cart / Order / Payment Services]
     Services --> Guards[Validation / State machines]
+    API --> Audit[AuditWriter: independent DbContext]
+    Audit --> DB
+    Worker --> Audit
     Services -->|TB2: EF Core, transaction| DB[(PostgreSQL)]
     Services -->|TB3: charge, refund, status| Gateway[IPaymentGateway / FakePaymentGateway]
     Config[Host config / Secrets] -->|TB4| API
@@ -20,7 +25,7 @@ runtime. Z3, checker Kripke và sanitizer không phải thành phần mà API g�
 mỗi request. State machine chỉ kiểm cặp trạng thái; service bổ sung điều kiện như
 payment SUCCESS, amount equality và inventory RESERVED.
 
-`Program.cs` đăng ký service scoped theo request, DbContext scoped, gateway mock
+`Program.cs` đăng ký service scoped theo request, DbContext scoped, gateway mô phỏng
 singleton và recovery worker. Khởi động yêu cầu connection string và JWT key dài
 ít nhất 32 ký tự; `Data.DbInitializer` chạy migration và seed Product nếu chưa có.
 Môi trường Development có OpenAPI và developer exception page; test host dùng
@@ -111,14 +116,31 @@ hoàn tiền cho Order đã COMPLETED; không suy rộng sang chính sách trả
 
 Worker mặc định quét mỗi 30 giây, chọn payment cũ ít nhất 60 giây, batch 50; source
 áp dụng mức tối thiểu 5 giây và giới hạn batch 1..500. Worker chỉ hỏi lại charge
-hoặc refund, không tự phát charge retry. CancellationToken được dùng cho timer và
-query; service gateway calls chưa truyền token/timeout policy của worker xuống
-mọi lời gọi. Gateway treo vô hạn vì vậy chưa được chứng minh bị cắt timeout.
+hoặc refund, không tự phát charge retry. TimeoutPaymentGateway áp deadline cho
+cả charge/refund/status; mặc định 5.000 ms, cấu hình hợp lệ 50..60.000 ms.
 
-Integration fixture tắt worker để test HTTP xác định. Unit test reconciliation
-xác minh lời gọi service trên aggregate đã lưu, không chứng minh scheduler worker,
-process restart hay recovery qua một gateway bền vững. Mock memory mất dữ liệu khi
-restart; cần phân biệt “có cơ chế reconcile” với “đã demo khôi phục toàn hệ thống”.
+Status reconciliation nhận stopping token của worker qua gateway lookup, load,
+save và finalize transaction. Shutdown cancellation được truyền ra ngoài, không
+biến thành UNKNOWN mới. Worker xóa tracker trước mỗi candidate để không mang
+mutation chưa commit của candidate lỗi sang candidate tiếp theo.
+
+WaitAsync giới hạn thời gian chờ ngay cả khi adapter không tuân cancellation;
+late task fault được observe và late result không tự finalize. Timeout vẫn có
+thể đã charge ở provider nên giữ UNKNOWN/reservation; refund giữ REFUND_PENDING.
+Deadline giới hạn caller waiting, không thể cưỡng chế dừng adapter hoặc chứng
+minh provider không thu tiền. Task không hợp tác và overload/backpressure còn cần
+kiểm thêm cho môi trường thực tế.
+
+Fixture HTTP thông thường tắt worker để test xác định. ProcessRestartTests dùng
+hai OS process riêng: process đầu bị kill sau khi gateway publish journal nhưng
+trước finalize, process mới bật worker và tự chuyển payment SUCCESS/Order PAID,
+không tăng attempt hay release stock. Đây là evidence cho một cửa sổ crash với
+local ledger; chưa chứng minh mọi scheduler/network fault hoặc provider thật.
+
+DurableFake là mode mặc định, lưu journal trong App_Data/payment-gateway và bind
+key với payload; ghi file tạm, flush rồi rename dưới file lock. Unit test kiểm
+replay/mismatch và instance restart cho cả charge/refund. Không coi atomic file
+publication là distributed transaction hoặc bảo đảm mất điện.
 
 ### 2.7. Input contract, attack surface và HTTP outcome
 
@@ -130,11 +152,15 @@ là không thay đổi, không phải đã có chính sách xóa mọi field.
 
 401 biểu thị thiếu identity hợp lệ; 403 biểu thị thiếu quyền; 400 là input sai;
 409 là conflict nghiệp vụ hoặc persistence cạnh tranh được xử lý; 500 vẫn là lỗi
-ngoài hợp đồng xử lý của endpoint. Việc source có catch DbUpdateException không
-chứng minh mọi SQLSTATE/network exception đều thành 409.
+ngoài hợp đồng xử lý của endpoint. Classifier mới nhận SQLSTATE 40001/40P01 cả khi Npgsql execution strategy bọc
+exception, trả 409 thay vì 500 ở catch tương ứng. Các SQLSTATE/network exception
+khác không được tự coi là conflict cạnh tranh.
 
-Giới hạn numeric từng item chưa giới hạn số item trong collection; chưa có rate
-limit riêng. API đọc danh sách chưa có pagination. Chi tiết endpoint và requirement
+Order hiện giới hạn tối đa 100 item và body 64 KiB mặc định. Auth login/register
+dùng IP quota 10/phút; API dùng subject đã xác thực hoặc connection IP quota
+120/phút. Fixed windows nằm trong process, không distributed. Request 429/413
+bị chặn trước JSON binding và trước audit để tránh log amplification. API đọc
+danh sách vẫn chưa có pagination. Chi tiết endpoint và requirement
 được giữ trong [Phụ lục A](PHU_LUC_A_G.md#phụ-lục-a--hệ-thống).
 
 Nguồn: [Program](../../OrderPaymentMicroservice/Program.cs),
@@ -142,3 +168,21 @@ Nguồn: [Program](../../OrderPaymentMicroservice/Program.cs),
 [PaymentService](../../OrderPaymentMicroservice/Services/PaymentService.cs),
 [DbContext](../../OrderPaymentMicroservice/Data/AppDbContext.cs),
 [recovery worker](../../OrderPaymentMicroservice/Services/Payments/PaymentRecoveryWorker.cs).
+
+### 2.8. Audit durable và chính sách khi ghi log lỗi
+
+AuditWriter dùng DbContext riêng để insert BEGIN/RESULT, không SaveChanges trên
+tracker nghiệp vụ. Middleware giữ transport response tới khi RESULT đã lưu;
+worker reconciliation lưu SYSTEM events. Field allowlist không có body, header,
+password, JWT, idempotency key hay exception message. HTTP_SUCCESS chỉ nói HTTP
+outcome; worker RESULT nói trạng thái nghiệp vụ.
+
+Trigger PostgreSQL chặn UPDATE/DELETE/TRUNCATE, nhưng DBA có thể disable trigger;
+chưa có retention và audit access governance. BEGIN failure chặn action; RESULT
+failure có thể sau business commit và trả 503 cần reconcile. Create BEGIN có thể
+chưa biết resource ID. Đây không phải atomic business-audit transaction; outbox
+và order-create idempotency còn cần bổ sung.
+
+Admission/audit error dùng JSON message. Audit 503 có requiresReconciliation=false
+khi BEGIN lỗi trước action, true khi RESULT lỗi sau action; correlationId do server
+sinh. CORS expose correlation/retry headers cho origin được cho phép.

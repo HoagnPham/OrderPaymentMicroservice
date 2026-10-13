@@ -66,9 +66,9 @@ Inventory vì gián đoạn có thể để lại giao dịch chưa xác định
 |---|---|---|---:|---|
 | T1 | Spoofing / TB1 | Không có/giả mạo identity hoặc dùng route id của user khác | 20 CRITICAL | Đã xác minh trong các đường HTTP test |
 | T2 | Tampering / TB1 | Sửa price, total hoặc payment amount | 25 CRITICAL | Đã giảm thiểu |
-| T3 | Repudiation / TB1 | Phủ nhận payment/retry/cancel khi log không bền vững | 12 HIGH | **OPEN** |
+| T3 | Repudiation / TB1 | Phủ nhận payment/retry/cancel khi log không bền vững | 12 HIGH | Giảm thiểu một phần: durable audit, chưa atomic/retention |
 | T4 | Information disclosure / TB1 | IDOR đọc aggregate của user khác | 16 HIGH | Đã xác minh trong các đường HTTP test |
-| T5 | Denial of service / TB1 | Flood endpoint hoặc order có quá nhiều item | 16 HIGH | **OPEN** |
+| T5 | Denial of service / TB1 | Flood endpoint hoặc order có quá nhiều item | 16 HIGH | Giảm thiểu một phần: local rate/body/item limits |
 | T6 | Elevation of privilege / TB1 | Customer gọi endpoint refund/list của Admin | 15 HIGH | Đã xác minh trong các đường HTTP test |
 | T7 | Tampering / TB2 | Race payment-cancel, replay hoặc chuyển trạng thái sai | 20 CRITICAL | Đã xác minh trong PostgreSQL race test |
 | T8 | Spoofing / TB3 | Giả/replay kết quả SUCCESS từ gateway thật | 15 HIGH | **OPEN cho gateway thật** |
@@ -148,3 +148,15 @@ Audit liveness mới xác nhận graph gốc không thỏa unconditional AG AF t
 trong khi checker progress-only thỏa thuộc tính sau lọc cạnh. Xem
 [Chương 3](report/BAO_CAO.md#3-mô-hình-trạng-thái-kiểm-chứng-và-đối-chiếu-implementation)
 và [liveness audit](results/liveness_audit.results.json).
+
+## 9. Admission và audit — cập nhật 13/10/2026
+
+T3/T5 chuyển PARTIALLY_MITIGATED. Admission có body 64 KiB, tối đa 100 item,
+auth IP quota 10/phút và verified-user API quota 120/phút. Fixed windows nằm trong
+mỗi process, không lấy IP từ X-Forwarded-For tùy ý; proxy/distributed/load còn mở.
+
+Audit HTTP và worker lưu field allowlist trong PostgreSQL. BEGIN có trước nghiệp
+vụ, RESULT lưu trước transport response; UPDATE/DELETE/TRUNCATE bị trigger chặn.
+BEGIN failure chặn action; RESULT failure có thể đi sau business commit và trả
+503 cần reconcile, có thể chỉ còn BEGIN. Không gọi đây là atomic business-audit
+transaction hoặc protection khỏi DBA. Retention và audit access governance còn mở.

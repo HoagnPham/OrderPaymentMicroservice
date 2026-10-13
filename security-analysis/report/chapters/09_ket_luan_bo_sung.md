@@ -2,7 +2,7 @@
 
 Q1 có source guard và HTTP evidence trên đường đã kiểm; chưa bao phủ toàn bộ vòng
 đời token. Q2 có model mutation và PostgreSQL race test; không là proof mọi
-interleaving. Q3 có safety cho UNKNOWN/compensation ở model và unit; liveness vẫn
+interleaving. Q3 có safety cho UNKNOWN/compensation và một process-kill charge recovery với worker; liveness vẫn
 phụ thuộc môi trường. Q4 có witness cụ thể, bản sửa theo tổng quantity và evidence
 SMT/test/database. Q5 có 22 case memory cùng static false-negative analysis,
 không suy rộng sang C#. Q6 có report, phụ lục, traceability và manifest; evidence

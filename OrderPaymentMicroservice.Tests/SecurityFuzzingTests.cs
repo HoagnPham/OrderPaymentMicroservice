@@ -83,6 +83,7 @@ public sealed class SecurityFuzzingTests
                 paymentValidator.ValidateCreatePaymentRequest(paymentRequest);
                 Assert.True(paymentRequest.OrderId > 0);
                 Assert.InRange(paymentRequest.Amount, 0.01m, 999999.99m);
+                Assert.Equal(decimal.Round(paymentRequest.Amount, 2), paymentRequest.Amount);
                 Assert.False(string.IsNullOrWhiteSpace(paymentRequest.IdempotencyKey));
                 Assert.InRange(paymentRequest.IdempotencyKey.Length, 1, 128);
             }
@@ -202,6 +203,7 @@ public sealed class SecurityFuzzingTests
         3 => 0.01m,
         4 => 999999.99m,
         5 => 1000000m,
+        6 => 25.005m,
         _ => random.Next(1, 1_000_000) / 100m
     };
 
@@ -217,6 +219,7 @@ public sealed class SecurityFuzzingTests
     {
         Assert.True(request.CustomerId > 0);
         Assert.InRange(request.TotalAmount, 0.01m, 999999.99m);
+        Assert.Equal(decimal.Round(request.TotalAmount, 2), request.TotalAmount);
         Assert.NotEmpty(request.Items);
         var calculated = 0m;
         foreach (var item in request.Items)
@@ -224,6 +227,7 @@ public sealed class SecurityFuzzingTests
             Assert.True(item.ProductId > 0);
             Assert.InRange(item.Quantity, 1, 10_000);
             Assert.InRange(item.UnitPrice, 0.01m, 999999.99m);
+            Assert.Equal(decimal.Round(item.UnitPrice, 2), item.UnitPrice);
             calculated += item.Quantity * item.UnitPrice;
         }
         Assert.InRange(Math.Abs(request.TotalAmount - calculated), 0m, 0.01m);

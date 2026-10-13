@@ -1,7 +1,7 @@
 {
   "passed": true,
-  "run_at_utc": "2026-10-12T13:13:59.711612+00:00",
-  "model_sha256": "b8283d6718efd22ebd6b490f3407c737b6f7bc77a865577e075cf1a4e35e2a39",
+  "run_at_utc": "2026-10-13T04:13:10.116799+00:00",
+  "model_sha256": "00d00cfaaaa4d156a282e13556f5bc92b0920de185c034b9b8dec9f4e527a5d2",
   "reachable_count": 15,
   "unconditional_AG_AF_terminal": false,
   "unconditional_satisfying_states": [

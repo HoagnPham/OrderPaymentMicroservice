@@ -17,8 +17,6 @@
     "INTEGRITY"
   ],
   "open_threats": [
-    "T3",
-    "T5",
     "T8"
   ],
   "checks": [

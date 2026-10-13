@@ -38,3 +38,6 @@ ATPM/**/*.exe
 
 # Raw local test logs; portable outcomes and log hashes are packaged separately.
 security-analysis/results/dotnet/
+
+# Local simulated provider ledger (retained across API restarts).
+**/App_Data/

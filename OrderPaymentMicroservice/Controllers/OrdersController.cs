@@ -1,3 +1,4 @@
+using OrderPaymentMicroservice.Data;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -41,7 +42,9 @@ public class OrdersController : ControllerBase
             request.CustomerId = User.GetRequiredUserId();
 
             _logger.LogInformation("Creating order for customer {CustomerId}", request.CustomerId);
-            var response = await _orderService.CreateOrderAsync(request);
+            var keys = Request.Headers["Idempotency-Key"];
+            if (keys.Count > 1) return BadRequest("Provide exactly one Idempotency-Key");
+            var response = await _orderService.CreateOrderAsync(request, keys.Count == 0 ? null : keys[0]);
             return CreatedAtAction(nameof(GetOrder), new { id = response.Id }, response);
         }
         catch (ArgumentException ex)
@@ -57,6 +60,10 @@ public class OrdersController : ControllerBase
         {
             _logger.LogWarning(ex, "Concurrent order creation conflict");
             return Conflict("Inventory or order data changed concurrently; reload and retry");
+        }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
         }
         catch (Exception ex)
         {
@@ -82,6 +89,10 @@ public class OrdersController : ControllerBase
             _logger.LogInformation("Fetching all orders");
             var orders = await _orderService.GetAllOrdersAsync();
             return Ok(orders);
+        }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
         }
         catch (Exception ex)
         {
@@ -121,6 +132,10 @@ public class OrdersController : ControllerBase
 
             return Ok(order);
         }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
+        }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error fetching order {OrderId}", id);
@@ -159,6 +174,10 @@ public class OrdersController : ControllerBase
         {
             _logger.LogWarning(ex, "Concurrent cancellation conflict for order {OrderId}", id);
             return Conflict("Order or inventory changed concurrently; reload and retry");
+        }
+        catch (Exception ex) when (PersistenceConflicts.IsConcurrentWrite(ex))
+        {
+            return Conflict("Concurrent transaction conflict; reload and reconcile before retrying");
         }
         catch (Exception ex)
         {

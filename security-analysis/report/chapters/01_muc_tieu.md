@@ -26,7 +26,7 @@ chứng cho điều kiện chuyển, thay vì chỉ một happy path.
 | Q6 | Người đọc có thể tái lập và truy vết kết luận không? | Có source/model, command, tool version, outcome, hash và giới hạn từng evidence | Manifest, phụ lục và verifier |
 
 Các tiêu chí này giới hạn kết luận theo phép kiểm. “Đủ sáu nhóm STRIDE” là coverage
-của hoạt động phân tích đe dọa; “108 unit PASS” là outcome của các ca thực thi;
+của hoạt động phân tích đe dọa; “@@UNIT_COUNT@@ unit PASS” là outcome của các ca thực thi;
 “UNSAT” là kết luận trên tập ràng buộc. Ba loại kết quả không thay thế nhau.
 
 ### 1.3. Phạm vi và giả định vận hành
@@ -40,8 +40,10 @@ mô hình học tập ownership/lifetime, không phải bản dịch của imple
 Phạm vi xác minh gồm request validation, authorization ở đường đã test, lifecycle,
 reservation, số học model và một số cạnh tranh database. Chưa bao gồm bảo mật
 thiết bị client, cấu hình cloud, gateway thật, audit bền vững, throughput mục tiêu
-hay tất cả interleaving. Gateway mock mặc định luôn trả thành công và lưu trạng
-thái trong process; test dùng gateway có kịch bản riêng mới quan sát được UNKNOWN.
+hay tất cả interleaving. Gateway mặc định DurableFake trả thành công và lưu journal ngoài memory của process.
+MemoryFake vẫn được chọn rõ ràng trong fixture thông thường; test gateway có kịch
+bản riêng quan sát UNKNOWN. Process-kill recovery đã được xác minh với local journal,
+chưa phải provider thật hoặc mất điện.
 
 ### 1.4. Asset và ưu tiên CIA
 
@@ -73,7 +75,8 @@ rotation hay quyền đọc secret trên host.
 Risk dùng thang giáo dục likelihood×impact (mỗi thành phần 1–5). Điểm thể hiện
 **inherent risk trước control**, không phải CVSS hay residual risk đã đo. Một threat
 mang trạng thái VERIFIED_IN_TEST_SCOPE vẫn có giới hạn về endpoint và môi trường.
-T3/T5/T8 còn mở; T9 mới giảm thiểu một phần. Bộ test quyền đã được mở rộng để kiểm
+T3/T5 đã giảm thiểu một phần với audit/admission; atomicity, retention, distributed
+quota và load verification còn mở. T8 còn mở; T9 mới giảm thiểu một phần. Bộ test quyền đã được mở rộng để kiểm
 Payment chéo user và Customer gọi các đường Admin; chưa kiểm token hết hạn, key
 rotation hay mọi cách giả mạo identity.
 
