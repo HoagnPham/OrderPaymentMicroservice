@@ -211,3 +211,25 @@ interval hoặc ý nghĩa thống kê. So sánh trên dữ liệu cuối trong b
 số đo cũ làm SLA. Muốn capacity claim cần repetitions, đổi thứ tự phases, tăng tải,
 soak test và workload/provider thật. Retry không thay thế điều tra 500/503 hoặc lỗi
 storage; ngưỡng/alerts đang có vẫn cần được quan sát.
+
+## 10. Chạy lại project và smoke test giao diện thật
+
+`ApplicationSmokeTests.NormalApplicationServesShopAndCompletesRealBrowserFlow`
+khởi chạy normal API executable, không dùng crash decorator, trên PostgreSQL tạm.
+Chrome dùng HTTP thật để đăng ký/login/cart/checkout/payment/history, reload và
+logout. API_BASE_URL=/api nên shop theo đúng origin/HTTPS/port; không phải đi tới
+một API cố định tại localhost:5246. Gateway vẫn là local simulation, UI không yêu
+cầu hoặc gửi dữ liệu thẻ. Cache session sai định dạng trở về signed-out.
+
+```bash
+dotnet test OrderPaymentMicroservice.IntegrationTests/OrderPaymentMicroservice.IntegrationTests.csproj --no-restore --filter FullyQualifiedName~ApplicationSmokeTests
+```
+
+Cần local PostgreSQL binaries và Chrome/Chromium. Python CDP driver dùng standard
+library, không cài browser dependencies mới. External fonts bị block, chỉ API/UI
+trên origin test được dùng. Kết thúc test dọn processes/temp files, không để API
+background chạy vào database của người dùng. Chạy thủ công ứng dụng trên database
+riêng vẫn cần ConnectionStrings:DefaultConnection và Jwt:Key hợp lệ ngoài repo;
+startup Database.Migrate có thể nâng schema của database cấu hình đó.
+Evidence/biên bản: [application_smoke.results.json](results/application_smoke.results.json),
+[REVIEW_2026_10_13.md](REVIEW_2026_10_13.md).

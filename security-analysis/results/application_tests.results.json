@@ -8,258 +8,258 @@
       "failed": 0,
       "skipped": 0,
       "times": {
-        "creation": "2026-10-13T17:28:01.9511023+07:00",
-        "queuing": "2026-10-13T17:28:01.9511023+07:00",
-        "start": "2026-10-13T17:27:59.8421014+07:00",
-        "finish": "2026-10-13T17:28:03.9016074+07:00"
+        "creation": "2026-10-13T18:05:33.4406085+07:00",
+        "queuing": "2026-10-13T18:05:33.4406085+07:00",
+        "start": "2026-10-13T18:05:30.5748763+07:00",
+        "finish": "2026-10-13T18:05:35.1112794+07:00"
       },
-      "trx_local_path": "security-analysis/results/dotnet/verification_net10.0_20261013172803.trx",
-      "trx_sha256": "a27200a4b139bf428cf6dee7be276a339019bee6edf2054c1fdbab57ac4f7b6a",
+      "trx_local_path": "security-analysis/results/dotnet/verification_net10.0_20261013180535.trx",
+      "trx_sha256": "b85d66480210ad61f112feb036c0bc350ca8b569e10bc86b5d83e67f1d81a396",
       "cases": [
         {
           "name": "OrderPaymentMicroservice.Tests.AdmissionBoundaryTests.ItemCountLimitRejectsBeforeProcessingItems(count: 3, accepted: True)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001972"
+          "duration": "00:00:00.0014628"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.AdmissionBoundaryTests.ItemCountLimitRejectsBeforeProcessingItems(count: 4, accepted: False)",
           "outcome": "Passed",
-          "duration": "00:00:00.0045289"
+          "duration": "00:00:00.0032370"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.AuditMiddlewareTests.AuditCapturesOnlyAllowlistedFieldsAndServerCorrelation",
           "outcome": "Passed",
-          "duration": "00:00:00.0181117"
+          "duration": "00:00:00.0764096"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.AuditMiddlewareTests.AuditFailureRejectsResponseAndMarksPossibleCommittedOperation(failAt: 1, executed: False)",
           "outcome": "Passed",
-          "duration": "00:00:00.0046859"
+          "duration": "00:00:00.0036258"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.AuditMiddlewareTests.AuditFailureRejectsResponseAndMarksPossibleCommittedOperation(failAt: 2, executed: True)",
           "outcome": "Passed",
-          "duration": "00:00:00.0771511"
+          "duration": "00:00:00.1280625"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.BodyLimitTests.ExactLimitBodyIsRewoundForJsonReader",
           "outcome": "Passed",
-          "duration": "00:00:00.0194586"
+          "duration": "00:00:00.0066673"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.BodyLimitTests.OverLimitBodiesAreRejectedWithOrWithoutContentLength(knownLength: False)",
           "outcome": "Passed",
-          "duration": "00:00:00.0526002"
+          "duration": "00:00:00.0157813"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.BodyLimitTests.OverLimitBodiesAreRejectedWithOrWithoutContentLength(knownLength: True)",
           "outcome": "Passed",
-          "duration": "00:00:00.0020748"
+          "duration": "00:00:00.0009968"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.BodyLimitTests.ServerBodyLimitExceptionRemains413",
           "outcome": "Passed",
-          "duration": "00:00:00.0014769"
+          "duration": "00:00:00.0014196"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.DurableGatewayTests.ConcurrentGatewayInstancesPublishOneCharge",
           "outcome": "Passed",
-          "duration": "00:00:00.7461001"
+          "duration": "00:00:02.3660388"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.DurableGatewayTests.MissingOutcomeAndCancelledCallDoNotPublishCharge",
           "outcome": "Passed",
-          "duration": "00:00:00.0050206"
+          "duration": "00:00:00.0100782"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.DurableGatewayTests.RestartRetainsChargeAndRefundAndBindsPayload",
           "outcome": "Passed",
-          "duration": "00:00:00.0281684"
+          "duration": "00:00:00.0894638"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.GatewayTimeoutTests.AllGatewayOperationsBoundWaitingForNonCooperativeAdapter(operation: 0)",
           "outcome": "Passed",
-          "duration": "00:00:00.0911629"
+          "duration": "00:00:00.1179314"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.GatewayTimeoutTests.AllGatewayOperationsBoundWaitingForNonCooperativeAdapter(operation: 1)",
           "outcome": "Passed",
-          "duration": "00:00:00.0808982"
+          "duration": "00:00:00.0813758"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.GatewayTimeoutTests.AllGatewayOperationsBoundWaitingForNonCooperativeAdapter(operation: 2)",
           "outcome": "Passed",
-          "duration": "00:00:00.1152567"
+          "duration": "00:00:00.1058137"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.GatewayTimeoutTests.AllGatewayOperationsBoundWaitingForNonCooperativeAdapter(operation: 3)",
           "outcome": "Passed",
-          "duration": "00:00:00.0846763"
+          "duration": "00:00:00.0835231"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.GatewayTimeoutTests.CallerCancellationIsNotMisreportedAsTimeout",
           "outcome": "Passed",
-          "duration": "00:00:00.0015171"
+          "duration": "00:00:00.0032639"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.GatewayTimeoutTests.ChargeTimeoutPreservesReservationAndLateResultRequiresReconciliation",
           "outcome": "Passed",
-          "duration": "00:00:00.1116002"
+          "duration": "00:00:00.1407506"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.GatewayTimeoutTests.RefundTimeoutKeepsCompensationPendingUntilStatusIsKnown",
           "outcome": "Passed",
-          "duration": "00:00:00.1088319"
+          "duration": "00:00:00.1987234"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.GatewayTimeoutTests.WorkerContinuesAfterHungStatusLookupAndStopsPromptly",
           "outcome": "Passed",
-          "duration": "00:00:00.1187241"
+          "duration": "00:00:00.1895894"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.GatewayTimeoutTests.WorkerShutdownCancelsActiveLookupWithoutInventingOutcome",
           "outcome": "Passed",
-          "duration": "00:00:00.1677481"
+          "duration": "00:00:01.7393157"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidCustomer(id: -1)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001203"
+          "duration": "00:00:00.0001313"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidCustomer(id: -2147483648)",
           "outcome": "Passed",
-          "duration": "00:00:00.0003167"
+          "duration": "00:00:00.0005782"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidCustomer(id: 0)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000086"
+          "duration": "00:00:00.0000082"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidPrice(price: \"-0.01\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0001089"
+          "duration": "00:00:00.0002373"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidPrice(price: \"1000000\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000100"
+          "duration": "00:00:00.0000143"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidPrice(price: \"79228162514264337593543950335\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0002084"
+          "duration": "00:00:00.0010482"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidProduct(id: -1)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001118"
+          "duration": "00:00:00.0001254"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidProduct(id: 0)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001451"
+          "duration": "00:00:00.0001944"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: -1)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000044"
+          "duration": "00:00:00.0000079"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: 0)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000104"
+          "duration": "00:00:00.0000144"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: 10001)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001123"
+          "duration": "00:00:00.0002923"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidQuantity(quantity: 2147483647)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001405"
+          "duration": "00:00:00.0001541"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: \"-1\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000994"
+          "duration": "00:00:00.0001146"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: \"0\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0001987"
+          "duration": "00:00:00.0001895"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: \"0.009\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000054"
+          "duration": "00:00:00.0000159"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: \"1000000\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000050"
+          "duration": "00:00:00.0000056"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.InvalidTotal(amount: \"79228162514264337593543950335\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000145"
+          "duration": "00:00:00.0000192"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.ItemSubtotalAboveMaximumOrderTotalIsRejected",
           "outcome": "Passed",
-          "duration": "00:00:00.0002213"
+          "duration": "00:00:00.0012300"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: \"0.01\", price: \"999999.99\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0001584"
+          "duration": "00:00:00.0002961"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: \"10\", price: \"0\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000047"
+          "duration": "00:00:00.0000049"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: \"10\", price: \"0.001\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000096"
+          "duration": "00:00:00.0000124"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: \"10.011\", price: \"10\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000074"
+          "duration": "00:00:00.0000310"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected(total: \"9.989\", price: \"10\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0001050"
+          "duration": "00:00:00.0001271"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.MissingItems(isNull: False)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001112"
+          "duration": "00:00:00.0001207"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.MissingItems(isNull: True)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001707"
+          "duration": "00:00:00.0002102"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.MultipleItems",
           "outcome": "Passed",
-          "duration": "00:00:00.0002236"
+          "duration": "00:00:00.0002115"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.NullItem",
           "outcome": "Passed",
-          "duration": "00:00:00.0003977"
+          "duration": "00:00:00.0004232"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.NullRequest",
           "outcome": "Passed",
-          "duration": "00:00:00.0002638"
+          "duration": "00:00:00.0002191"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: \"0.01\", quantity: 1, price: \"0.01\")",
@@ -269,17 +269,17 @@
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: \"10\", quantity: 1, price: \"10\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0004286"
+          "duration": "00:00:00.0004000"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: \"10.01\", quantity: 1, price: \"10\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0001716"
+          "duration": "00:00:00.0001487"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: \"100\", quantity: 10000, price: \"0.01\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000055"
+          "duration": "00:00:00.0000064"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: \"9.99\", quantity: 1, price: \"10\")",
@@ -289,112 +289,112 @@
         {
           "name": "OrderPaymentMicroservice.Tests.InputValidatorTests.ValidBoundariesAndTolerance(total: \"999999.99\", quantity: 1, price: \"999999.99\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000016"
+          "duration": "00:00:00.0000018"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.MoneyPrecisionTests.CentAmountsIncludingTrailingZeroesAreAccepted(input: \"0.01\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000074"
+          "duration": "00:00:00.0000069"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.MoneyPrecisionTests.CentAmountsIncludingTrailingZeroesAreAccepted(input: \"25.0100\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0002169"
+          "duration": "00:00:00.0003852"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.MoneyPrecisionTests.CentAmountsIncludingTrailingZeroesAreAccepted(input: \"999999.99\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0003345"
+          "duration": "00:00:00.0011922"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.MoneyPrecisionTests.FractionalCentsAreRejectedAcrossAllRequestBoundaries(input: \"0.019\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0685095"
+          "duration": "00:00:00.0081285"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.MoneyPrecisionTests.FractionalCentsAreRejectedAcrossAllRequestBoundaries(input: \"25.001\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0003199"
+          "duration": "00:00:00.0016959"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.MoneyPrecisionTests.FractionalCentsAreRejectedAcrossAllRequestBoundaries(input: \"25.005\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0001432"
+          "duration": "00:00:00.0008074"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.MoneyPrecisionTests.FractionalCentsAreRejectedAcrossAllRequestBoundaries(input: \"999999.999\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0011281"
+          "duration": "00:00:00.0015596"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderRetryContractTests.OnlyAllowlistedDatabaseConflictsAreRetryable(state: \"23505\", constraint: \"IX_Orders_CustomerId_CreationKeyHash\", expected: True, code: \"ORDER_CONCURRENT_WRITE\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0018978"
+          "duration": "00:00:00.0009135"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderRetryContractTests.OnlyAllowlistedDatabaseConflictsAreRetryable(state: \"23505\", constraint: \"IX_Users_Email\", expected: False, code: \"ORDER_PERSISTENCE_REJECTED\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000094"
+          "duration": "00:00:00.0000126"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderRetryContractTests.OnlyAllowlistedDatabaseConflictsAreRetryable(state: \"23514\", constraint: \"CK_Products_Stock_Nonnegative\", expected: False, code: \"ORDER_PERSISTENCE_REJECTED\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0017971"
+          "duration": "00:00:00.0006351"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderRetryContractTests.OnlyAllowlistedDatabaseConflictsAreRetryable(state: \"40001\", constraint: null, expected: True, code: \"ORDER_CONCURRENT_WRITE\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000308"
+          "duration": "00:00:00.0000316"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderRetryContractTests.OnlyAllowlistedDatabaseConflictsAreRetryable(state: \"40P01\", constraint: null, expected: True, code: \"ORDER_CONCURRENT_WRITE\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000135"
+          "duration": "00:00:00.0000174"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderRetryContractTests.OnlyAllowlistedDatabaseConflictsAreRetryable(state: \"P0001\", constraint: null, expected: False, code: \"ORDER_PERSISTENCE_REJECTED\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0000105"
+          "duration": "00:00:00.0000136"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderRetryContractTests.WrappedSerializationConflictIsRecognizedButLegacyRequestCannotAutoRetry",
           "outcome": "Passed",
-          "duration": "00:00:00.0133655"
+          "duration": "00:00:00.0183093"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderServiceTests.CancellingPendingOrderReleasesReservedInventoryExactlyOnce",
           "outcome": "Passed",
-          "duration": "00:00:00.1733125"
+          "duration": "00:00:00.0259494"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderServiceTests.ClientCannotCreateOrderUsingTamperedPrice",
           "outcome": "Passed",
-          "duration": "00:00:00.0013683"
+          "duration": "00:00:00.0028502"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderServiceTests.ConcurrentOrdersCannotBothUseTheSameStaleStockVersion",
           "outcome": "Passed",
-          "duration": "00:00:00.0126496"
+          "duration": "00:00:00.0189618"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderServiceTests.OrderUsesServerPriceAndDecrementsStock",
           "outcome": "Passed",
-          "duration": "00:00:00.0013932"
+          "duration": "00:00:00.0025299"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderServiceTests.OrderWithoutSuccessfulPaymentCannotBeConfirmed",
           "outcome": "Passed",
-          "duration": "00:00:00.6361962"
+          "duration": "00:00:00.1584969"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderServiceTests.PaidOrderMustBeConfirmedBeforeCompletion",
           "outcome": "Passed",
-          "duration": "00:00:00.0328714"
+          "duration": "00:00:00.0056387"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.CancelledOrderCannotBeRevivedByPayment",
           "outcome": "Passed",
-          "duration": "00:00:00.0003371"
+          "duration": "00:00:00.0002638"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: CONFIRMED, to: COMPLETED)",
@@ -404,7 +404,7 @@
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: CONFIRMED, to: REFUND_PENDING)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000005"
+          "duration": "00:00:00.0000004"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: CREATED, to: VALIDATED)",
@@ -419,12 +419,12 @@
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: PAID, to: REFUND_PENDING)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000040"
+          "duration": "00:00:00.0000028"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: PAYMENT_PENDING, to: PAID)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000450"
+          "duration": "00:00:00.0001260"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: REFUND_PENDING, to: REFUNDED)",
@@ -434,27 +434,27 @@
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.ExpectedForwardTransitionsAreAllowed(from: VALIDATED, to: PAYMENT_PENDING)",
           "outcome": "Passed",
-          "duration": "00:00:00.0002914"
+          "duration": "00:00:00.0001388"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: CANCELLED)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000978"
+          "duration": "00:00:00.0008245"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: COMPLETED)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001230"
+          "duration": "00:00:00.0001678"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: FAILED)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000043"
+          "duration": "00:00:00.0000038"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.TerminalStatesCannotTransitionAnywhere(terminal: REFUNDED)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000007"
+          "duration": "00:00:00.0000008"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: CANCELLED, to: PAID)",
@@ -469,17 +469,17 @@
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: CREATED, to: PAID)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000027"
+          "duration": "00:00:00.0000043"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: FAILED, to: PAYMENT_PENDING)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000494"
+          "duration": "00:00:00.0000530"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: PAID, to: PAYMENT_PENDING)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001181"
+          "duration": "00:00:00.0007249"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.OrderStateMachineTests.UnsafeTransitionsAreRejected(from: REFUNDED, to: PAID)",
@@ -489,67 +489,67 @@
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.CancellationCannotWinAfterPaymentEnteredProcessing",
           "outcome": "Passed",
-          "duration": "00:00:00.1631187"
+          "duration": "00:00:01.7500356"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.CancelledOrderCannotBePaid",
           "outcome": "Passed",
-          "duration": "00:00:00.0012273"
+          "duration": "00:00:00.0035066"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.DeclineFailsOrderAndReleasesInventory",
           "outcome": "Passed",
-          "duration": "00:00:00.0018472"
+          "duration": "00:00:00.0033829"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.ExhaustedUnknownPaymentRemainsReservedUntilOutcomeIsKnown",
           "outcome": "Passed",
-          "duration": "00:00:00.0028222"
+          "duration": "00:00:00.0035690"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.PaymentAmountMustEqualOrderTotal",
           "outcome": "Passed",
-          "duration": "00:00:00.0010671"
+          "duration": "00:00:00.0016445"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.ReconciliationRecoversPaymentLeftProcessingByProcessCrash",
           "outcome": "Passed",
-          "duration": "00:00:00.0013195"
+          "duration": "00:00:00.0022602"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.RefundReconciliationRecoversAfterProcessCrashWithoutIssuingAnotherRefund",
           "outcome": "Passed",
-          "duration": "00:00:00.0030139"
+          "duration": "00:00:00.0098697"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.RetryingSameIdempotencyKeyReturnsOriginalPayment",
           "outcome": "Passed",
-          "duration": "00:00:00.0012655"
+          "duration": "00:00:00.0022561"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.SuccessfulGatewayResultMovesPaymentAndOrderAtomically",
           "outcome": "Passed",
-          "duration": "00:00:00.0011351"
+          "duration": "00:00:00.0357633"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.SuccessfulRefundCompensatesOrderAndReleasesInventory",
           "outcome": "Passed",
-          "duration": "00:00:00.0160606"
+          "duration": "00:00:00.0701285"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.TimeoutBecomesUnknownAndRetryUsesSameLogicalPayment",
           "outcome": "Passed",
-          "duration": "00:00:00.0169507"
+          "duration": "00:00:00.0381340"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentServiceTests.UnknownRefundStaysPendingUntilSameRefundIsRetried",
           "outcome": "Passed",
-          "duration": "00:00:00.0024472"
+          "duration": "00:00:00.0029476"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PENDING, to: PROCESSING)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001508"
+          "duration": "00:00:00.0001453"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PROCESSING, to: FAILED)",
@@ -559,7 +559,7 @@
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PROCESSING, to: SUCCESS)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000005"
+          "duration": "00:00:00.0000006"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: PROCESSING, to: UNKNOWN)",
@@ -569,369 +569,374 @@
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: REFUND_PENDING, to: REFUNDED)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000004"
+          "duration": "00:00:00.0000005"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: SUCCESS, to: REFUND_PENDING)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000035"
+          "duration": "00:00:00.0000029"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: UNKNOWN, to: FAILED)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000004"
+          "duration": "00:00:00.0000006"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.DeclaredTransitionsAreAllowed(from: UNKNOWN, to: PROCESSING)",
           "outcome": "Passed",
-          "duration": "00:00:00.0004239"
+          "duration": "00:00:00.0001010"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.FailureAndRefundAreTerminal(terminal: FAILED)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000793"
+          "duration": "00:00:00.0000922"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.FailureAndRefundAreTerminal(terminal: REFUNDED)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001276"
+          "duration": "00:00:00.0041555"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PaymentStateMachineTests.SuccessfulPaymentCanOnlyEnterRefundFlow",
           "outcome": "Passed",
-          "duration": "00:00:00.0077297"
+          "duration": "00:00:00.0369934"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PendingAgeTests.UnknownReconciliationKeepsPendingAgeAndRefundStartsANewWindow",
           "outcome": "Passed",
-          "duration": "00:00:00.0037549"
+          "duration": "00:00:00.0138970"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PersistenceConflictTests.DetectsWrappedPostgresConcurrencyWithoutMisclassifyingOtherConstraints(state: \"23505\", expected: False)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000051"
+          "duration": "00:00:00.0000106"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PersistenceConflictTests.DetectsWrappedPostgresConcurrencyWithoutMisclassifyingOtherConstraints(state: \"23514\", expected: False)",
           "outcome": "Passed",
-          "duration": "00:00:00.0000012"
+          "duration": "00:00:00.0000014"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PersistenceConflictTests.DetectsWrappedPostgresConcurrencyWithoutMisclassifyingOtherConstraints(state: \"40001\", expected: True)",
           "outcome": "Passed",
-          "duration": "00:00:00.0001526"
+          "duration": "00:00:00.0004205"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.PersistenceConflictTests.DetectsWrappedPostgresConcurrencyWithoutMisclassifyingOtherConstraints(state: \"40P01\", expected: True)",
           "outcome": "Passed",
-          "duration": "00:00:00.0014162"
+          "duration": "00:00:00.0004036"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.CartAdditionChecksCombinedQuantityAndLeavesTotalUnchangedOnRejection",
           "outcome": "Passed",
-          "duration": "00:00:00.0133433"
+          "duration": "00:00:00.0088758"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.CartZeroUpdateRemovesItemAndRecalculatesTotal",
           "outcome": "Passed",
-          "duration": "00:00:00.1554423"
+          "duration": "00:00:00.7068335"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.DuplicateProductLinesRespectCombinedStock(perLine: 5, accepted: True)",
           "outcome": "Passed",
-          "duration": "00:00:00.0367236"
+          "duration": "00:00:00.0098442"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.DuplicateProductLinesRespectCombinedStock(perLine: 6, accepted: False)",
           "outcome": "Passed",
-          "duration": "00:00:00.1223006"
+          "duration": "00:00:00.0960762"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InactiveProductCannotBeAddedOrUpdatedInCart",
           "outcome": "Passed",
-          "duration": "00:00:00.0034001"
+          "duration": "00:00:00.0038188"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: -1)",
           "outcome": "Passed",
-          "duration": "00:00:00.0003547"
+          "duration": "00:00:00.0002180"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: 0)",
           "outcome": "Passed",
-          "duration": "00:00:00.0004253"
+          "duration": "00:00:00.0008065"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: 10001)",
           "outcome": "Passed",
-          "duration": "00:00:00.0500329"
+          "duration": "00:00:00.0031611"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartAdditionDoesNotCreateCartOrItems(quantity: 2147483647)",
           "outcome": "Passed",
-          "duration": "00:00:00.1013715"
+          "duration": "00:00:00.0540811"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartUpdatePreservesItemAndTotal(quantity: -1)",
           "outcome": "Passed",
-          "duration": "00:00:00.0010571"
+          "duration": "00:00:00.0008975"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartUpdatePreservesItemAndTotal(quantity: 10001)",
           "outcome": "Passed",
-          "duration": "00:00:00.0041005"
+          "duration": "00:00:00.0023430"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidCartUpdatePreservesItemAndTotal(quantity: 11)",
           "outcome": "Passed",
-          "duration": "00:00:00.0007084"
+          "duration": "00:00:00.0006866"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: -1, stock: 10)",
           "outcome": "Passed",
-          "duration": "00:00:00.0002646"
+          "duration": "00:00:00.0002457"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: 0, stock: 10)",
           "outcome": "Passed",
-          "duration": "00:00:00.0074360"
+          "duration": "00:00:00.0495688"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: 1000000, stock: 10)",
           "outcome": "Passed",
-          "duration": "00:00:00.0012998"
+          "duration": "00:00:00.0039670"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidProductCreateAndUpdateDoNotPersistChanges(price: 25, stock: -1)",
           "outcome": "Passed",
-          "duration": "00:00:00.0009220"
+          "duration": "00:00:00.0003281"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: \"\", password: \"StrongPassword!123\", name: \"Customer\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0042973"
+          "duration": "00:00:00.0025469"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: \"customer@example.test\", password: \"\", name: \"Customer\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0002580"
+          "duration": "00:00:00.0001416"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: \"customer@example.test\", password: \"StrongPassword!123\", name: \" \")",
           "outcome": "Passed",
-          "duration": "00:00:00.0003373"
+          "duration": "00:00:00.0003005"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: \"customer@example.test\", password: \"short\", name: \"Customer\")",
           "outcome": "Passed",
-          "duration": "00:00:00.0004236"
+          "duration": "00:00:00.0003638"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.RequestBoundaryRegressionTests.InvalidRegistrationDoesNotPersistUser(email: \"invalid\", password: \"StrongPassword!123\", name: \"Customer\")",
           "outcome": "Passed",
-          "duration": "00:00:01.2156104"
+          "duration": "00:00:01.0332307"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.SecurityFuzzingTests.SeedCorpusMatchesExpectedValidatorOutcome",
           "outcome": "Passed",
-          "duration": "00:00:00.0298460"
+          "duration": "00:00:00.0203253"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.SecurityFuzzingTests.SeededOrderAndPaymentValidatorCampaignHasNoUnexpectedCrash",
           "outcome": "Passed",
-          "duration": "00:00:00.2429976"
+          "duration": "00:00:00.1775868"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.SecurityFuzzingTests.SeededStateMachineCampaignMatchesIndependentTransitionTables",
           "outcome": "Passed",
-          "duration": "00:00:00.3606860"
+          "duration": "00:00:00.6335358"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.UserServiceTests.LegacySha256PasswordIsUpgradedAfterSuccessfulLogin",
           "outcome": "Passed",
-          "duration": "00:00:00.7077645"
+          "duration": "00:00:00.3031090"
         },
         {
           "name": "OrderPaymentMicroservice.Tests.UserServiceTests.RegisterHashesPasswordAndLoginReturnsSignedJwt",
           "outcome": "Passed",
-          "duration": "00:00:00.2111167"
+          "duration": "00:00:00.3449927"
         }
       ]
     },
     "integration": {
       "run_outcome": "Completed",
-      "total": 32,
-      "passed": 32,
+      "total": 33,
+      "passed": 33,
       "failed": 0,
       "skipped": 0,
       "times": {
-        "creation": "2026-10-13T17:28:15.8948698+07:00",
-        "queuing": "2026-10-13T17:28:15.8948698+07:00",
-        "start": "2026-10-13T17:28:05.1883187+07:00",
-        "finish": "2026-10-13T17:28:57.7995455+07:00"
+        "creation": "2026-10-13T18:05:44.5425389+07:00",
+        "queuing": "2026-10-13T18:05:44.5425390+07:00",
+        "start": "2026-10-13T18:05:31.0596005+07:00",
+        "finish": "2026-10-13T18:06:37.4256148+07:00"
       },
-      "trx_local_path": "security-analysis/results/dotnet/verification_net10.0_20261013172857.trx",
-      "trx_sha256": "bf92a556746f813fcbc6d67cf2a925d752f5d074bf00c7b6aa18f946789cf839",
+      "trx_local_path": "security-analysis/results/dotnet/verification_net10.0_20261013180637.trx",
+      "trx_sha256": "14f6a5632394ee24392d0b8079ccf0883f6ee4d30818f7e171625cf7a3b7b22f",
       "cases": [
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AdmissionAuditTests.BodyAndItemLimitsRejectBeforeOrderPersistence",
           "outcome": "Passed",
-          "duration": "00:00:00.2374285"
+          "duration": "00:00:00.2558504"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AdmissionAuditTests.MissingAuditResultReturns503WithDurableBeginAndCommittedOrder",
           "outcome": "Passed",
-          "duration": "00:00:00.3202514"
+          "duration": "00:00:00.4252300"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AdmissionAuditTests.MissingAuditStorePreventsBusinessOperation",
           "outcome": "Passed",
-          "duration": "00:00:00.2246890"
+          "duration": "00:00:00.3604411"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AdmissionAuditTests.PaymentCancelRefundAuditPersistsWithoutSecretsAndRejectsMutation",
           "outcome": "Passed",
-          "duration": "00:00:00.4065338"
+          "duration": "00:00:00.4927795"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AdmissionAuditTests.RateLimitsUseSeparateAuthBucketAndSeparateVerifiedUserBuckets",
           "outcome": "Passed",
-          "duration": "00:00:00.4086729"
+          "duration": "00:00:00.3721993"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AdmissionAuditTests.StreamingBodyWithoutLengthIsRejectedBeforeJsonBinding",
           "outcome": "Passed",
-          "duration": "00:00:00.0877753"
+          "duration": "00:00:00.0904765"
+        },
+        {
+          "name": "OrderPaymentMicroservice.IntegrationTests.ApplicationSmokeTests.NormalApplicationServesShopAndCompletesRealBrowserFlow",
+          "outcome": "Passed",
+          "duration": "00:00:09.3488038"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AtomicAuditIdempotencyTests.AtomicAuditInsertFailureRollsBackOrderAndInventory",
           "outcome": "Passed",
-          "duration": "00:00:00.2456267"
+          "duration": "00:00:00.2545895"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AtomicAuditIdempotencyTests.ConcurrentSameKeyReservesInventoryOnlyOnceAndCanBeRetried",
           "outcome": "Passed",
-          "duration": "00:00:00.2310993"
+          "duration": "00:00:00.2613132"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AtomicAuditIdempotencyTests.DirectSqlMutationIsAuditedAndTransactionRollbackRemovesItsAudit",
           "outcome": "Passed",
-          "duration": "00:00:00.2082684"
+          "duration": "00:00:00.2047122"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AtomicAuditIdempotencyTests.InvalidAndMultipleKeysAreRejectedWithoutCreatingOrders",
           "outcome": "Passed",
-          "duration": "00:00:00.1918740"
+          "duration": "00:00:00.1793294"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AtomicAuditIdempotencyTests.KeyIsBoundToPayloadAndScopedToAuthenticatedUser",
           "outcome": "Passed",
-          "duration": "00:00:00.3533896"
+          "duration": "00:00:00.3526154"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AtomicAuditIdempotencyTests.ReplayFromAnotherHostReturnsOriginalReceiptEvenAfterCancellation",
           "outcome": "Passed",
-          "duration": "00:00:00.3467796"
+          "duration": "00:00:00.3332759"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AtomicAuditIdempotencyTests.StockAndInactiveProductConflictsAreNotRetryable",
           "outcome": "Passed",
-          "duration": "00:00:00.2178039"
+          "duration": "00:00:00.2228410"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.AtomicAuditIdempotencyTests.TwoApiHostsCompeteForTenUnitsWithoutOverselling",
           "outcome": "Passed",
-          "duration": "00:00:01.4712953"
+          "duration": "00:00:01.5169549"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OperationalDrillTests.BackupRestoresDatabaseReceiptsAuditAndGatewayJournalThenRecoversPendingCharge",
           "outcome": "Passed",
-          "duration": "00:00:07.3358905"
+          "duration": "00:00:06.7080116"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OperationalDrillTests.TwoRealApiProcessesRecordBoundedLoadLatencyConflictsAndRateLimits",
           "outcome": "Passed",
-          "duration": "00:00:08.9197378"
+          "duration": "00:00:10.0231363"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OperationsTests.AuditAppendFailureIsCountedWithoutExposingExceptionOrSecrets",
           "outcome": "Passed",
-          "duration": "00:00:00.3027696"
+          "duration": "00:00:00.2821747"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OperationsTests.HealthIsMinimalAndOperationalDetailsRequireAdmin",
           "outcome": "Passed",
-          "duration": "00:00:00.2639805"
+          "duration": "00:00:00.2659490"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OperationsTests.ReconciliationRefreshDoesNotHidePendingAgeAndMissingAuditRaisesAlerts",
           "outcome": "Passed",
-          "duration": "00:00:00.6052665"
+          "duration": "00:00:00.6056106"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Admin_can_confirm_and_complete_paid_order",
           "outcome": "Passed",
-          "duration": "00:00:00.4881876"
+          "duration": "00:00:00.4958156"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Authentication_and_resource_ownership_are_enforced",
           "outcome": "Passed",
-          "duration": "00:00:00.5421251"
+          "duration": "00:00:00.6462744"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Cart_updates_and_removal_commit_consistent_totals_on_PostgreSQL",
           "outcome": "Passed",
-          "duration": "00:00:00.2250206"
+          "duration": "00:00:00.2419342"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Concurrent_payment_and_cancellation_end_in_one_consistent_outcome",
           "outcome": "Passed",
-          "duration": "00:00:00.2715835"
+          "duration": "00:00:00.2599225"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Concurrent_payment_requests_create_only_one_charge_record",
           "outcome": "Passed",
-          "duration": "00:00:00.2562342"
+          "duration": "00:00:00.2590700"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Customer_can_complete_register_cart_order_payment_flow",
           "outcome": "Passed",
-          "duration": "00:00:00.3289374"
+          "duration": "00:00:00.4162755"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Database_rejects_negative_stock_and_nonpositive_quantity",
           "outcome": "Passed",
-          "duration": "00:00:00.0762391"
+          "duration": "00:00:00.0918977"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Fractional_cents_are_rejected_before_persistence_and_cent_values_round_trip",
           "outcome": "Passed",
-          "duration": "00:00:00.8149467"
+          "duration": "00:00:00.8294945"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderPaymentApiTests.Invalid_payloads_are_rejected_without_changing_persisted_data",
           "outcome": "Passed",
-          "duration": "00:00:00.2914699"
+          "duration": "00:00:00.3497330"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.OrderRetryLoadTests.CompareBoundedSameKeyRetryWithOneShotAcrossUsersAndProducts",
           "outcome": "Passed",
-          "duration": "00:00:10.8766313"
+          "duration": "00:00:11.5259785"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.ProcessRestartTests.Killed_API_recovers_committed_gateway_charge_without_charging_or_releasing_again",
           "outcome": "Passed",
-          "duration": "00:00:04.7440534"
+          "duration": "00:00:04.6606955"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.ProcessRestartTests.Separate_processes_replay_one_durable_gateway_result",
           "outcome": "Passed",
-          "duration": "00:00:00.1697808"
+          "duration": "00:00:00.2405202"
         },
         {
           "name": "OrderPaymentMicroservice.IntegrationTests.RefundRestartTests.KilledApiRecoversRefundWithoutRefundingOrReleasingInventoryTwice",
           "outcome": "Passed",
-          "duration": "00:00:07.1090883"
+          "duration": "00:00:07.5485725"
         }
       ]
     }

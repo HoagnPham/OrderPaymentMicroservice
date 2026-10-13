@@ -165,3 +165,18 @@ không retry business/503, cancel và giữ key sau 429. C# workload mô phỏng
 không phải browser-to-API end-to-end measurement.
 Nguồn: [order_retry_load.results.json](../results/order_retry_load.results.json),
 [checkout_retry.results.json](../results/checkout_retry.results.json).
+
+### 6.12. Rà soát và chạy normal application với Chrome
+
+Normal executable OrderPaymentMicroservice chạy Development, port động và PostgreSQL
+tạm. Chrome thực thi signup/login/products/cart/checkout/payment/history qua HTTP
+thật; backend và gateway journal cũng được assert. Kiểm cached user JSON hỏng,
+reload document mới, logout navbar, chặn hai payment submit và payload không có dữ
+liệu thẻ. Browser có 0 uncaught JS exceptions trong flow đạt oracle.
+
+Đã sửa API host/port cố định, cache parse không guard, error body double-read,
+card fields không dùng, logout navbar và payment double-submit. Live test dùng
+provider mô phỏng, không là provider/browser matrix hoặc production deployment.
+External fonts bị block để không phụ thuộc mạng; dữ liệu/process test được cleanup.
+Nguồn: [biên bản review](../REVIEW_2026_10_13.md),
+[application_smoke.results.json](../results/application_smoke.results.json).

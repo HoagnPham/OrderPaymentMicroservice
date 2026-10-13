@@ -245,3 +245,14 @@ kiểm riêng bằng mocked fetch. Tỷ lệ success/latency là quan sát, asse
 bounded attempts, không duplicate, conservation stock và COMMIT audit count.
 Evidence giữ raw per-logical/per-attempt samples và backoff. Baseline chạy trước,
 chưa crossover/repetitions/statistical confidence; không suy SLA production.
+
+## Live project/browser review
+
+ApplicationSmokeTests chạy normal OrderPaymentMicroservice executable trong
+Development trên port động, PostgreSQL/ledger tạm, Chrome CDP với HTTP thật. Khác
+với mocked-fetch checkout test, flow này thực thi đầy đủ API/DB. API path cùng
+origin; cache user hỏng phục hồi; payment không thu/gửi card fields; error reader
+hỗ trợ text/JSON; double submit và logout được kiểm. Reload chờ timeOrigin đổi để
+xác nhận document mới, không nhận nhầm state của document trước reload.
+[Biên bản rà soát](REVIEW_2026_10_13.md),
+[application_smoke.results.json](results/application_smoke.results.json).

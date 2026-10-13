@@ -1,5 +1,5 @@
 // API Configuration
-const API_BASE_URL = 'http://localhost:5246/api';
+const API_BASE_URL = '/api';
 let currentUser = null;
 let cart = { items: [], totalPrice: 0 };
 
@@ -163,15 +163,26 @@ function logout() {
     localStorage.removeItem('user');
     cart = { items: [], totalPrice: 0 };
     showSection('auth');
+    updateNavBar();
+    document.getElementById('checkoutForm').reset();
+    document.getElementById('paymentForm').reset();
     updateCartUI();
     showAuthMessage('Đã đăng xuất', 'info');
 }
 
 function loadUser() {
-    const user = localStorage.getItem('user');
-    if (user) {
-        currentUser = JSON.parse(user);
+    try {
+        const cached = localStorage.getItem('user');
+        if (!cached) return;
+        const parsed = JSON.parse(cached);
+        if (!parsed || !Number.isInteger(parsed.id) || parsed.id <= 0 || typeof parsed.token !== 'string' || !parsed.token) {
+            throw new Error('Invalid cached session');
+        }
+        currentUser = parsed;
         updateNavBar();
+    } catch (_) {
+        currentUser = null;
+        try { localStorage.removeItem('user'); } catch (_) { /* Storage may be unavailable. */ }
     }
 }
 
@@ -358,6 +369,15 @@ async function removeFromCart(itemId) {
 }
 
 // Checkout & Orders
+async function readApiError(response, fallback) {
+    const text = await response.text();
+    let parsed;
+    try { parsed = JSON.parse(text); } catch (_) { return { message: text || fallback }; }
+    if (typeof parsed === 'string') return { message: parsed || fallback };
+    if (!parsed || typeof parsed !== 'object') return { message: fallback };
+    return { ...parsed, message: parsed.message || parsed.title || fallback };
+}
+
 function waitForCheckoutRetry(milliseconds, signal) {
     return new Promise((resolve, reject) => {
         signal?.throwIfAborted();
@@ -444,17 +464,11 @@ async function handleCheckout(e) {
             if ([400, 413].includes(response.status) && !attempt.orderId) {
                 sessionStorage.removeItem(storageKey);
             }
-            let errMsg = 'Không thể tạo đơn hàng';
-            try {
-                const errData = await response.json();
-                if (errData.retryable === false && ['OUT_OF_STOCK', 'PRODUCT_UNAVAILABLE'].includes(errData.code) && !attempt.orderId) {
-                    sessionStorage.removeItem(storageKey);
-                }
-                errMsg = errData.title || errData.message || errData || errMsg;
-            } catch (_) { 
-                errMsg = await response.text() || errMsg;
+            const errData = await readApiError(response, 'Không thể tạo đơn hàng');
+            if (errData.retryable === false && ['OUT_OF_STOCK', 'PRODUCT_UNAVAILABLE'].includes(errData.code) && !attempt.orderId) {
+                sessionStorage.removeItem(storageKey);
             }
-            throw new Error(errMsg);
+            throw new Error(errData.message);
         }
 
         const order = await response.json();
@@ -483,15 +497,17 @@ function goToPayment(orderId, amount) {
     showSection('payment');
 }
 
+let paymentInFlight = false;
 async function handlePayment(e) {
     e.preventDefault();
+    if (paymentInFlight) return;
 
     const orderId = parseInt(document.getElementById('paymentOrderId').value);
     const paymentAmount = parseFloat(document.getElementById('paymentAmountValue').value) || cart.totalPrice;
-    const cardNumber = document.getElementById('cardNumber').value;
-    const cardName = document.getElementById('cardName').value;
-    const cardExpiry = document.getElementById('cardExpiry').value;
-    const cardCvv = document.getElementById('cardCvv').value;
+    if (!Number.isInteger(orderId) || orderId <= 0 || !Number.isFinite(paymentAmount) || paymentAmount <= 0) {
+        showMessage('Hãy chọn một đơn hàng hợp lệ trước khi thanh toán.', 'error');
+        return;
+    }
     const paymentKeyStorage = `payment-idempotency-${orderId}`;
     let paymentIdempotencyKey = sessionStorage.getItem(paymentKeyStorage);
     if (!paymentIdempotencyKey) {
@@ -500,6 +516,7 @@ async function handlePayment(e) {
     }
 
     try {
+        paymentInFlight = true;
         showMessage('Đang xử lý thanh toán...', 'info');
         const response = await fetch(`${API_BASE_URL}/payments`, {
             method: 'POST',
@@ -509,19 +526,12 @@ async function handlePayment(e) {
             },
             body: JSON.stringify({
                 orderId,
-                amount: paymentAmount,
-                paymentMethod: 'credit_card',
-                cardDetails: {
-                    cardNumber: cardNumber.slice(-4),
-                    cardholderName: cardName,
-                    expiryDate: cardExpiry,
-                    cvv: cardCvv
-                }
+                amount: paymentAmount
             })
         });
 
         if (!response.ok) {
-            const error = await response.json();
+            const error = await readApiError(response, 'Thanh toán thất bại');
             throw new Error(error.message || 'Thanh toán thất bại');
         }
 
@@ -574,6 +584,8 @@ async function handlePayment(e) {
         }, 1500);
     } catch (error) {
         showMessage(error.message, 'error');
+    } finally {
+        paymentInFlight = false;
     }
 }
 

@@ -1,8 +1,8 @@
 {
   "passed": true,
-  "run_at_utc": "2026-10-13T10:28:20.6898412Z",
-  "first_pid": 49099,
-  "restarted_pid": 49163,
+  "run_at_utc": "2026-10-13T11:05:49.3080227Z",
+  "first_pid": 57688,
+  "restarted_pid": 57752,
   "kill_window": "Gateway journal published; API payment still PROCESSING before finalize",
   "recovered_by": "PaymentRecoveryWorker in restarted OS process",
   "charge_records": 1,

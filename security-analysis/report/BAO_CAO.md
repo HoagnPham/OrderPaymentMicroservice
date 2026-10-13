@@ -750,7 +750,7 @@ model solver được giữ tại Phụ lục D, không đưa verdict suy đoán
 ## 6. Kiểm thử động và fuzzing
 
 Bộ test ứng dụng mới nhất ghi nhận 148/148 unit test và
-32/32 integration test PASS, không SKIP.
+33/33 integration test PASS, không SKIP.
 Ba campaign fuzz cũng nằm trong unit suite; đợt này đo lại coverage campaign.
 Branch coverage 96.66% áp dụng InputValidator,
 PaymentValidator, hai state machine và MoneyAmounts. InputValidator có branch coverage 97.22%,
@@ -863,10 +863,10 @@ Không gọi browser test là end-to-end HTTP hoặc kết quả chịu tải pr
 
 | Kịch bản | Phạm vi / outcome | Timing trong lần chạy |
 | --- | --- | --- |
-| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 67.5 ms; restore 164.8 ms; API recovery 1864.8 ms |
-| read | 200 requests; concurrency 8; 200: 200 | 352.33 req/s; successful 352.33/s; p95 45.19 ms |
-| write | 96 requests; concurrency 8; 201: 27, 409: 69 | 64.53 req/s; successful 18.15/s; p95 460.72 ms |
-| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 81.46 req/s; successful 20.37/s; p95 235.09 ms |
+| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 69.5 ms; restore 147.7 ms; API recovery 1843.9 ms |
+| read | 200 requests; concurrency 8; 200: 200 | 354.92 req/s; successful 354.92/s; p95 33.90 ms |
+| write | 96 requests; concurrency 8; 201: 28, 409: 68 | 59.33 req/s; successful 17.30/s; p95 487.21 ms |
+| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 74.40 req/s; successful 18.60/s; p95 241.20 ms |
 | Refund process kill | 2 journal entries giữ hash; charge reference giữ nguyên; stock release một lần | PASS; DB outage live=200, ready/status=503 |
 
 
@@ -918,8 +918,8 @@ Evidence: [refund_restart.results.json](../results/refund_restart.results.json).
 
 | Policy | Đơn thành công | HTTP attempts | p95 logical (gồm backoff) | Đơn thành công/s |
 | --- | --- | --- | --- | --- |
-| Gửi một lần | 37/96 (38.5%) | 96 | 541.31 ms | 21.36 |
-| Retry tối đa 4 lần | 95/96 (99.0%) | 138 | 757.07 ms | 35.41 |
+| Gửi một lần | 45/96 (46.9%) | 96 | 502.22 ms | 30.11 |
+| Retry tối đa 4 lần | 96/96 (100.0%) | 139 | 679.91 ms | 32.22 |
 
 
 Cùng 96 logical requests/scenario, 8 users và 4 products, concurrency=8 qua hai OS
@@ -943,13 +943,28 @@ không phải browser-to-API end-to-end measurement.
 Nguồn: [order_retry_load.results.json](../results/order_retry_load.results.json),
 [checkout_retry.results.json](../results/checkout_retry.results.json).
 
+### 6.12. Rà soát và chạy normal application với Chrome
+
+Normal executable OrderPaymentMicroservice chạy Development, port động và PostgreSQL
+tạm. Chrome thực thi signup/login/products/cart/checkout/payment/history qua HTTP
+thật; backend và gateway journal cũng được assert. Kiểm cached user JSON hỏng,
+reload document mới, logout navbar, chặn hai payment submit và payload không có dữ
+liệu thẻ. Browser có 0 uncaught JS exceptions trong flow đạt oracle.
+
+Đã sửa API host/port cố định, cache parse không guard, error body double-read,
+card fields không dùng, logout navbar và payment double-submit. Live test dùng
+provider mô phỏng, không là provider/browser matrix hoặc production deployment.
+External fonts bị block để không phụ thuộc mạng; dữ liệu/process test được cleanup.
+Nguồn: [biên bản review](../REVIEW_2026_10_13.md),
+[application_smoke.results.json](../results/application_smoke.results.json).
+
 
 ## 7. Kết quả và truy vết
 
 | Phép kiểm | Kết quả | Phạm vi |
 | --- | --- | --- |
 | Unit | 148/148 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
-| HTTP/PostgreSQL | 32/32 PASS | Database tạm, migration/seed và test host |
+| HTTP/PostgreSQL | 33/33 PASS | Database tạm, migration/seed và test host |
 | Recovery | 15/15 thuộc tính; 6 mutation detected | Graph hữu hạn, giả định được khai báo |
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |
 | Inventory SMT | 3/3 đúng kỳ vọng | Hai dòng của một sản phẩm |

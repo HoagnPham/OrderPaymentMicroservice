@@ -17,16 +17,17 @@ internal sealed class OperationalProbe : IAsyncDisposable
     private OperationalProbe(Process process, int port)
     { _process=process;Client=new(){BaseAddress=new Uri($"http://127.0.0.1:{port}"),Timeout=TimeSpan.FromSeconds(30)}; }
 
-    public static async Task<OperationalProbe> Start(string connection, string ledger, bool recovery=false, string? marker=null, int permits=100000, string operation="charge")
+    public static async Task<OperationalProbe> Start(string connection, string ledger, bool recovery=false, string? marker=null, int permits=100000, string operation="charge", bool realApplication=false)
     {
         var listener=new TcpListener(IPAddress.Loopback,0);listener.Start();var port=((IPEndPoint)listener.LocalEndpoint).Port;listener.Stop();
         var configuration=new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
-        var project=Path.Combine(Root,"OrderPaymentMicroservice.CrashProbe");
+        var application=realApplication?"OrderPaymentMicroservice":"OrderPaymentMicroservice.CrashProbe";
+        var project=Path.Combine(Root,application);
         var info=new ProcessStartInfo("dotnet"){WorkingDirectory=project,UseShellExecute=false,RedirectStandardOutput=true,RedirectStandardError=true};
-        info.ArgumentList.Add(Path.Combine(project,"bin",configuration,"net10.0","OrderPaymentMicroservice.CrashProbe.dll"));
+        info.ArgumentList.Add(Path.Combine(project,"bin",configuration,"net10.0",application+".dll"));
         foreach(var pair in new Dictionary<string,string>
         {
-            ["ASPNETCORE_ENVIRONMENT"]="Testing",["ASPNETCORE_URLS"]=$"http://127.0.0.1:{port}",
+            ["ASPNETCORE_ENVIRONMENT"]=realApplication?"Development":"Testing",["ASPNETCORE_URLS"]=$"http://127.0.0.1:{port}",
             ["ConnectionStrings__DefaultConnection"]=connection,["Jwt__Key"]="operational-test-key-at-least-32-characters-long",
             ["Jwt__Issuer"]="OperationalTests",["Jwt__Audience"]="OperationalTests",
             ["PaymentGateway__Mode"]="DurableFake",["PaymentGateway__StoreDirectory"]=ledger,

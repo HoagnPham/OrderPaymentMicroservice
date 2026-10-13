@@ -1,12 +1,12 @@
 {
   "passed": true,
-  "run_at_utc": "2026-10-13T10:32:02.281191+00:00",
+  "run_at_utc": "2026-10-13T11:08:58.706755+00:00",
   "browser": "Google Chrome 137.0.7151.68",
   "source_sha256": {
-    "OrderPaymentMicroservice/wwwroot/js/app.js": "387bdff2815cfe8e76b3e405fc93216117373cafcb611a7caea57cc77599f5b5",
-    "security-analysis/browser/checkout_retry.template.html": "30f2da7070acf8004a7cf1210ded91715726d91d407808fa413bac5512dce98a",
+    "OrderPaymentMicroservice/wwwroot/js/app.js": "559677da680ba4aa7cfece946af00e390e2f5b640bcb3a0f8db5ec87983d0f8c",
+    "security-analysis/browser/checkout_retry.template.html": "2926666016c5d6bba57eb7db20d76dca520597135ae68c0d6882af4d0768fd3e",
     "security-analysis/verify_checkout.py": "7102b2d7bec764bc113379bf394cbddae80de21b24b6a0f3091e7fbcd2be9ef0"
   },
-  "result": "PASS: checkout key persistence; transient retry; stable payload/key; bounded jitter and attempts; no business/503 retry; cancellation",
+  "result": "PASS: checkout key persistence; transient retry; stable payload/key; bounded jitter and attempts; no business/503 retry; cancellation; JSON/text API errors",
   "limits": "Browser executes real checkout functions with mocked fetch/sessionStorage; live HTTP/PostgreSQL is verified by separate integration tests."
 }

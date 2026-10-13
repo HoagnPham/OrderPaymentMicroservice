@@ -1,0 +1,40 @@
+{
+  "passed": true,
+  "run_at_utc": "2026-10-13T11:06:28.973346\u002B00:00",
+  "application": "Normal OrderPaymentMicroservice executable in Development with temporary PostgreSQL/ledger",
+  "limitations": [
+    "One Chrome desktop flow over localhost; no real card/provider or production deployment.",
+    "External font resources are blocked; no mobile/accessibility or full cross-browser coverage."
+  ],
+  "flow": {
+    "registration": true,
+    "login": true,
+    "products": true,
+    "cart": true,
+    "checkout": true,
+    "payment": "SUCCESS",
+    "history": "PAID",
+    "card_data_sent": false,
+    "broken_cache_recovered": true,
+    "duplicate_payment_submit_blocked": true
+  },
+  "javascript_errors": [],
+  "session_reload": true,
+  "logout": true,
+  "database_assertions": {
+    "orders": 1,
+    "payments": 1,
+    "payment_status": "SUCCESS",
+    "journal_entries": 1,
+    "commit_audit_present": true
+  },
+  "source_sha256": {
+    "OrderPaymentMicroservice.IntegrationTests/ApplicationSmokeTests.cs": "0501C0EF2D306A5CF2DB7BB99E4E62AF5F0B70719A375E6BB0B4542010C92AB8",
+    "OrderPaymentMicroservice.IntegrationTests/OperationalProbe.cs": "1C749393CDD237E52CE272CA48E5F0022970E272B939ADF0174661E0A57E5F29",
+    "security-analysis/browser/live_smoke.py": "EC928DA0745345F7C92C084C264EBD747C7918CFFDED5EDE3D0940AD31F86D37",
+    "security-analysis/browser/live_smoke.js": "42A9ECD25C201D74AB8113C48FC61CA28DA73A0AF0C8E4BF1DC403C2DD839CED",
+    "OrderPaymentMicroservice/wwwroot/js/app.js": "559677DA680BA4AA7CFECE946AF00E390E2F5B640BCB3A0F8DB5EC87983D0F8C",
+    "OrderPaymentMicroservice/wwwroot/index.html": "1FC6DD25B2B3016027170BD30D1166B401EBE7B070E0E38D7348F87F8167BA17",
+    "OrderPaymentMicroservice/Program.cs": "78DB51AC564D34F3620559A6DD141ABE87CBAB1C86C5E9A8D4EE7EC8F4EBD214"
+  }
+}

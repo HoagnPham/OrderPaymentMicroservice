@@ -7,7 +7,7 @@ const goToPayment=()=>{}; window.setTimeout=()=>{}; sessionStorage.clear();
 @@BLOCK@@
 (async()=>{
  const captured=[]; let mode='network';
- window.fetch=async(url, options)=>{captured.push(options);if(mode==='network')throw Error('lost connection');if(mode==='audit')return{ok:false,status:503,json:async()=>({message:'uncertain'})};if(mode==='limited')return{ok:false,status:429,json:async()=>({message:'limited'})};return{ok:true,json:async()=>({id:42,totalAmount:10})}};
+ window.fetch=async(url, options)=>{captured.push(options);if(mode==='network')throw Error('lost connection');if(mode==='audit')return new Response(JSON.stringify({message:'uncertain'}),{status:503});if(mode==='limited')return new Response(JSON.stringify({message:'limited'}),{status:429});return new Response(JSON.stringify({id:42,totalAmount:10}),{status:201})};
  const submit=()=>handleCheckout({preventDefault(){}}); const check=(v,m)=>{if(!v)throw Error(m)};
  await submit();const first=JSON.parse(sessionStorage.getItem('order-create:101'));check(first.key,'key saved before send');
  document.getElementById('address').value='Changed';await submit();check(captured.length===1,'uncertain changed payload blocked');
@@ -34,7 +34,9 @@ const goToPayment=()=>{}; window.setTimeout=()=>{}; sessionStorage.clear();
  const cancellation=new AbortController();calls=0;
  try{await createOrderWithRetry('p','k',{signal:cancellation.signal,fetchOrder:async()=>{calls++;return transient()},wait:async()=>cancellation.abort()});throw Error('missing cancellation')}catch(e){check(e.name==='AbortError','abort stops retry')}
  check(calls===1,'no request after abort');
- document.getElementById('result').textContent='PASS: checkout key persistence; transient retry; stable payload/key; bounded jitter and attempts; no business/503 retry; cancellation';
+ const plain = await readApiError(new Response('Server text diagnostic',{status:400}),'fallback');check(plain.message==='Server text diagnostic','plain text error survives one body read');
+ const structured = await readApiError(new Response(JSON.stringify({code:'OUT_OF_STOCK',retryable:false,message:'Stock missing'}),{status:409}),'fallback');check(structured.code==='OUT_OF_STOCK' && structured.retryable===false,'structured metadata retained');
+ document.getElementById('result').textContent='PASS: checkout key persistence; transient retry; stable payload/key; bounded jitter and attempts; no business/503 retry; cancellation; JSON/text API errors';
 
 })().catch(e=>document.getElementById('result').textContent='FAIL: '+e.message);
 </script>

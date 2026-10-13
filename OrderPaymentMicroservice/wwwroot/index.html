@@ -43,7 +43,7 @@
                         <div class="auth-heading"><span class="auth-icon"><svg viewBox="0 0 24 24"><path d="M12 3 4 7v5c0 4.8 3.4 8 8 9 4.6-1 8-4.2 8-9V7l-8-4Z"/><path d="m9 12 2 2 4-4"/></svg></span><div><h2 id="authTitle">Chào mừng trở lại</h2><p>Nhập thông tin để tiếp tục đặt món.</p></div></div>
                         <form id="loginForm">
                             <div class="form-group"><label for="loginEmail">Email</label><input type="email" id="loginEmail" required placeholder="ban@example.com" autocomplete="email"></div>
-                            <div class="form-group"><div class="label-row"><label for="loginPassword">Mật khẩu</label><span>Bảo mật AES-256</span></div><input type="password" id="loginPassword" required placeholder="Nhập mật khẩu" autocomplete="current-password"></div>
+                            <div class="form-group"><div class="label-row"><label for="loginPassword">Mật khẩu</label><span>Bảo vệ tài khoản</span></div><input type="password" id="loginPassword" required placeholder="Nhập mật khẩu" autocomplete="current-password"></div>
                             <button type="submit" class="btn btn-dark">Đăng nhập <span>→</span></button>
                         </form>
                         <form id="registerForm" style="display:none;">
@@ -75,8 +75,8 @@
                 </section>
 
                 <section id="payment" class="section">
-                    <div class="page-heading"><button class="back-link" type="button" onclick="showSection('checkout')">← Quay lại</button><h1>Thanh toán an toàn</h1><p>Thông tin thẻ được mã hóa và không lưu trên hệ thống.</p></div>
-                    <form id="paymentForm" class="surface payment-form"><input type="hidden" id="paymentOrderId"><input type="hidden" id="paymentAmountValue"><div class="payment-info"><span>Số tiền cần thanh toán</span><div class="payment-amount" id="paymentAmount">0 VNĐ</div><span class="secure-chip">● Kết nối bảo mật</span></div><div class="form-group"><label for="cardNumber">Số thẻ</label><input type="text" id="cardNumber" required placeholder="1234 5678 9012 3456" maxlength="19" inputmode="numeric"></div><div class="form-group"><label for="cardName">Tên chủ thẻ</label><input type="text" id="cardName" required placeholder="NGUYEN VAN A" autocomplete="cc-name"></div><div class="form-row"><div class="form-group"><label for="cardExpiry">Ngày hết hạn</label><input type="text" id="cardExpiry" required placeholder="MM/YY" maxlength="5" autocomplete="cc-exp"></div><div class="form-group"><label for="cardCvv">CVV</label><input type="password" id="cardCvv" required placeholder="•••" maxlength="4" inputmode="numeric"></div></div><button type="submit" class="btn btn-dark">Thanh toán ngay <span>→</span></button></form>
+                    <div class="page-heading"><button class="back-link" type="button" onclick="showSection('checkout')">← Quay lại</button><h1>Thanh toán mô phỏng</h1><p>Đây là giao dịch thử nghiệm, không thu tiền thật và không cần thông tin thẻ.</p></div>
+                    <form id="paymentForm" class="surface payment-form"><input type="hidden" id="paymentOrderId"><input type="hidden" id="paymentAmountValue"><div class="payment-info"><span>Số tiền cần thanh toán</span><div class="payment-amount" id="paymentAmount">0 VNĐ</div><span class="secure-chip">● Giao dịch thử nghiệm</span></div><p>Nhấn xác nhận để hoàn tất thanh toán thử cho đơn này.</p><button type="submit" class="btn btn-dark">Thanh toán ngay <span>→</span></button></form>
                 </section>
 
                 <section id="orders" class="section">
