@@ -3,7 +3,7 @@
   "workbook": "OrderPaymentMicroservice_Security_Spec.xlsx",
   "pipeline_json": "security-analysis/order_payment_pipeline_spec.json",
   "sheet_count": 10,
-  "requirements": 18,
+  "requirements": 27,
   "states": 15,
   "transitions": 31,
   "reachable_states": 15,
@@ -23,7 +23,7 @@
     ],
     "holds": true
   },
-  "generated_functions": 7,
+  "generated_functions": 5,
   "arithmetic_checks": 6,
-  "test_cases": 28
+  "test_cases": 50
 }

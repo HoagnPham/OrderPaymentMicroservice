@@ -1,6 +1,6 @@
 {
   "name": "order_payment_microservice_security",
-  "description": "Đặc tả kiểm chứng hình thức cho luồng Order-Payment: state machine có xử lý sự cố và phục hồi, safety/liveness, idempotency, serialization payment-cancel, bounded retry, compensation refund, SMT số học, fuzzing xác định, TLC, integration PostgreSQL và mô hình C về an toàn bộ nhớ.",
+  "description": "Group 14 — Xây dựng và kiểm chứng an toàn hệ thống xử lý đơn hàng và thanh toán trực tuyến. Phạm vi đã làm: JWT/ownership/Admin, giá server, idempotency Order/Payment, consistency Order–Payment–Inventory, recovery charge/refund qua kill process và PostgreSQL stop/start, audit nguyên tử, admission, health/status, backup/restore, checkout/browser, model/SMT/fuzz và 5 module C minh họa an toàn bộ nhớ.",
   "requirements": [
     {
       "id": "REQ-1",
@@ -16,19 +16,19 @@
     },
     {
       "id": "REQ-3",
-      "text": "Khi tạo đơn, giá sản phẩm phải lấy từ cơ sở dữ liệu phía server, sản phẩm phải tồn tại/đang hoạt động và tồn kho phải đủ.",
+      "text": "Tạo Order lấy UnitPrice/TotalAmount từ catalog server; kiểm sản phẩm tồn tại/active và cộng dồn quantity theo ProductId trước kiểm stock. Payload giá/tổng không hợp lệ bị từ chối; client UnitPrice không là nguồn giá có thẩm quyền.",
       "category": "functional",
       "priority": "HIGH"
     },
     {
       "id": "REQ-4",
-      "text": "TotalAmount phải dương, trong giới hạn cho phép và khớp tổng Quantity × UnitPrice với sai số tối đa 0,01; dữ liệu sai phải bị từ chối.",
+      "text": "Price/TotalAmount/Payment.Amount phải là bội 0,01 trong giới hạn; fractional cent bị từ chối, không round âm thầm. InputValidator/OrderService chấp nhận lệch tổng tối đa 0,01; Order lưu tổng giá server, Payment phải bằng chính xác tổng đã lưu.",
       "category": "safety",
       "priority": "HIGH"
     },
     {
       "id": "REQ-5",
-      "text": "Order chỉ được chuyển theo chuỗi CREATED → VALIDATED → PAYMENT_PENDING → PAID → CONFIRMED → COMPLETED; không bỏ bước, quay ngược hoặc hồi sinh trạng thái terminal.",
+      "text": "Order đi CREATED → VALIDATED → PAYMENT_PENDING → PAID → CONFIRMED → COMPLETED; cho phép cancel trước charge, FAILED khi decline, PAID/CONFIRMED → REFUND_PENDING → REFUNDED. Guard cấm hồi sinh terminal; model có các state trừu tượng bổ sung, không đồng nhất với enum runtime.",
       "category": "safety",
       "priority": "HIGH"
     },
@@ -82,7 +82,7 @@
     },
     {
       "id": "REQ-14",
-      "text": "Từ mọi trạng thái Order có thể đạt tới, mọi đường thực thi hữu hạn tiến triển phải cuối cùng tới COMPLETED, CANCELLED hoặc FAILED.",
+      "text": "Liveness có điều kiện: checker progress-only đạt terminal khi lọc các cạnh đánh dấu stutter. Raw AG AF terminal trên graph đầy đủ là false; không suy ra runtime luôn kết thúc khi provider còn UNKNOWN.",
       "category": "liveness",
       "priority": "HIGH"
     },
@@ -94,13 +94,13 @@
     },
     {
       "id": "REQ-16",
-      "text": "Retry thanh toán và xác nhận phải có bound; khi hết ngân sách retry phải chuyển FAILED hoặc REFUND_PENDING thay vì lặp vô hạn.",
-      "category": "liveness",
+      "text": "PaymentService giới hạn charge tối đa 2 attempts cho cùng logical payment/key. Hết budget mà UNKNOWN vẫn giữ reservation và chỉ lookup/reconcile; không suy thành FAILED. Bounded confirmation retry chỉ có trong model, chưa hiện thực scheduler/counter tự động.",
+      "category": "safety",
       "priority": "HIGH"
     },
     {
       "id": "REQ-17",
-      "text": "Nếu gateway đã charge nhưng không thể hoàn tất đơn hoặc commit PAID, hệ thống phải dùng REFUND_PENDING và REFUNDED để bù trừ; không được đổi thẳng sang FAILED.",
+      "text": "Charge đã xảy ra nhưng finalize PAID lỗi phải được lookup bằng cùng key và hoàn tất SUCCESS/PAID, không charge mù hoặc đổi FAILED. Khi yêu cầu refund cho Order PAID/CONFIRMED, dùng REFUND_PENDING → REFUNDED, giữ dấu vết charge và release kho một lần.",
       "category": "safety",
       "priority": "HIGH"
     },
@@ -109,6 +109,60 @@
       "text": "Payment và cancellation trên cùng Order phải được serialize; không được đồng thời sở hữu critical resource hoặc tạo hai Payment SUCCESS.",
       "category": "safety",
       "priority": "HIGH"
+    },
+    {
+      "id": "REQ-19",
+      "text": "PROCESSING/UNKNOWN phải được worker reconciliation hỏi trạng thái charge cũ; REFUND_PENDING hỏi trạng thái refund cũ. Lookup không tăng AttemptCount, không tự phát charge/refund; UNKNOWN giữ reservation và chặn cancel.",
+      "category": "safety",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-20",
+      "text": "Với DurableFake journal đã publish trước local finalize, API kill/restart hoặc PostgreSQL stop/start phải phục hồi đúng charge/refund. Reconnect giữ nguyên API process/pool; giữ key, transaction reference và journal, không duplicate operation hoặc release kho.",
+      "category": "safety",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-21",
+      "text": "POST /api/orders hỗ trợ Idempotency-Key tùy chọn, namespace theo customer từ JWT. Cùng key/payload trả 201 và receipt gốc kể cả sau cancel/catalog đổi; payload khác trả 409. Unique key hash, reserve, order và receipt commit cùng transaction; client không key vẫn có thể tạo Order mới.",
+      "category": "functional",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-22",
+      "text": "Mutation Orders/Payments phải có COMMIT audit cùng transaction bằng DB trigger; audit lỗi phải rollback nghiệp vụ. BEGIN/RESULT HTTP dùng correlation server và allowlist không có secrets; BEGIN lỗi trả 503 trước action, RESULT lỗi sau action trả 503 với requiresReconciliation=true.",
+      "category": "safety",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-23",
+      "text": "Admission mặc định body ≤65536 byte, tối đa 100 order items, auth 10 request/60s theo connection IP, API 120 request/60s theo subject hoặc IP. Quá quota trả 429/Retry-After; body quá lớn trả 413 cả khi thiếu Content-Length, trước JSON binding.",
+      "category": "safety",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-24",
+      "text": "Checkout giữ attempt/key/payload theo tài khoản trong sessionStorage; chặn double submit và thay payload khi outcome chưa rõ. Create-order retry tối đa 4 HTTP attempts/8s, chỉ cho 409 ORDER_CONCURRENT_WRITE với retryable=true; 503/network giữ key để đối soát.",
+      "category": "functional",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-25",
+      "text": "Health live/ready trả thông tin tối thiểu; ready phản ánh DB outage. /api/operations/status chỉ Admin, no-store và không lộ secret; PendingSince giữ tuổi unresolved qua status lookup, có chỉ số recovery/audit failure và cảnh báo pending quá lâu.",
+      "category": "functional",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-26",
+      "text": "Backup/restore trên môi trường tạm phải giữ database, receipt, audit triggers, identity sequence và gateway ledger nhất quán; worker phục hồi pending charge sau restore không charge lại. Không dùng phép đo drill làm cam kết RPO/RTO.",
+      "category": "functional",
+      "priority": "HIGH"
+    },
+    {
+      "id": "REQ-27",
+      "text": "Shop chạy được register/login → cart → order → payment giả lập → history qua HTTP/PostgreSQL thật; reload/logout đúng, không thu/gửi card fields. Browser smoke và browser mocked-fetch có phạm vi bằng chứng riêng.",
+      "category": "functional",
+      "priority": "MEDIUM"
     }
   ],
   "state_machine": {
@@ -440,28 +494,6 @@
       ],
       "buffer_size": 32,
       "bug": "double-free"
-    },
-    {
-      "name": "safe_divide_retry_budget",
-      "language": "python",
-      "kind": "divide",
-      "params": [
-        "remaining_attempts",
-        "elapsed_ms"
-      ]
-    },
-    {
-      "name": "verify_gateway_callback",
-      "language": "python",
-      "kind": "magic_value",
-      "params": [
-        "signature_code",
-        "callback_type"
-      ],
-      "magic_values": [
-        4919,
-        2026
-      ]
     }
   ],
   "arithmetic_checks": [
