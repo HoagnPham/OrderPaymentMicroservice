@@ -1,8 +1,12 @@
 # Hướng dẫn vận hành và nghiệm thu
 
-Cập nhật 13/10/2026. Đây là runbook cho project hiện tại; chưa thực hiện backup,
+Cập nhật 14/10/2026. Đây là runbook cho project hiện tại; chưa thực hiện backup,
 restore hoặc migration trên database phát triển của người dùng. Gateway hiện là
 mô phỏng local, chưa có provider thu tiền thật.
+
+Nghiệm thu tập trung safety Order–Payment theo [phạm vi](PHAM_VI_KIEM_CHUNG.md).
+DB RBAC, retention job, exporter/webhook, shared limiter và gateway thật là future
+work; những hướng dẫn triển khai dưới đây không phải yêu cầu phải thêm vào demo.
 
 ## 1. Trước khi triển khai migration
 
@@ -11,7 +15,7 @@ mô phỏng local, chưa có provider thu tiền thật.
 - Kiểm tra stock/quantity/price cũ trước các migration CHECK; không tự xóa dữ liệu lỗi.
 - Migration mới thêm ba cột receipt, unique customer/key và audit row triggers.
   Đơn cũ có key null; không backfill audit hoặc idempotency cho lịch sử.
-- Tách tài khoản migration có quyền DDL và runtime chỉ có quyền nghiệp vụ cần thiết.
+- Future work ngoài nghiệm thu: tách tài khoản migration có quyền DDL và runtime chỉ có quyền nghiệp vụ cần thiết.
   Runtime không được ALTER/DROP trigger, TRUNCATE AuditEvents hoặc sở hữu schema.
   Mặc định project chưa tự provision các PostgreSQL roles này.
 
@@ -191,6 +195,24 @@ journal entries có hash không đổi. Test sau đó dừng cluster tạm: live
 và protected status trả 503. Đây không là failover hoặc reconnect recovery test.
 Evidence: [refund_restart.results.json](results/refund_restart.results.json).
 
+## 8.1. Demo PostgreSQL ngắt/kết nối lại trước local finalize
+
+```bash
+python3 security-analysis/run_recovery_demo.py
+```
+
+Hai ca charge/refund giữ API process và pool, dừng rồi bật lại cùng PostgreSQL tạm.
+Gateway journal được publish trước khi DB tắt; finalize và same-key replay lúc
+outage trả 503. Worker có recovery_scan_failures, rồi recovery_resolved sau DB
+trở lại; live 200, ready 200 → 503 → 200. Charge kết thúc PAID/SUCCESS, giữ kho;
+refund kết thúc REFUNDED, giữ charge reference và trả kho một lần. Counter adapter
+test kiểm một call charge/refund và lookup; replay không đổi hash journal.
+
+Đây là local stop/start, không failover/network partition hoặc provider thật.
+Oracle, yêu cầu môi trường và giới hạn trong [phạm vi kiểm chứng](PHAM_VI_KIEM_CHUNG.md).
+Evidence: [charge](results/postgres_reconnect_charge.results.json),
+[refund](results/postgres_reconnect_refund.results.json).
+
 ## 9. Retry tạo đơn và đọc kết quả đo
 
 Shop tự retry chỉ đối với 409 code ORDER_CONCURRENT_WRITE/retryable=true, tối đa
@@ -231,5 +253,5 @@ trên origin test được dùng. Kết thúc test dọn processes/temp files, k
 background chạy vào database của người dùng. Chạy thủ công ứng dụng trên database
 riêng vẫn cần ConnectionStrings:DefaultConnection và Jwt:Key hợp lệ ngoài repo;
 startup Database.Migrate có thể nâng schema của database cấu hình đó.
-Evidence/biên bản: [application_smoke.results.json](results/application_smoke.results.json),
-[REVIEW_2026_10_13.md](REVIEW_2026_10_13.md).
+Evidence/hướng dẫn: [application_smoke.results.json](results/application_smoke.results.json),
+[Kịch bản thuyết trình và demo](KICH_BAN_THUYET_TRINH_VA_DEMO.md).

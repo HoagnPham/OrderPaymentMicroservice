@@ -93,16 +93,19 @@ def main():
               'application': 'Normal OrderPaymentMicroservice executable in Development with temporary PostgreSQL/ledger',
               'limitations': ['One Chrome desktop flow over localhost; no real card/provider or production deployment.', 'External font resources are blocked; no mobile/accessibility or full cross-browser coverage.']}
     with tempfile.TemporaryDirectory(prefix='live-shop-browser-') as directory:
+        browser_log = (Path(directory)/'chrome-startup.log').open('w+')
         process = subprocess.Popen([chrome, '--headless', '--no-sandbox', '--disable-gpu', '--disable-background-networking',
                                     '--remote-debugging-port=0', f'--user-data-dir={directory}', 'about:blank'],
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                                   stdout=subprocess.DEVNULL, stderr=browser_log)
         cdp = None
         try:
             port_file = Path(directory)/'DevToolsActivePort'
             deadline = time.monotonic()+15
             while not port_file.exists():
                 if process.poll() is not None or time.monotonic()>deadline:
-                    raise RuntimeError('Chrome startup failed')
+                    browser_log.seek(0)
+                    diagnostic = browser_log.read()[-3000:]
+                    raise RuntimeError(f'Chrome startup failed (exit={process.poll()}): {diagnostic}')
                 time.sleep(.05)
             port = int(port_file.read_text().splitlines()[0])
             with urllib.request.urlopen(f'http://127.0.0.1:{port}/json/list') as response:
@@ -112,6 +115,7 @@ def main():
             cdp.call('Network.setBlockedURLs', {'urls':['https://fonts.googleapis.com/*','https://fonts.gstatic.com/*']})
             init = cdp.call('Page.addScriptToEvaluateOnNewDocument', {'source':"localStorage.setItem('user','{broken cached session');"})
             cdp.call('Page.navigate', {'url': address})
+            deadline = time.monotonic()+15
             while cdp.evaluate('document.readyState') != 'complete':
                 if time.monotonic()>deadline:
                     raise RuntimeError('Shop did not finish loading')
@@ -142,6 +146,7 @@ def main():
                 process.wait(timeout=5)
             except subprocess.TimeoutExpired:
                 process.kill();process.wait()
+            browser_log.close()
     (BASE.parent/'results/application_smoke.results.json').write_text(json.dumps(result,indent=2)+'\n')
     print('Live shop smoke: '+('PASS' if result['passed'] else 'FAIL: '+result.get('error','unknown')))
     if not result['passed']:

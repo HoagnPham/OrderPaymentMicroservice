@@ -1,0 +1,100 @@
+{
+  "passed": true,
+  "run_at_utc": "2026-10-14T17:34:42.084963Z",
+  "operation": "refund",
+  "api_pid": 22981,
+  "api_restarted": false,
+  "postgres_data_preserved": true,
+  "connection_pooling": true,
+  "health_ready_sequence": [
+    200,
+    503,
+    200
+  ],
+  "health_live_during_outage": 200,
+  "original_finalize_http_status": 503,
+  "worker_metrics": {
+    "audit_append_failures": 2,
+    "recovery_scan_failures": 1,
+    "recovery_attempts": 1,
+    "recovery_resolved": 1,
+    "last_completed_scan_unix_ms": 1791999281913,
+    "scope": "this_process_since_start"
+  },
+  "gateway_calls": {
+    "charge_calls": 1,
+    "refund_calls": 1,
+    "charge_status_lookups": 0,
+    "refund_status_lookups": 1
+  },
+  "payment_records": 1,
+  "attempt_count": 1,
+  "idempotency_keys_preserved": true,
+  "journal_hashes": {
+    "9A7664C0C842B3B9214C6CE3605BA86240CE2CC6E57F416BFC4A63D6B3B84D4A.json": "DC3A8525DE4BD86569CCA13DBCA41E6345941B22AE2BFB21FCD16ABD28F98383",
+    "DAB9639094CE017DEDCF4C6D7FD1B738543F251753221BA0437B296B7F0D17E4.json": "68CEAC47427F236C3F933D6740BFDC641FF8106A22A693CDEB04CF56A7C87B6A"
+  },
+  "inventory_reservation_count": 1,
+  "inventory_release_count": 1,
+  "charge_reference_preserved": true,
+  "final_payment_status": "REFUNDED",
+  "final_order_status": "REFUNDED",
+  "final_inventory_status": "RELEASED",
+  "initial_stock": 50,
+  "final_stock": 50,
+  "timeline": [
+    {
+      "step": "READY_200_BEFORE",
+      "elapsed_ms": 2381.6779
+    },
+    {
+      "step": "GATEWAY_JOURNAL_PUBLISHED_LOCAL_FINALIZE_BLOCKED",
+      "elapsed_ms": 3036.2106
+    },
+    {
+      "step": "POSTGRES_STOPPED_DATA_DIRECTORY_RETAINED",
+      "elapsed_ms": 3261.8045
+    },
+    {
+      "step": "READY_503_LIVE_200",
+      "elapsed_ms": 3291.8816
+    },
+    {
+      "step": "ORIGINAL_FINALIZE_FAILED_WHILE_DB_OFF",
+      "elapsed_ms": 3339.8541
+    },
+    {
+      "step": "RECOVERY_SCAN_DURING_OUTAGE",
+      "elapsed_ms": 9847.6974
+    },
+    {
+      "step": "SAME_POSTGRES_CLUSTER_RESTARTED",
+      "elapsed_ms": 9968.1551
+    },
+    {
+      "step": "READY_200_AFTER",
+      "elapsed_ms": 9987.3629
+    },
+    {
+      "step": "WORKER_RECONCILED_WITHOUT_API_RESTART",
+      "elapsed_ms": 11615.9018
+    },
+    {
+      "step": "SAME_KEY_REPLAY_NO_ADDITIONAL_GATEWAY_MUTATION",
+      "elapsed_ms": 11778.6049
+    }
+  ],
+  "source_sha256": {
+    "OrderPaymentMicroservice.IntegrationTests/PostgresReconnectTests.cs": "7C960EAD880295C68E7CC8A647340247ACE2016EB3BB9F6B50DE8A49F90FD397",
+    "OrderPaymentMicroservice.IntegrationTests/LocalPostgresServer.cs": "1B9E0B69F951CE501F517685DC6C9DD1EE7BC0141B133544DF660E9D466D6AD2",
+    "OrderPaymentMicroservice.IntegrationTests/OperationalProbe.cs": "DAA0B44404650623B88849C6EE89AC817A43ED374453DAB396AFF89604280B7B",
+    "OrderPaymentMicroservice.CrashProbe/CrashProbeHost.cs": "E36D4C308A7A4D16FFACAF1727A99C37D7A0D21EA2C18EEF42D22EDC99B4D4A1",
+    "OrderPaymentMicroservice/Services/Payments/PaymentRecoveryWorker.cs": "5263F06D645C1456534C3FA98F2BD387EB8F480E3007886C6580BA876F57F05B",
+    "OrderPaymentMicroservice/Services/PaymentService.cs": "B001669F1FEB07095D9C936D12BBD7C8C07E4230ECB45E0B09288B3C19DE68EC",
+    "OrderPaymentMicroservice/Services/Payments/DurableFakePaymentGateway.cs": "4B9B070054468C767188220F846C2E04AE6677525DB2095C90BBC3E72A8E23DA"
+  },
+  "limitations": [
+    "Real stop/start of one temporary local PostgreSQL cluster, same API process, simulated durable provider; not network partition, failover or real PSP.",
+    "Test executable barrier creates the pre-finalize window; production executable has no fault switches. No DB role/retention/external alert changes."
+  ]
+}

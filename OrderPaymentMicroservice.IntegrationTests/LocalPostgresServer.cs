@@ -52,11 +52,25 @@ internal sealed class LocalPostgresServer : IAsyncDisposable
         var socketDirectory = Path.Combine(_root, "socket");
         Directory.CreateDirectory(socketDirectory);
         await RunAsync("initdb", "-D", _data, "-A", "trust", "--no-locale", "--encoding=UTF8");
+        await RestartAsync();
+        await RunAsync("createdb", "-h", "127.0.0.1", "-p", _port.ToString(), DatabaseName);
+    }
+
+    public async Task RestartAsync()
+    {
+        if (_started) return;
+        var socketDirectory = Path.Combine(_root, "socket");
         await RunAsync(
             "pg_ctl", "-D", _data, "-w", "start", "-l", Path.Combine(_root, "postgres.log"), "-o",
             $"-h 127.0.0.1 -p {_port} -k {socketDirectory}");
         _started = true;
-        await RunAsync("createdb", "-h", "127.0.0.1", "-p", _port.ToString(), DatabaseName);
+    }
+
+    public async Task StopAsync()
+    {
+        if (!_started) return;
+        await RunAsync("pg_ctl", "-D", _data, "-w", "stop", "-m", "fast");
+        _started = false;
     }
 
     public async ValueTask DisposeAsync()
@@ -65,7 +79,7 @@ internal sealed class LocalPostgresServer : IAsyncDisposable
         {
             try
             {
-                await RunAsync("pg_ctl", "-D", _data, "-w", "stop", "-m", "fast");
+                await StopAsync();
             }
             catch
             {

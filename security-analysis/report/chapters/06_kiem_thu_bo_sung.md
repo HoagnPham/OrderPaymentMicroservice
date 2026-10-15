@@ -141,6 +141,29 @@ ready/status 503 không lộ connection string. Cửa sổ kill refund và shutd
 chứng minh disk failure, network partition, provider thật hoặc reconnect recovery.
 Evidence: [refund_restart.results.json](../results/refund_restart.results.json).
 
+### 6.10.1. PostgreSQL disconnect → reconnect, giữ nguyên API process
+
+@@RECONNECT_TABLE@@
+
+PostgresReconnectTests giữ response gateway sau khi journal charge/refund ghi xong,
+dừng cluster PostgreSQL tạm rồi thả response khi DB còn tắt: finalize trả 503.
+Replay cùng key trong outage cũng 503. Worker scan lỗi thật, API vẫn live=200.
+Bật lại cùng cluster và giữ nguyên API process/pool: ready trở lại 200, worker
+lookup đúng key rồi reconcile thành SUCCESS/PAID hoặc REFUNDED. Không sửa timestamp.
+
+Oracle kiểm một payment, AttemptCount=1, keys/charge reference/transaction đúng,
+SYSTEM audit RESULT, stock và InventoryStatus khớp. Adapter test đếm lời gọi
+charge/refund thực tế; journal hashes giữ nguyên sau recovery và replay. Refund
+kiểm đúng một ORDER_UPDATE COMMIT sang REFUNDED và stock trở về giá trị ban đầu.
+Quan sát DB dùng kết nối mới độc lập, API dùng pooling suốt outage.
+
+Đây là hai case stop/start local với durable fake provider; không chứng minh
+network partition, failover, disk/power loss, mọi crash window hoặc provider thật.
+Barrier/counters chỉ nằm ở test executable. Demo: `python3 security-analysis/run_recovery_demo.py`.
+Evidence: [charge](../results/postgres_reconnect_charge.results.json),
+[refund](../results/postgres_reconnect_refund.results.json),
+[phạm vi nghiệm thu](../PHAM_VI_KIEM_CHUNG.md).
+
 ### 6.11. So sánh retry có giới hạn với gửi một lần
 
 @@ORDER_RETRY_TABLE@@
@@ -178,5 +201,5 @@ liệu thẻ. Browser có 0 uncaught JS exceptions trong flow đạt oracle.
 card fields không dùng, logout navbar và payment double-submit. Live test dùng
 provider mô phỏng, không là provider/browser matrix hoặc production deployment.
 External fonts bị block để không phụ thuộc mạng; dữ liệu/process test được cleanup.
-Nguồn: [biên bản review](../REVIEW_2026_10_13.md),
+Nguồn: [kịch bản thuyết trình và demo](../KICH_BAN_THUYET_TRINH_VA_DEMO.md),
 [application_smoke.results.json](../results/application_smoke.results.json).

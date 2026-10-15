@@ -207,7 +207,10 @@ stuck với clock tiến 10 phút và audit append failure counter. Thí nghiệ
 ảnh hưởng quan sát, không sửa database time hoặc gateway outcome.
 Refund process kill sau journal publish đã PASS: worker giữ charge reference,
 resolve đúng refund transaction, clear PendingSince, release một lần, replay không
-đổi journal. Dừng DB tạm kiểm chứng live/ready khác nhau; chưa reconnect/failover.
+đổi journal. PostgresReconnectTests bổ sung ngắt/bật lại DB với cùng API process,
+pooled connections và worker: charge/refund gọi một lần, journal giữ hash, trạng
+thái Order–Payment và stock khớp sau recovery. Không chứng minh failover.
+Tiêu chí và giới hạn: [phạm vi kiểm chứng](PHAM_VI_KIEM_CHUNG.md).
 
 ## Contract retry cho POST /api/orders
 
@@ -254,5 +257,5 @@ với mocked-fetch checkout test, flow này thực thi đầy đủ API/DB. API 
 origin; cache user hỏng phục hồi; payment không thu/gửi card fields; error reader
 hỗ trợ text/JSON; double submit và logout được kiểm. Reload chờ timeOrigin đổi để
 xác nhận document mới, không nhận nhầm state của document trước reload.
-[Biên bản rà soát](REVIEW_2026_10_13.md),
+[Hướng dẫn demo và các lỗi giao diện đã sửa](KICH_BAN_THUYET_TRINH_VA_DEMO.md),
 [application_smoke.results.json](results/application_smoke.results.json).

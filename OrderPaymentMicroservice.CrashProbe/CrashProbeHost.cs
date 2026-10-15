@@ -1,5 +1,6 @@
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using OrderPaymentMicroservice.Services.Payments;
+using System.Text.Json;
 
 // Test executable only: the production API has no crash switch/endpoint.
 internal static class CrashProbeHost
@@ -21,16 +22,32 @@ internal static class CrashProbeHost
             {
                 var inner = new DurableFakePaymentGateway(builder.Configuration["PaymentGateway:StoreDirectory"]!);
                 builder.Services.RemoveAll<IPaymentGateway>();
-                builder.Services.AddSingleton<IPaymentGateway>(new BarrierGateway(inner, marker, builder.Configuration["CrashProbe:Operation"] ?? "charge"));
+                builder.Services.AddSingleton<IPaymentGateway>(new BarrierGateway(inner, marker, builder.Configuration["CrashProbe:Operation"] ?? "charge",
+                    builder.Configuration["CrashProbe:ReleaseFile"],builder.Configuration["CrashProbe:CountsFile"]));
             }
         });
         app.Run();
     }
 
-    private sealed class BarrierGateway(IPaymentGateway inner, string marker, string operation) : IPaymentGateway
+    private sealed class BarrierGateway(IPaymentGateway inner, string marker, string operation, string? releaseFile, string? countsFile) : IPaymentGateway
     {
+        private readonly SemaphoreSlim _gate=new(1,1);
+        private int _charge,_refund,_chargeLookup,_refundLookup;
+        private async Task Count(string kind,CancellationToken token)
+        {
+            if(countsFile==null)return;
+            await _gate.WaitAsync(token);
+            try
+            {
+                switch(kind){case "charge":_charge++;break;case "refund":_refund++;break;case "charge_lookup":_chargeLookup++;break;case "refund_lookup":_refundLookup++;break;}
+                await File.WriteAllTextAsync(countsFile+".tmp",JsonSerializer.Serialize(new{charge_calls=_charge,refund_calls=_refund,charge_status_lookups=_chargeLookup,refund_status_lookups=_refundLookup}),token);
+                File.Move(countsFile+".tmp",countsFile,overwrite:true);
+            }
+            finally{_gate.Release();}
+        }
         public async Task<GatewayResult> ChargeAsync(GatewayPaymentRequest request, CancellationToken token = default)
         {
+            await Count("charge",token);
             var result = await inner.ChargeAsync(request, token);
             if(operation!="charge")return result;
             await Pause(result,token);
@@ -40,13 +57,16 @@ internal static class CrashProbeHost
         {
             await File.WriteAllTextAsync(marker + ".tmp", result.TransactionCode, token);
             File.Move(marker + ".tmp", marker);
-            // The test kills this process after the provider ledger is durable,
-            // while PaymentService is still waiting and cannot finalize the DB.
-            await Task.Delay(Timeout.InfiniteTimeSpan, token);
+            // Process-kill tests never release this barrier. Reconnect tests release
+            // it while DB is unavailable, so the original local finalize really fails.
+            if(releaseFile==null)await Task.Delay(Timeout.InfiniteTimeSpan, token);
+            else while(!File.Exists(releaseFile))await Task.Delay(25,token);
         }
         public async Task<GatewayResult> RefundAsync(GatewayPaymentRequest r, CancellationToken t = default)
-        {var result=await inner.RefundAsync(r,t);if(operation=="refund")await Pause(result,t);return result;}
-        public Task<GatewayResult> GetChargeStatusAsync(GatewayPaymentRequest r, CancellationToken t = default) => inner.GetChargeStatusAsync(r, t);
-        public Task<GatewayResult> GetRefundStatusAsync(GatewayPaymentRequest r, CancellationToken t = default) => inner.GetRefundStatusAsync(r, t);
+        {await Count("refund",t);var result=await inner.RefundAsync(r,t);if(operation=="refund")await Pause(result,t);return result;}
+        public async Task<GatewayResult> GetChargeStatusAsync(GatewayPaymentRequest r, CancellationToken t = default)
+        {await Count("charge_lookup",t);return await inner.GetChargeStatusAsync(r,t);}
+        public async Task<GatewayResult> GetRefundStatusAsync(GatewayPaymentRequest r, CancellationToken t = default)
+        {await Count("refund_lookup",t);return await inner.GetRefundStatusAsync(r,t);}
     }
 }

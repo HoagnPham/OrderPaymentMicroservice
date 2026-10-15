@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "run_at_utc": "2026-10-13T11:06:00.5438622Z",
+  "run_at_utc": "2026-10-14T16:46:02.247071Z",
   "api_processes": 2,
   "baseline": {
     "logical_requests": 96,
@@ -8,1175 +8,1175 @@
     "users": 8,
     "products": 4,
     "max_attempts": 1,
-    "duration_seconds": 1.4947454,
+    "duration_seconds": 2.6143558,
     "http_attempts": 96,
     "retries": 0,
-    "created_orders": 45,
-    "success_rate": 0.46875,
-    "logical_requests_per_second": 64.22498440202592,
-    "successful_orders_per_second": 30.10546143844965,
-    "http_attempts_per_second": 64.22498440202592,
-    "p50_ms": 86.4677,
-    "p95_ms": 502.2241,
-    "p99_ms": 581.7765,
+    "created_orders": 48,
+    "success_rate": 0.5,
+    "logical_requests_per_second": 36.72032704959287,
+    "successful_orders_per_second": 18.360163524796434,
+    "http_attempts_per_second": 36.72032704959287,
+    "p50_ms": 166.2123,
+    "p95_ms": 779.6545,
+    "p99_ms": 803.3679,
     "final_status_counts": {
-      "409": 51,
-      "201": 45
+      "201": 48,
+      "409": 48
     },
     "attempt_status_counts": {
-      "409": 51,
-      "201": 45
+      "201": 48,
+      "409": 48
     },
     "samples": [
       {
-        "status": 409,
+        "status": 201,
         "attempts": 1,
-        "elapsed_ms": 465.6599,
+        "elapsed_ms": 779.6545,
         "attempt_statuses": [
-          409
+          201
         ],
         "attempt_elapsed_ms": [
-          463.8441
+          773.6866
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 578.8995,
+        "elapsed_ms": 795.54,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          578.8582
+          795.4864
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 502.2241,
+        "elapsed_ms": 803.3679,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          502.1738
+          803.3333
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 581.7765,
+        "elapsed_ms": 768.988,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          581.7558
+          768.6485
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 502.2121,
+        "elapsed_ms": 799.5949,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          502.2077
+          799.5708
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 574.218,
+        "elapsed_ms": 769.1683,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          574.1778
+          769.1565
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 770.4196,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          770.402
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 796.2801,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          796.2643
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 100.006,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          99.953
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 109.2065,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          109.0524
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 465.9762,
+        "elapsed_ms": 55.9559,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          463.4507
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 576.2128,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          576.1302
+          55.8342
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 82.8426,
+        "elapsed_ms": 100.9265,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          82.6865
+          100.7463
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 113.8417,
+        "elapsed_ms": 138.3075,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          113.7932
+          138.2015
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 155.4585,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          155.3164
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 126.8066,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          126.6984
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 59.9867,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          59.8267
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 52.132,
+        "elapsed_ms": 238.888,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          51.925
+          237.8119
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 104.1937,
+        "elapsed_ms": 169.3996,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          104.1044
+          169.2747
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 79.8912,
+        "elapsed_ms": 246.7989,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          79.7625
+          246.6947
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 142.0937,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          141.9074
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 226.3362,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          226.2434
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 91.489,
+        "elapsed_ms": 189.7023,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          91.4089
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 100.5601,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          100.1076
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 112.8393,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          112.7776
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 67.7861,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          67.7248
+          189.474
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 66.1142,
+        "elapsed_ms": 328.4848,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          65.8399
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 83.3262,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          83.2674
+          328.3264
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 89.9218,
+        "elapsed_ms": 189.9377,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          89.7614
+          189.6084
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 127.463,
+        "elapsed_ms": 224.6726,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          127.3584
+          224.3436
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 72.3057,
+        "elapsed_ms": 201.0795,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          72.1171
+          200.9371
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 115.719,
+        "elapsed_ms": 270.0343,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          115.6421
+          269.9084
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 74.2087,
+        "elapsed_ms": 243.1052,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          74.1585
+          243.0038
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 211.2383,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          211.19
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 113.2767,
+        "elapsed_ms": 223.51,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          113.1566
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 66.1417,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          63.4116
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 112.253,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          112.1353
+          223.2258
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 55.7429,
+        "elapsed_ms": 197.8688,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          55.6827
+          197.7643
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 101.7454,
+        "elapsed_ms": 148.3645,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          101.5336
+          148.2207
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 72.2042,
+        "elapsed_ms": 123.3516,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          72.0411
+          123.2211
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 64.88,
+        "elapsed_ms": 131.8966,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          64.8135
+          131.8426
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 109.6893,
+        "elapsed_ms": 66.2007,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          109.6093
+          66.0615
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 100.8251,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          100.6434
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 84.8088,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          84.6353
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 70.1747,
+        "elapsed_ms": 68.7817,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          70.0673
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 96.8445,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          96.7668
+          68.4497
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 102.474,
+        "elapsed_ms": 78.3045,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          101.849
+          78.2112
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 106.8193,
+        "elapsed_ms": 74.1892,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          106.7091
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 118.384,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          118.2453
+          71.5106
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 101.8014,
+        "elapsed_ms": 117.9973,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          101.5973
+          117.7496
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 115.4766,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          115.3346
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 118.4952,
+        "elapsed_ms": 94.8328,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          117.6522
+          94.6969
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 76.9355,
+        "elapsed_ms": 166.2123,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          76.882
+          166.0695
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 174.4901,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          174.4411
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 106.0351,
+        "elapsed_ms": 147.9317,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          105.9051
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 98.718,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          98.6464
+          147.8452
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 102.1784,
+        "elapsed_ms": 162.9675,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          102.0617
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 96.1026,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          96.0469
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 70.3406,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          70.2815
+          162.8301
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 82.4524,
+        "elapsed_ms": 175.5074,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          82.3496
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 70.0957,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          70.0262
+          175.293
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 80.3474,
+        "elapsed_ms": 180.4199,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          79.554
+          180.0788
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 86.4704,
+        "elapsed_ms": 223.2893,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          86.3393
+          223.0717
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 152.9837,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          152.8405
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 244.2144,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          244.132
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 66.709,
+        "elapsed_ms": 219.7482,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          66.3561
+          219.4353
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 93.3571,
+        "elapsed_ms": 248.8611,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          93.2889
+          248.6137
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 288.7787,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          288.6748
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 63.92,
+        "elapsed_ms": 260.1125,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          63.8486
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 79.8439,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          79.8168
+          259.9708
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 91.0067,
+        "elapsed_ms": 225.4923,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          90.8769
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 85.8084,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          85.7277
+          225.3524
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 92.8965,
+        "elapsed_ms": 232.7741,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          92.7656
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 86.4677,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          86.3945
+          232.6508
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 98.9549,
+        "elapsed_ms": 190.7423,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          98.8651
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 79.4774,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          79.4291
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 102.2973,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          102.2249
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 84.9384,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          84.8774
+          190.6641
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 95.6662,
+        "elapsed_ms": 119.6966,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          95.558
+          119.6057
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 107.3916,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          107.29
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 62.2244,
+        "elapsed_ms": 97.095,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          62.1092
+          96.9454
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 82.788,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          82.7386
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 82.598,
+        "elapsed_ms": 66.1192,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          82.4971
+          66.0389
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 92.4343,
+        "elapsed_ms": 66.5633,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          92.3651
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 101.2943,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          101.2353
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 84.1978,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          84.0579
+          66.3786
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 74.7941,
+        "elapsed_ms": 98.7402,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          74.6934
+          98.6561
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 96.2998,
+        "elapsed_ms": 94.1368,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          96.1903
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 83.3172,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          83.2697
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 102.4746,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          102.4225
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 96.902,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          96.8392
+          93.8745
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 72.3568,
+        "elapsed_ms": 94.1174,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          72.2464
+          94.0601
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 81.5,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          81.4468
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 139.6764,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          139.6296
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 74.288,
+        "elapsed_ms": 73.5028,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          74.1936
+          73.4202
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 122.1367,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          122.0915
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 96.1426,
+        "elapsed_ms": 72.1254,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          95.922
+          72.0358
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 85.2484,
+        "elapsed_ms": 102.1424,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          85.1814
+          102.0946
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 81.9532,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          81.9036
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 70.9895,
+        "elapsed_ms": 126.7549,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          70.9018
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 78.2025,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          78.038
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 87.416,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          87.2916
+          126.6878
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 87.0902,
+        "elapsed_ms": 70.3762,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          87.0091
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 99.6469,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          99.5713
+          70.3187
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 96.5614,
+        "elapsed_ms": 175.2894,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          96.483
+          175.2138
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 62.8547,
+        "elapsed_ms": 100.3251,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          62.7961
+          100.2917
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 83.3896,
+        "elapsed_ms": 261.995,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          83.2743
+          261.8722
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 95.6451,
+        "elapsed_ms": 264.588,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          95.5926
+          264.519
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 78.3418,
+        "elapsed_ms": 224.0956,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          78.2828
+          224.0462
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 84.1951,
+        "elapsed_ms": 147.2202,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          83.6377
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 74.0579,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          74.0138
+          146.9
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 63.9018,
+        "elapsed_ms": 240.4574,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          63.7135
+          240.3067
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 56.6757,
+        "elapsed_ms": 308.3272,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          56.6191
+          308.2666
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 75.8564,
+        "elapsed_ms": 238.0224,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          75.7728
+          237.8995
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 79.3946,
+        "elapsed_ms": 272.5898,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          79.2739
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 73.6771,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          73.6232
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 409,
-        "attempts": 1,
-        "elapsed_ms": 66.0124,
-        "attempt_statuses": [
-          409
-        ],
-        "attempt_elapsed_ms": [
-          65.9673
+          272.4558
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 50.7928,
+        "elapsed_ms": 285.7315,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          50.7114
+          285.6546
         ],
         "delays_ms": []
       },
       {
         "status": 409,
         "attempts": 1,
-        "elapsed_ms": 42.5642,
+        "elapsed_ms": 242.9417,
         "attempt_statuses": [
           409
         ],
         "attempt_elapsed_ms": [
-          42.5064
+          242.9014
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 230.3628,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          230.2911
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 217.4257,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          217.3986
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 228.2853,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          228.223
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 224.2341,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          224.1596
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 151.3002,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          151.1911
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 409,
+        "attempts": 1,
+        "elapsed_ms": 122.933,
+        "attempt_statuses": [
+          409
+        ],
+        "attempt_elapsed_ms": [
+          122.8989
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 87.7726,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          87.7151
         ],
         "delays_ms": []
       }
@@ -1189,74 +1189,65 @@
     "users": 8,
     "products": 4,
     "max_attempts": 4,
-    "duration_seconds": 2.9795399,
-    "http_attempts": 139,
-    "retries": 43,
-    "created_orders": 96,
-    "success_rate": 1,
-    "logical_requests_per_second": 32.21973969873671,
-    "successful_orders_per_second": 32.21973969873671,
-    "http_attempts_per_second": 46.65149810546253,
-    "p50_ms": 66.1941,
-    "p95_ms": 679.9123,
-    "p99_ms": 1443.3295,
+    "duration_seconds": 3.4009651,
+    "http_attempts": 142,
+    "retries": 46,
+    "created_orders": 95,
+    "success_rate": 0.9895833333333334,
+    "logical_requests_per_second": 28.227281720709218,
+    "successful_orders_per_second": 27.933247536118497,
+    "http_attempts_per_second": 41.752854211882386,
+    "p50_ms": 136.414,
+    "p95_ms": 928.2619,
+    "p99_ms": 2161.3806,
     "final_status_counts": {
-      "201": 96
+      "201": 95,
+      "409": 1
     },
     "attempt_status_counts": {
-      "409": 43,
-      "201": 96
+      "201": 95,
+      "409": 47
     },
     "samples": [
       {
         "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 316.4408,
+        "attempts": 1,
+        "elapsed_ms": 57.8636,
         "attempt_statuses": [
-          409,
           201
         ],
         "attempt_elapsed_ms": [
-          66.419,
-          67.9046
+          57.8064
         ],
-        "delays_ms": [
-          180
-        ]
+        "delays_ms": []
       },
       {
         "status": 201,
-        "attempts": 4,
-        "elapsed_ms": 1241.7717,
+        "attempts": 2,
+        "elapsed_ms": 249.3953,
         "attempt_statuses": [
-          409,
-          409,
           409,
           201
         ],
         "attempt_elapsed_ms": [
-          77.9011,
-          86.9222,
-          68.1668,
-          62.4721
+          64.8229,
+          51.0747
         ],
         "delays_ms": [
-          133,
-          307,
-          491
+          133
         ]
       },
       {
         "status": 201,
         "attempts": 2,
-        "elapsed_ms": 340.5217,
+        "elapsed_ms": 322.171,
         "attempt_statuses": [
           409,
           201
         ],
         "attempt_elapsed_ms": [
-          82.9503,
-          70.0495
+          54.6989,
+          80.2006
         ],
         "delays_ms": [
           185
@@ -1264,52 +1255,45 @@
       },
       {
         "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 66.5327,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          64.3444
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
         "attempts": 2,
-        "elapsed_ms": 314.3587,
+        "elapsed_ms": 332.6358,
         "attempt_statuses": [
           409,
           201
         ],
         "attempt_elapsed_ms": [
-          82.9281,
-          90.4965
+          65.3352,
+          77.0107
         ],
         "delays_ms": [
-          137
+          189
         ]
       },
       {
         "status": 201,
         "attempts": 3,
-        "elapsed_ms": 679.9123,
+        "elapsed_ms": 684.9389,
         "attempt_statuses": [
           409,
           409,
           201
         ],
         "attempt_elapsed_ms": [
-          75.3928,
-          59.4682,
-          66.3229
-        ],
-        "delays_ms": [
-          189,
-          283
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 3,
-        "elapsed_ms": 727.1412,
-        "attempt_statuses": [
-          409,
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          77.2248,
-          84.5889,
-          66.5771
+          71.6745,
+          68.7692,
+          60.19
         ],
         "delays_ms": [
           142,
@@ -1318,140 +1302,1065 @@
       },
       {
         "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 65.4302,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          65.3538
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 4,
-        "elapsed_ms": 1304.7828,
-        "attempt_statuses": [
-          409,
-          409,
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          88.4241,
-          87.7565,
-          59.9631,
-          91.9583
-        ],
-        "delays_ms": [
-          146,
-          259,
-          569
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 45.9686,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          45.878
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 34.0596,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          33.9683
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 47.3334,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          47.2456
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 27.256,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          27.1597
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 72.9934,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          72.9017
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
         "attempts": 3,
-        "elapsed_ms": 539.2733,
+        "elapsed_ms": 590.5734,
         "attempt_statuses": [
           409,
           409,
           201
         ],
         "attempt_elapsed_ms": [
-          49.9332,
-          55.2146,
-          66.1484
+          64.2069,
+          73.9131,
+          56.3898
         ],
         "delays_ms": [
-          160,
-          211
+          194,
+          200
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 273.1852,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          56.9693,
+          67.448
+        ],
+        "delays_ms": [
+          146
         ]
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 47.178,
+        "elapsed_ms": 26.6449,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          47.0947
+          26.5389
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 43.3801,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          43.3163
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 32.9557,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          32.8933
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 32.1637,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          32.1013
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 29.4846,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          29.4288
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 28.357,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          28.2963
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 2,
-        "elapsed_ms": 259.5183,
+        "elapsed_ms": 226.2424,
         "attempt_statuses": [
           409,
           201
         ],
         "attempt_elapsed_ms": [
-          54.4963,
-          39.1787
+          28.192,
+          84.8695
+        ],
+        "delays_ms": [
+          112
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 40.8887,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          40.8216
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 66.9778,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          66.9173
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 329.4794,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          99.2346,
+          60.8118
+        ],
+        "delays_ms": [
+          168
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 236.8063,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          80.6467,
+          33.0726
+        ],
+        "delays_ms": [
+          121
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 313.3601,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          84.3184,
+          55.169
+        ],
+        "delays_ms": [
+          173
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 231.6734,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          62.4634,
+          43.2547
+        ],
+        "delays_ms": [
+          125
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 68.7238,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          68.6606
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 33.6286,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          33.5226
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 51.1675,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          51.1164
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 46.1168,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          45.983
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 296.7366,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          53.2222,
+          57.4988
+        ],
+        "delays_ms": [
+          186
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 35.5238,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          35.4659
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 35.3356,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          35.2701
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 4,
+        "elapsed_ms": 1286.6589,
+        "attempt_statuses": [
+          409,
+          409,
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          49.6512,
+          47.7498,
+          114.9656,
+          190.8431
+        ],
+        "delays_ms": [
+          143,
+          291,
+          440
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 43.3419,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          43.2765
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 252.4596,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          60.8534,
+          42.6948
+        ],
+        "delays_ms": [
+          148
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 62.5477,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          62.4342
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 65.0578,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          65.0034
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 63.5201,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          63.4654
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 53.6487,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          53.611
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 71.8351,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          71.7823
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 399.8431,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          75.7204,
+          162.3612
+        ],
+        "delays_ms": [
+          161
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 227.8639,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          65.4664,
+          46.6815
+        ],
+        "delays_ms": [
+          113
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 52.033,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          51.8734
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 53.9209,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          53.8729
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 36.0224,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          35.9694
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 279.0968,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          49.4211,
+          107.1944
+        ],
+        "delays_ms": [
+          122
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 36.7743,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          36.7149
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 3,
+        "elapsed_ms": 782.119,
+        "attempt_statuses": [
+          409,
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          51.3093,
+          170.2678,
+          58.9507
+        ],
+        "delays_ms": [
+          127,
+          371
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 41.134,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          41.0635
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 40.3763,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          40.323
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 40.3687,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          40.3194
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 51.432,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          50.4673
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 53.3246,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          53.2716
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 408.1589,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          58.0222,
+          207.9562
+        ],
+        "delays_ms": [
+          140
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 62.9501,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          62.8949
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 484.4355,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          117.2627,
+          216.1725
+        ],
+        "delays_ms": [
+          145
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 572.4948,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          167.5666,
+          207.0343
+        ],
+        "delays_ms": [
+          197
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 215.6401,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          215.4883
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 183.4188,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          183.2898
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 185.4628,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          185.3698
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 170.3041,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          170.1747
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 290.4534,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          290.2846
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 504.6811,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          224.2429,
+          168.7949
+        ],
+        "delays_ms": [
+          110
+        ]
+      },
+      {
+        "status": 409,
+        "attempts": 4,
+        "elapsed_ms": 2161.3806,
+        "attempt_statuses": [
+          409,
+          409,
+          409,
+          409
+        ],
+        "attempt_elapsed_ms": [
+          217.4816,
+          180.9782,
+          336.4638,
+          62.7515
+        ],
+        "delays_ms": [
+          163,
+          310,
+          708
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 166.7843,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          166.6931
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 485.3019,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          134.4247,
+          182.4406
+        ],
+        "delays_ms": [
+          167
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 75.3433,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          75.3153
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 63.9527,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          63.8001
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 73.2855,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          73.0525
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 105.1151,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          105.0783
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 4,
+        "elapsed_ms": 1879.1194,
+        "attempt_statuses": [
+          409,
+          409,
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          95.0693,
+          157.8233,
+          263.297,
+          62.8415
+        ],
+        "delays_ms": [
+          128,
+          321,
+          665
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 404.9924,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          112.7966,
+          109.158
+        ],
+        "delays_ms": [
+          181
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 175.0491,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          174.9526
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 501.145,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          151.9533,
+          162.215
+        ],
+        "delays_ms": [
+          185
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 185.6102,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          185.5167
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 3,
+        "elapsed_ms": 990.371,
+        "attempt_statuses": [
+          409,
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          159.6721,
+          356.5493,
+          67.9355
+        ],
+        "delays_ms": [
+          190,
+          215
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 136.414,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          136.354
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 653.5114,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          104.4992,
+          350.1934
+        ],
+        "delays_ms": [
+          194
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 195.1239,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          195.0291
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 3,
+        "elapsed_ms": 928.2619,
+        "attempt_statuses": [
+          409,
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          198.8316,
+          230.5398,
+          48.4222
+        ],
+        "delays_ms": [
+          199,
+          249
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 79.176,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          79.0787
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 256.6172,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          256.5228
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 256.2034,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          256.0741
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 327.2678,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          327.0903
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 441.8486,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          233.822,
+          46.1689
+        ],
+        "delays_ms": [
+          160
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 191.9061,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          191.8529
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 327.7465,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          118.8893,
+          45.1157
         ],
         "delays_ms": [
           164
@@ -1460,98 +2369,106 @@
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 48.2541,
+        "elapsed_ms": 68.9683,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          48.1679
+          68.9212
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 52.1635,
+        "elapsed_ms": 54.4294,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          52.0737
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 58.8795,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          58.7847
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 52.1318,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          52.0427
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 29.2982,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          29.1454
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 45.1779,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          45.0845
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 37.6534,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          37.5661
+          54.3751
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 2,
-        "elapsed_ms": 294.4282,
+        "elapsed_ms": 216.332,
         "attempt_statuses": [
           409,
           201
         ],
         "attempt_elapsed_ms": [
-          46.1401,
-          68.1354
+          42.2205,
+          52.396
+        ],
+        "delays_ms": [
+          121
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 34.017,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          33.9629
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 38.7523,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          38.6974
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 248.5054,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          46.0924,
+          24.0549
+        ],
+        "delays_ms": [
+          178
+        ]
+      },
+      {
+        "status": 201,
+        "attempts": 1,
+        "elapsed_ms": 52.9537,
+        "attempt_statuses": [
+          201
+        ],
+        "attempt_elapsed_ms": [
+          52.9019
+        ],
+        "delays_ms": []
+      },
+      {
+        "status": 201,
+        "attempts": 2,
+        "elapsed_ms": 273.6678,
+        "attempt_statuses": [
+          409,
+          201
+        ],
+        "attempt_elapsed_ms": [
+          40.0511,
+          43.6421
         ],
         "delays_ms": [
           182
@@ -1560,965 +2477,62 @@
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 50.431,
+        "elapsed_ms": 55.5058,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          50.2953
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 66.1941,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          66.0508
+          55.4522
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 59.169,
+        "elapsed_ms": 56.3949,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          59.0974
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 56.4999,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          56.4358
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 298.0008,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          76.5541,
-          76.7505
-        ],
-        "delays_ms": [
-          143
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 73.1561,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          72.9992
+          56.2009
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 67.3873,
+        "elapsed_ms": 53.3725,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          67.3289
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 57.0474,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          56.9794
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 265.0897,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          50.8633,
-          61.0785
-        ],
-        "delays_ms": [
-          152
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 228.184,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          68.7524,
-          54.0841
-        ],
-        "delays_ms": [
-          104
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 289.007,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          54.1268,
-          76.8705
-        ],
-        "delays_ms": [
-          157
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 70.4886,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          70.2856
+          53.3269
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 75.0889,
+        "elapsed_ms": 49.0033,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          75.0211
+          48.9516
         ],
         "delays_ms": []
       },
       {
         "status": 201,
         "attempts": 1,
-        "elapsed_ms": 73.6285,
+        "elapsed_ms": 39.555,
         "attempt_statuses": [
           201
         ],
         "attempt_elapsed_ms": [
-          73.5587
+          39.4119
         ],
         "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 71.3062,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          70.4316
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 85.2808,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          85.2128
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 319.4812,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          71.048,
-          76.0877
-        ],
-        "delays_ms": [
-          170
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 51.294,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          51.2232
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 60.1254,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          60.0594
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 73.6204,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          73.552
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 38.5687,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          38.5028
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 254.5437,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          39.5219,
-          82.7504
-        ],
-        "delays_ms": [
-          131
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 54.3414,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          54.1844
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 63.3607,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          63.1959
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 40.0415,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          39.9689
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 51.2111,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          51.1468
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 50.9323,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          50.8576
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 62.273,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          62.1999
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 68.4726,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          68.3962
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 278.2798,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          74.9112,
-          52.9379
-        ],
-        "delays_ms": [
-          149
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 54.343,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          54.2765
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 298.4223,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          85.8931,
-          57.3828
-        ],
-        "delays_ms": [
-          154
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 283.2002,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          87.7444,
-          86.1671
-        ],
-        "delays_ms": [
-          106
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 292.9514,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          79.7497,
-          54.876
-        ],
-        "delays_ms": [
-          158
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 71.4885,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          71.4283
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 298.9465,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          71.1195,
-          65.0026
-        ],
-        "delays_ms": [
-          163
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 60.1408,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          60.0796
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 51.3127,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          51.2513
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 53.3831,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          53.3188
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 53.037,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          52.6748
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 63.4989,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          63.3401
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 298.0303,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          60.977,
-          59.9889
-        ],
-        "delays_ms": [
-          176
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 86.8603,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          86.6059
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 56.9053,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          56.7366
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 3,
-        "elapsed_ms": 576.7424,
-        "attempt_statuses": [
-          409,
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          79.91,
-          77.5297,
-          45.9468
-        ],
-        "delays_ms": [
-          133,
-          239
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 63.9158,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          63.8269
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 277.6151,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          64.7883,
-          74.4849
-        ],
-        "delays_ms": [
-          137
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 42.8089,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          42.7525
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 264.4686,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          52.1597,
-          69.0121
-        ],
-        "delays_ms": [
-          142
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 51.215,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          51.1523
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 58.0089,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          57.9049
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 4,
-        "elapsed_ms": 1443.3295,
-        "attempt_statuses": [
-          409,
-          409,
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          40.9521,
-          62.1291,
-          48.2196,
-          58.8327
-        ],
-        "delays_ms": [
-          199,
-          249,
-          781
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 49.9592,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          49.8945
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 61.8392,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          61.7313
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 54.6475,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          54.5925
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 63.3097,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          63.2474
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 72.8607,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          72.8026
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 3,
-        "elapsed_ms": 502.7174,
-        "attempt_statuses": [
-          409,
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          74.1678,
-          63.6263,
-          49.1445
-        ],
-        "delays_ms": [
-          112,
-          201
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 67.8558,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          67.8026
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 3,
-        "elapsed_ms": 576.426,
-        "attempt_statuses": [
-          409,
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          60.5192,
-          49.7843,
-          29.4512
-        ],
-        "delays_ms": [
-          116,
-          319
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 275.5991,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          53.1278,
-          53.5283
-        ],
-        "delays_ms": [
-          169
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 49.225,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          49.1678
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 61.2285,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          61.158
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 59.2644,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          59.2453
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 69.6545,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          69.5929
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 71.7023,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          71.4934
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 71.9886,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          71.9518
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 56.4456,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          56.3087
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 298.5459,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          56.238,
-          54.6556
-        ],
-        "delays_ms": [
-          187
-        ]
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 48.8592,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          48.6783
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 1,
-        "elapsed_ms": 56.1898,
-        "attempt_statuses": [
-          201
-        ],
-        "attempt_elapsed_ms": [
-          56.1288
-        ],
-        "delays_ms": []
-      },
-      {
-        "status": 201,
-        "attempts": 2,
-        "elapsed_ms": 243.079,
-        "attempt_statuses": [
-          409,
-          201
-        ],
-        "attempt_elapsed_ms": [
-          43.7965,
-          55.5171
-        ],
-        "delays_ms": [
-          143
-        ]
       }
     ],
     "latency_definition": "Logical request after semaphore through final body, including backoff; excludes queue. Nearest-rank percentiles."
@@ -2526,7 +2540,7 @@
   "jitter_seed": 20261013,
   "source_sha256": {
     "OrderPaymentMicroservice.IntegrationTests/OrderRetryLoadTests.cs": "A609303964D5AC6221034E5CFD6515E72CFB876C59C80116AD4612E3BF923380",
-    "OrderPaymentMicroservice.IntegrationTests/OperationalProbe.cs": "1C749393CDD237E52CE272CA48E5F0022970E272B939ADF0174661E0A57E5F29",
+    "OrderPaymentMicroservice.IntegrationTests/OperationalProbe.cs": "DAA0B44404650623B88849C6EE89AC817A43ED374453DAB396AFF89604280B7B",
     "OrderPaymentMicroservice/Controllers/OrdersController.cs": "1CA50A5295304B6784719D8E8B316D85217E9F724A548118C7FCAA74B1DA120A",
     "OrderPaymentMicroservice/Services/OrderService.cs": "8BFA5D2B782FD1E35F01DB30E0A0D9C86C125844AA00F37380F22D8573BD7B8A",
     "OrderPaymentMicroservice/Data/PersistenceConflicts.cs": "029BA6A14D3F1BF589AD45553E624F368229CC2DE0CE1AA92ACA60FB4F4BB746",

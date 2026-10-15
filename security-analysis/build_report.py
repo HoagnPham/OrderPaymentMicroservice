@@ -64,6 +64,16 @@ def chapter_tokens():
                                  f"{run['requests_per_second']:.2f} req/s; successful {run['successful_requests_per_second']:.2f}/s; p95 {run['p95_ms']:.2f} ms"])
     refund = read('results/refund_restart.results.json')
     operational_rows.append(['Refund process kill', str(refund['journal_entries'])+' journal entries giữ hash; charge reference giữ nguyên; stock release một lần', 'PASS; DB outage live=200, ready/status=503'])
+    reconnect_rows = []
+    for operation in ('charge', 'refund'):
+        run = read(f'results/postgres_reconnect_{operation}.results.json')
+        calls = run['gateway_calls']
+        process = run['worker_metrics']
+        reconnect_rows.append([operation, ' → '.join(map(str, run['health_ready_sequence'])),
+                               f"charge={calls['charge_calls']}; refund={calls['refund_calls']}",
+                               f"scan failures={process['recovery_scan_failures']}; resolved={process['recovery_resolved']}",
+                               run['inventory_release_count'], 'PASS' if run['passed'] else 'FAIL'])
+    reconnect_table = table(['Case', 'Ready HTTP', 'Gateway mutation calls', 'Worker counters', 'Stock release', 'Outcome'], reconnect_rows)
     operational = table(['Kịch bản', 'Phạm vi / outcome', 'Timing trong lần chạy'], operational_rows)
     comparison = read('results/order_retry_load.results.json')
     retry_rows = []
@@ -72,7 +82,7 @@ def chapter_tokens():
         retry_rows.append([label, f"{run['created_orders']}/{run['logical_requests']} ({run['success_rate']*100:.1f}%)", run['http_attempts'], f"{run['p95_ms']:.2f} ms", f"{run['successful_orders_per_second']:.2f}"])
     retry_table = table(['Policy','Đơn thành công','HTTP attempts','p95 logical (gồm backoff)','Đơn thành công/s'],retry_rows)
     return {'@@ORDER_RETRY_TABLE@@':retry_table, '@@OPERATIONAL_TABLE@@':operational, '@@UNIT_COUNT@@':str(read('results/application_tests.results.json')['suites']['unit']['passed']), '@@PIPELINE_PAIRS@@':str(read('results/model_projection.results.json')['pipeline_state_pairs']), '@@ASSET_TABLE@@':assets, '@@THREAT_TABLE@@':risks, '@@LIVENESS_TABLE@@':liveness,
-            '@@MUTATION_TABLE@@':mutations, '@@MEMORY_RUN_TABLE@@':memory_table,
+            '@@RECONNECT_TABLE@@':reconnect_table, '@@MUTATION_TABLE@@':mutations, '@@MEMORY_RUN_TABLE@@':memory_table,
             '@@STATIC_DETECTION_TABLE@@':static_table, '@@LAYOUT_TABLE@@':layout_table}
 
 
@@ -186,6 +196,8 @@ riêng. Hash/authenticity của gateway response chưa được mock chứng min
 
 def main():
     tests = read('results/application_tests.results.json')
+    if not tests['passed']:
+        raise SystemExit('Full-suite evidence is not PASS; rerun tests and package_evidence before building the report.')
     mapping = read('results/model_projection.results.json')
     model = read('order_payment_recovery_model.json')
     recovery = read('results/order_payment_recovery_model.results.json')
@@ -337,7 +349,10 @@ database sạch, không thực hiện migration lên database phát triển củ
 
 Gateway mặc định DurableFake lưu journal bền vững; process-kill recovery sau charge
 đã PASS. Audit/admission đã hiện thực và test trong phạm vi local; COMMIT audit đã nguyên tử và Order create có key tùy chọn.
-External audit outbox, retention, distributed quota, callback thật, refund crash windows khác và BMC riêng còn mở.
+PostgreSQL stop/start với cùng API process đã có evidence charge/refund riêng.
+External audit outbox, retention, DB RBAC, distributed quota, callback thật và Kubernetes
+là future work ngoài nghiệm thu Order–Payment; không cần mở rộng các phần này để chốt đề tài.
+Refund crash windows khác và BMC riêng chỉ bổ sung khi có tiêu chí kiểm chứng tương ứng.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -445,6 +460,8 @@ của chính project và xuất pipeline JSON vào security-analysis/.
               '## Phụ lục G — Hạn chế và công việc còn mở\n',
               table(['Hạng mục','Trạng thái','Điều kiện nghiệm thu'], [
                   ['Gateway bền vững/sandbox','LOCAL_PROCESS_KILL_PASS / REAL_PROVIDER_OPEN','Local charge/refund recovery sau journal PASS; crash windows khác/provider thật còn mở'],
+                  ['PostgreSQL reconnect','LOCAL_SAME_PROCESS_PASS','Ready 200/503/200; worker resolve; charge/refund một lần; kho đúng; không failover/partition'],
+                  ['DB RBAC/retention/webhook/shared limiter/Kubernetes','FUTURE_WORK_OUTSIDE_ACCEPTANCE','Không bắt buộc trong đề tài safety Order–Payment; không tuyên bố đã hiện thực'],
                   ['BMC có bound','OPEN','Ghi tool, k, assumption, verdict và witness'],
                   ['Công cụ Windows giảng viên','NOT_RUN_THIS_SESSION','Lưu manifest/log/export thực tế; checker độc lập không thay thế'],
                   ['Rate limiting/audit','PARTIALLY_MITIGATED','Admission/audit test PASS; distributed quota, external sink outbox, retention và DBA protection còn mở'],

@@ -1,6 +1,6 @@
 # Báo cáo kiểm chứng an toàn OrderPaymentMicroservice
 
-Ngày tổng hợp: 13/10/2026. Các thời điểm thực thi cụ thể nằm trong evidence.
+Ngày tổng hợp: 15/10/2026. Các thời điểm thực thi cụ thể nằm trong evidence.
 
 ## 1. Mục tiêu, phương pháp và mô hình đe dọa
 
@@ -35,6 +35,14 @@ của hoạt động phân tích đe dọa; “148 unit PASS” là outcome củ
 
 ### 1.3. Phạm vi và giả định vận hành
 
+Đây là đề tài Group 14 kiểm chứng an toàn Order–Payment, với trọng tâm idempotency,
+crash recovery và consistency Order–Payment–Inventory. Tiêu chí bắt buộc gồm
+PostgreSQL disconnect → reconnect, worker phục hồi, không charge/refund/release
+kho lặp và demo tái lập bằng evidence thật. Tách quyền DB migration/runtime,
+retention job, webhook thật, Redis/shared limiter, gateway thật và Kubernetes là
+future work ngoài nghiệm thu hiện tại. Giữ JWT/Admin hiện có. Xem
+[phạm vi nghiệm thu](../PHAM_VI_KIEM_CHUNG.md).
+
 Repository hiện có một host ASP.NET Core, chung PostgreSQL, các Controller/Service
 User, Product, Cart, Order và Payment. Tên đề tài dùng microservice theo dịch vụ
 Order/Payment cung cấp REST API; các module trong host chưa được triển khai độc
@@ -43,7 +51,7 @@ mô hình học tập ownership/lifetime, không phải bản dịch của imple
 
 Phạm vi xác minh gồm request validation, authorization ở đường đã test, lifecycle,
 reservation, số học model và một số cạnh tranh database. Chưa bao gồm bảo mật
-thiết bị client, cấu hình cloud, gateway thật, audit bền vững, throughput mục tiêu
+thiết bị client, cấu hình cloud, gateway thật, quản trị audit toàn diện, throughput mục tiêu
 hay tất cả interleaving. Gateway mặc định DurableFake trả thành công và lưu journal ngoài memory của process.
 MemoryFake vẫn được chọn rõ ràng trong fixture thông thường; test gateway có kịch
 bản riêng quan sát UNKNOWN. Process-kill recovery đã được xác minh với local journal,
@@ -116,7 +124,7 @@ stock được kiểm theo tổng quantity; model recovery được đối chi�
 workbook; static và dynamic analysis được dùng để chỉ ra cả năng lực và điểm bỏ
 sót của tool. Cách tổ chức evidence cùng các giới hạn là một đầu ra của đề tài.
 
-Nguồn: [mục tiêu gốc](../../OrderPaymentMicroservice/readme.md),
+Nguồn: [phạm vi nghiệm thu](../PHAM_VI_KIEM_CHUNG.md),
 [threat model](../threat_model.json),
 [traceability](../results/traceability_matrix.csv) và
 [Phụ lục A](PHU_LUC_A_G.md#phụ-lục-a--hệ-thống).
@@ -750,7 +758,7 @@ model solver được giữ tại Phụ lục D, không đưa verdict suy đoán
 ## 6. Kiểm thử động và fuzzing
 
 Bộ test ứng dụng mới nhất ghi nhận 148/148 unit test và
-33/33 integration test PASS, không SKIP.
+35/35 integration test PASS, không SKIP.
 Ba campaign fuzz cũng nằm trong unit suite; đợt này đo lại coverage campaign.
 Branch coverage 96.66% áp dụng InputValidator,
 PaymentValidator, hai state machine và MoneyAmounts. InputValidator có branch coverage 97.22%,
@@ -863,10 +871,10 @@ Không gọi browser test là end-to-end HTTP hoặc kết quả chịu tải pr
 
 | Kịch bản | Phạm vi / outcome | Timing trong lần chạy |
 | --- | --- | --- |
-| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 69.5 ms; restore 147.7 ms; API recovery 1843.9 ms |
-| read | 200 requests; concurrency 8; 200: 200 | 354.92 req/s; successful 354.92/s; p95 33.90 ms |
-| write | 96 requests; concurrency 8; 201: 28, 409: 68 | 59.33 req/s; successful 17.30/s; p95 487.21 ms |
-| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 74.40 req/s; successful 18.60/s; p95 241.20 ms |
+| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 64.3 ms; restore 157.3 ms; API recovery 1666.5 ms |
+| read | 200 requests; concurrency 8; 200: 200 | 348.95 req/s; successful 348.95/s; p95 48.12 ms |
+| write | 96 requests; concurrency 8; 201: 26, 409: 70 | 67.24 req/s; successful 18.21/s; p95 456.74 ms |
+| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 122.24 req/s; successful 30.56/s; p95 145.24 ms |
 | Refund process kill | 2 journal entries giữ hash; charge reference giữ nguyên; stock release một lần | PASS; DB outage live=200, ready/status=503 |
 
 
@@ -914,12 +922,39 @@ ready/status 503 không lộ connection string. Cửa sổ kill refund và shutd
 chứng minh disk failure, network partition, provider thật hoặc reconnect recovery.
 Evidence: [refund_restart.results.json](../results/refund_restart.results.json).
 
+### 6.10.1. PostgreSQL disconnect → reconnect, giữ nguyên API process
+
+| Case | Ready HTTP | Gateway mutation calls | Worker counters | Stock release | Outcome |
+| --- | --- | --- | --- | --- | --- |
+| charge | 200 → 503 → 200 | charge=1; refund=0 | scan failures=1; resolved=1 | 0 | PASS |
+| refund | 200 → 503 → 200 | charge=1; refund=1 | scan failures=1; resolved=1 | 1 | PASS |
+
+
+PostgresReconnectTests giữ response gateway sau khi journal charge/refund ghi xong,
+dừng cluster PostgreSQL tạm rồi thả response khi DB còn tắt: finalize trả 503.
+Replay cùng key trong outage cũng 503. Worker scan lỗi thật, API vẫn live=200.
+Bật lại cùng cluster và giữ nguyên API process/pool: ready trở lại 200, worker
+lookup đúng key rồi reconcile thành SUCCESS/PAID hoặc REFUNDED. Không sửa timestamp.
+
+Oracle kiểm một payment, AttemptCount=1, keys/charge reference/transaction đúng,
+SYSTEM audit RESULT, stock và InventoryStatus khớp. Adapter test đếm lời gọi
+charge/refund thực tế; journal hashes giữ nguyên sau recovery và replay. Refund
+kiểm đúng một ORDER_UPDATE COMMIT sang REFUNDED và stock trở về giá trị ban đầu.
+Quan sát DB dùng kết nối mới độc lập, API dùng pooling suốt outage.
+
+Đây là hai case stop/start local với durable fake provider; không chứng minh
+network partition, failover, disk/power loss, mọi crash window hoặc provider thật.
+Barrier/counters chỉ nằm ở test executable. Demo: `python3 security-analysis/run_recovery_demo.py`.
+Evidence: [charge](../results/postgres_reconnect_charge.results.json),
+[refund](../results/postgres_reconnect_refund.results.json),
+[phạm vi nghiệm thu](../PHAM_VI_KIEM_CHUNG.md).
+
 ### 6.11. So sánh retry có giới hạn với gửi một lần
 
 | Policy | Đơn thành công | HTTP attempts | p95 logical (gồm backoff) | Đơn thành công/s |
 | --- | --- | --- | --- | --- |
-| Gửi một lần | 45/96 (46.9%) | 96 | 502.22 ms | 30.11 |
-| Retry tối đa 4 lần | 96/96 (100.0%) | 139 | 679.91 ms | 32.22 |
+| Gửi một lần | 48/96 (50.0%) | 96 | 779.65 ms | 18.36 |
+| Retry tối đa 4 lần | 95/96 (99.0%) | 142 | 928.26 ms | 27.93 |
 
 
 Cùng 96 logical requests/scenario, 8 users và 4 products, concurrency=8 qua hai OS
@@ -955,7 +990,7 @@ liệu thẻ. Browser có 0 uncaught JS exceptions trong flow đạt oracle.
 card fields không dùng, logout navbar và payment double-submit. Live test dùng
 provider mô phỏng, không là provider/browser matrix hoặc production deployment.
 External fonts bị block để không phụ thuộc mạng; dữ liệu/process test được cleanup.
-Nguồn: [biên bản review](../REVIEW_2026_10_13.md),
+Nguồn: [kịch bản thuyết trình và demo](../KICH_BAN_THUYET_TRINH_VA_DEMO.md),
 [application_smoke.results.json](../results/application_smoke.results.json).
 
 
@@ -964,7 +999,7 @@ Nguồn: [biên bản review](../REVIEW_2026_10_13.md),
 | Phép kiểm | Kết quả | Phạm vi |
 | --- | --- | --- |
 | Unit | 148/148 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
-| HTTP/PostgreSQL | 33/33 PASS | Database tạm, migration/seed và test host |
+| HTTP/PostgreSQL | 35/35 PASS | Database tạm, migration/seed và test host |
 | Recovery | 15/15 thuộc tính; 6 mutation detected | Graph hữu hạn, giả định được khai báo |
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |
 | Inventory SMT | 3/3 đúng kỳ vọng | Hai dòng của một sản phẩm |
@@ -1034,7 +1069,10 @@ database sạch, không thực hiện migration lên database phát triển củ
 
 Gateway mặc định DurableFake lưu journal bền vững; process-kill recovery sau charge
 đã PASS. Audit/admission đã hiện thực và test trong phạm vi local; COMMIT audit đã nguyên tử và Order create có key tùy chọn.
-External audit outbox, retention, distributed quota, callback thật, refund crash windows khác và BMC riêng còn mở.
+PostgreSQL stop/start với cùng API process đã có evidence charge/refund riêng.
+External audit outbox, retention, DB RBAC, distributed quota, callback thật và Kubernetes
+là future work ngoài nghiệm thu Order–Payment; không cần mở rộng các phần này để chốt đề tài.
+Refund crash windows khác và BMC riêng chỉ bổ sung khi có tiêu chí kiểm chứng tương ứng.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -1054,14 +1092,15 @@ Không dùng PASS của suite hiện tại để gọi hệ thống production-r
 
 Ưu tiên một đã có kết quả local: cancel UNKNOWN đồng bộ model/source,
 confirmation tự động được đánh dấu DESIGN_EXTENSION; gateway journal bền vững
-và process-kill recovery sau charge PASS. Refund crash sau journal đã có kiểm chứng; phần tiếp theo là cửa sổ
-trước charge và provider sandbox; không suy từ test local sang xác thực gateway thật.
+và process-kill recovery sau charge PASS. Refund crash sau journal và PostgreSQL
+reconnect đã có kiểm chứng; cửa sổ trước charge là hướng kiểm thử thêm nếu cần.
+Provider sandbox nằm ngoài nghiệm thu hiện tại; không suy từ test local sang xác thực gateway thật.
 
 Admission và audit đã có regression: body/item cap, auth/user quotas, durable
 BEGIN/RESULT, COMMIT cùng transaction, field allowlist và trigger append-only.
-Order-create có idempotency tùy chọn và original receipt. Phần tiếp theo là
-retention/least-privilege audit access, load/distributed quota và external outbox
-nếu thêm một đích audit bên ngoài PostgreSQL. Audit RESULT failure có thể sau commit;
+Order-create có idempotency tùy chọn và original receipt. Retention/least-privilege
+audit access, distributed quota và external outbox là future work ngoài phạm vi
+nghiệm thu Order–Payment, không phải việc bắt buộc thêm vào project. Audit RESULT failure có thể sau commit;
 503 không tự chứng minh nghiệp vụ chưa thực hiện.
 
 Precision/scale và timeout/cancellation worker đã có regression; phần tiếp theo
@@ -1096,14 +1135,21 @@ mở rộng refund crash windows và network/disk faults, rồi đo lại với 
 Health/aggregate metrics và log alert worker đã có, nhưng chưa external exporter,
 notification, least-privilege provisioning hoặc dashboard. PendingSince có durable
 age từ migration trở đi, lịch sử backfill chỉ lower bound. Metrics reset qua restart,
-audit failure counter không bao phủ mọi writer/DB-trigger failure. Dừng DB được kiểm
-chứng live/ready, chưa bật lại DB để đo reconnect/failover và backlog recovery.
+audit failure counter không bao phủ mọi writer/DB-trigger failure. Hai case PostgreSQL
+stop/start đã kiểm ready 200 → 503 → 200, cùng API process và pool, worker recovery,
+charge/refund không lặp và refund release kho một lần. Chưa kiểm failover hoặc backlog
+recovery dưới tải liên tục. Xem [charge](../results/postgres_reconnect_charge.results.json)
+và [refund](../results/postgres_reconnect_refund.results.json).
 
 Retry tăng số HTTP attempts, audit writes và thời gian chờ; 4-attempt/8s bound tránh
 loop vô hạn nhưng không đảm bảo mọi request thắng contention. Metadata retryable
 chỉ áp dụng create order; các client dùng plaintext 409 cần cập nhật. Workload
 mixed-user/product là một sample local, chưa fairness hoặc stability dưới tải dài.
-Tiếp theo đo reconnect PostgreSQL, payment backlog dưới tải, shared quota và exporter.
+Trong phạm vi đề tài, ưu tiên giữ demo recovery tái lập và báo cáo khớp evidence;
+nếu còn thời gian thì lặp load, đổi thứ tự phases và đo payment backlog dưới tải.
+DB migration/runtime RBAC, retention job, webhook/exporter thật, shared Redis limiter,
+gateway thật và Kubernetes nằm ngoài tiêu chí nghiệm thu hiện tại. Không tuyên bố
+đã hoàn thiện các phần này hoặc đã chứng minh toàn bộ hệ thống an toàn.
 
 
 ## 9. Kết luận
@@ -1118,7 +1164,9 @@ mở được giữ rõ trong bảng truy vết để tránh suy rộng ngoài p
 Q1 có source guard và HTTP evidence trên đường đã kiểm; chưa bao phủ toàn bộ vòng
 đời token. Q2 có model mutation và PostgreSQL race test; không là proof mọi
 interleaving. Q3 có safety cho UNKNOWN/compensation và một process-kill charge recovery với worker; liveness vẫn
-phụ thuộc môi trường. Q4 có witness cụ thể, bản sửa theo tổng quantity và evidence
+phụ thuộc môi trường. Hai case PostgreSQL stop/start bổ sung same-process worker
+recovery cho charge/refund, kiểm không gọi mutation lặp và release kho đúng một lần.
+Q4 có witness cụ thể, bản sửa theo tổng quantity và evidence
 SMT/test/database. Q5 có 22 case memory cùng static false-negative analysis,
 không suy rộng sang C#. Q6 có report, phụ lục, traceability và manifest; evidence
 lịch sử còn giới hạn provenance tại thời điểm thực thi.

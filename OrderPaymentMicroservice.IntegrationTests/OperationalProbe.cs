@@ -17,7 +17,7 @@ internal sealed class OperationalProbe : IAsyncDisposable
     private OperationalProbe(Process process, int port)
     { _process=process;Client=new(){BaseAddress=new Uri($"http://127.0.0.1:{port}"),Timeout=TimeSpan.FromSeconds(30)}; }
 
-    public static async Task<OperationalProbe> Start(string connection, string ledger, bool recovery=false, string? marker=null, int permits=100000, string operation="charge", bool realApplication=false)
+    public static async Task<OperationalProbe> Start(string connection, string ledger, bool recovery=false, string? marker=null, int permits=100000, string operation="charge", bool realApplication=false, string? releaseFile=null, string? countsFile=null)
     {
         var listener=new TcpListener(IPAddress.Loopback,0);listener.Start();var port=((IPEndPoint)listener.LocalEndpoint).Port;listener.Stop();
         var configuration=new DirectoryInfo(AppContext.BaseDirectory).Parent!.Name;
@@ -39,6 +39,9 @@ internal sealed class OperationalProbe : IAsyncDisposable
         if(marker!=null)info.Environment["CrashProbe__Marker"]=marker;
         else info.Environment.Remove("CrashProbe__Marker");
         info.Environment["CrashProbe__Operation"]=operation;
+        info.Environment.Remove("CrashProbe__ReleaseFile");info.Environment.Remove("CrashProbe__CountsFile");
+        if(releaseFile!=null)info.Environment["CrashProbe__ReleaseFile"]=releaseFile;
+        if(countsFile!=null)info.Environment["CrashProbe__CountsFile"]=countsFile;
         var process=Process.Start(info)!;
         process.OutputDataReceived+=(_,_)=>{};process.ErrorDataReceived+=(_,_)=>{};
         process.BeginOutputReadLine();process.BeginErrorReadLine();

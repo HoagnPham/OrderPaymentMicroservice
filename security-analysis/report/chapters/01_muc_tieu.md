@@ -31,6 +31,14 @@ của hoạt động phân tích đe dọa; “@@UNIT_COUNT@@ unit PASS” là o
 
 ### 1.3. Phạm vi và giả định vận hành
 
+Đây là đề tài Group 14 kiểm chứng an toàn Order–Payment, với trọng tâm idempotency,
+crash recovery và consistency Order–Payment–Inventory. Tiêu chí bắt buộc gồm
+PostgreSQL disconnect → reconnect, worker phục hồi, không charge/refund/release
+kho lặp và demo tái lập bằng evidence thật. Tách quyền DB migration/runtime,
+retention job, webhook thật, Redis/shared limiter, gateway thật và Kubernetes là
+future work ngoài nghiệm thu hiện tại. Giữ JWT/Admin hiện có. Xem
+[phạm vi nghiệm thu](../PHAM_VI_KIEM_CHUNG.md).
+
 Repository hiện có một host ASP.NET Core, chung PostgreSQL, các Controller/Service
 User, Product, Cart, Order và Payment. Tên đề tài dùng microservice theo dịch vụ
 Order/Payment cung cấp REST API; các module trong host chưa được triển khai độc
@@ -39,7 +47,7 @@ mô hình học tập ownership/lifetime, không phải bản dịch của imple
 
 Phạm vi xác minh gồm request validation, authorization ở đường đã test, lifecycle,
 reservation, số học model và một số cạnh tranh database. Chưa bao gồm bảo mật
-thiết bị client, cấu hình cloud, gateway thật, audit bền vững, throughput mục tiêu
+thiết bị client, cấu hình cloud, gateway thật, quản trị audit toàn diện, throughput mục tiêu
 hay tất cả interleaving. Gateway mặc định DurableFake trả thành công và lưu journal ngoài memory của process.
 MemoryFake vẫn được chọn rõ ràng trong fixture thông thường; test gateway có kịch
 bản riêng quan sát UNKNOWN. Process-kill recovery đã được xác minh với local journal,
@@ -93,7 +101,7 @@ stock được kiểm theo tổng quantity; model recovery được đối chi�
 workbook; static và dynamic analysis được dùng để chỉ ra cả năng lực và điểm bỏ
 sót của tool. Cách tổ chức evidence cùng các giới hạn là một đầu ra của đề tài.
 
-Nguồn: [mục tiêu gốc](../../OrderPaymentMicroservice/readme.md),
+Nguồn: [phạm vi nghiệm thu](../PHAM_VI_KIEM_CHUNG.md),
 [threat model](../threat_model.json),
 [traceability](../results/traceability_matrix.csv) và
 [Phụ lục A](PHU_LUC_A_G.md#phụ-lục-a--hệ-thống).

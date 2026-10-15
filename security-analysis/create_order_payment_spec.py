@@ -268,7 +268,7 @@ def apply_recovery_model() -> None:
 apply_recovery_model()
 
 
-# Evidence and implementation status belong in BAO_CAO_TIEN_DO_ATPM.md.  The
+# Evidence and implementation status belong in report/BAO_CAO.md. The
 # submission workbook must keep the exact ten-sheet schema consumed by the
 # lecturer's Spec Verification Lab, so do not append report-only columns here.
 

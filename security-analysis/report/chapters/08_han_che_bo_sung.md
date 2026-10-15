@@ -14,14 +14,15 @@
 
 Ưu tiên một đã có kết quả local: cancel UNKNOWN đồng bộ model/source,
 confirmation tự động được đánh dấu DESIGN_EXTENSION; gateway journal bền vững
-và process-kill recovery sau charge PASS. Refund crash sau journal đã có kiểm chứng; phần tiếp theo là cửa sổ
-trước charge và provider sandbox; không suy từ test local sang xác thực gateway thật.
+và process-kill recovery sau charge PASS. Refund crash sau journal và PostgreSQL
+reconnect đã có kiểm chứng; cửa sổ trước charge là hướng kiểm thử thêm nếu cần.
+Provider sandbox nằm ngoài nghiệm thu hiện tại; không suy từ test local sang xác thực gateway thật.
 
 Admission và audit đã có regression: body/item cap, auth/user quotas, durable
 BEGIN/RESULT, COMMIT cùng transaction, field allowlist và trigger append-only.
-Order-create có idempotency tùy chọn và original receipt. Phần tiếp theo là
-retention/least-privilege audit access, load/distributed quota và external outbox
-nếu thêm một đích audit bên ngoài PostgreSQL. Audit RESULT failure có thể sau commit;
+Order-create có idempotency tùy chọn và original receipt. Retention/least-privilege
+audit access, distributed quota và external outbox là future work ngoài phạm vi
+nghiệm thu Order–Payment, không phải việc bắt buộc thêm vào project. Audit RESULT failure có thể sau commit;
 503 không tự chứng minh nghiệp vụ chưa thực hiện.
 
 Precision/scale và timeout/cancellation worker đã có regression; phần tiếp theo
@@ -56,11 +57,18 @@ mở rộng refund crash windows và network/disk faults, rồi đo lại với 
 Health/aggregate metrics và log alert worker đã có, nhưng chưa external exporter,
 notification, least-privilege provisioning hoặc dashboard. PendingSince có durable
 age từ migration trở đi, lịch sử backfill chỉ lower bound. Metrics reset qua restart,
-audit failure counter không bao phủ mọi writer/DB-trigger failure. Dừng DB được kiểm
-chứng live/ready, chưa bật lại DB để đo reconnect/failover và backlog recovery.
+audit failure counter không bao phủ mọi writer/DB-trigger failure. Hai case PostgreSQL
+stop/start đã kiểm ready 200 → 503 → 200, cùng API process và pool, worker recovery,
+charge/refund không lặp và refund release kho một lần. Chưa kiểm failover hoặc backlog
+recovery dưới tải liên tục. Xem [charge](../results/postgres_reconnect_charge.results.json)
+và [refund](../results/postgres_reconnect_refund.results.json).
 
 Retry tăng số HTTP attempts, audit writes và thời gian chờ; 4-attempt/8s bound tránh
 loop vô hạn nhưng không đảm bảo mọi request thắng contention. Metadata retryable
 chỉ áp dụng create order; các client dùng plaintext 409 cần cập nhật. Workload
 mixed-user/product là một sample local, chưa fairness hoặc stability dưới tải dài.
-Tiếp theo đo reconnect PostgreSQL, payment backlog dưới tải, shared quota và exporter.
+Trong phạm vi đề tài, ưu tiên giữ demo recovery tái lập và báo cáo khớp evidence;
+nếu còn thời gian thì lặp load, đổi thứ tự phases và đo payment backlog dưới tải.
+DB migration/runtime RBAC, retention job, webhook/exporter thật, shared Redis limiter,
+gateway thật và Kubernetes nằm ngoài tiêu chí nghiệm thu hiện tại. Không tuyên bố
+đã hoàn thiện các phần này hoặc đã chứng minh toàn bộ hệ thống an toàn.
