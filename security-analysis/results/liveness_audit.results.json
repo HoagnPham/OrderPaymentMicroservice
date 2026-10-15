@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "run_at_utc": "2026-10-13T11:08:58.849889+00:00",
+  "run_at_utc": "2026-10-15T09:54:53.007153+00:00",
   "model_sha256": "00d00cfaaaa4d156a282e13556f5bc92b0920de185c034b9b8dec9f4e527a5d2",
   "reachable_count": 15,
   "unconditional_AG_AF_terminal": false,

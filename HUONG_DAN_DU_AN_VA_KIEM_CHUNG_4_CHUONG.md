@@ -949,15 +949,24 @@ python3 security-analysis/verify_inventory_smt.py
 
 Kỳ vọng payment 7/7, inventory 3/3. Không xem mọi SAT là lỗi hoặc mọi UNSAT là thành công mà bỏ qua câu hỏi của từng case.
 
-TLC là bước riêng: tải official `tla2tools.jar` từ [TLA+ releases](https://github.com/tlaplus/tlaplus/releases), rồi đặt đường dẫn file thật. File `/tmp/tla2tools.jar` ghi trong evidence cũ **không còn tồn tại** trên máy tại lúc đối chiếu:
+TLC là bước riêng. Đã tải JAR từ [release chính thức v1.7.4](https://github.com/tlaplus/tlaplus/releases/tag/v1.7.4) vào `tmp/tools/tla2tools.jar` và chạy lại PASS ngày 15/10/2026: 35 state sinh, 20 phân biệt, độ sâu 9. Từ gốc repository, chạy:
 
 ```bash
-export TLA2TOOLS_JAR=/duong/dan/thuc/te/tla2tools.jar
-test -f "$TLA2TOOLS_JAR"
-python3 security-analysis/run_tlc.py --jar "$TLA2TOOLS_JAR" --timeout 120
+python3 security-analysis/run_tlc.py --jar tmp/tools/tla2tools.jar --timeout 120
 ```
 
-Đây không là lệnh BMC; project chưa có CBMC harness nên không có “lệnh BMC project” để báo PASS. Nếu không chạy lại TLC, giữ nhãn **historical** cho evidence hiện có.
+Trên máy mới cần tải JAR trước vì `tmp/` bị Git ignore:
+
+```bash
+mkdir -p tmp/tools
+curl --fail --location --retry 2 \
+  https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar \
+  --output tmp/tools/tla2tools.jar
+```
+
+Cần Java (`java -version`) và tải thành công trước khi chạy Python. Các đường dẫn `/duong/dan/...` trong hướng dẫn cũ là placeholder; `/tmp/tla2tools.jar` của lượt lịch sử không còn trên máy. Nếu Java RMI báo `Operation not permitted`, chạy từ terminal thường được phép mở cổng local. Evidence mới ở `security-analysis/results/tlc/`; report/manifest lịch sử không tự cập nhật theo lượt này.
+
+Đây không là lệnh CBMC; project chưa có CBMC harness nên không có “lệnh BMC project” để báo PASS.
 
 ### F.6. Chương 4 — Unit coverage rồi fuzz coverage
 
