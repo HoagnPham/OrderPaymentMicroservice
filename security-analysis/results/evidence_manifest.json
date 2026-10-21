@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
-  "packaged_at_utc": "2026-10-21T17:50:17.896476+00:00",
-  "git_base_commit": "6eb2983912eef1c0131ee0f83072f772ff44f72b",
-  "working_tree_dirty": true,
+  "packaged_at_utc": "2026-10-21T17:51:25.900455+00:00",
+  "git_base_commit": "3a486fb290ca492254a8b5172c7aa457236d2328",
+  "working_tree_dirty": false,
   "dotnet_version": "10.0.112",
   "fresh_checks": [
     "postgres_reconnect_charge.results.json",
