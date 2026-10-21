@@ -6,9 +6,13 @@ from copy import deepcopy
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import sys
 from tempfile import NamedTemporaryFile
 from xml.etree import ElementTree as ET
 from zipfile import ZIP_DEFLATED, ZipFile
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ctl  # noqa: E402  (local helper module)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -71,11 +75,11 @@ SHEETS = {
         "widths": [13, 82, 14],
         "rows": [
             ["ID", "MoTa", "MucUuTien"],
-            ["NFR-1", "Các mutation aggregate Order–Payment–Inventory dùng transaction Serializable trên PostgreSQL. Lưu PROCESSING/REFUND_PENDING trước khi gọi gateway; finalize là transaction riêng. Gateway và DB không có distributed transaction, khoảng hở được reconciliation xử lý.", "HIGH"],
-            ["NFR-2", "Branch coverage tối thiểu 90% cho target đã đo: InputValidator và tập target fuzz được chọn. Coverage không đại diện toàn ứng dụng; ghi số đo và thời điểm từ coverage_summary.json/application_fuzzing.results.json.", "HIGH"],
-            ["NFR-3", "Log lỗi phải đủ OrderId/UserId để truy vết nhưng không được ghi mật khẩu, JWT, Jwt:Key hoặc connection string.", "HIGH"],
-            ["NFR-4", "Secret và connection string phải được cung cấp ngoài source control; Jwt:Key phải có ít nhất 32 ký tự.", "HIGH"],
-            ["NFR-5", "Các bản C biên dịch với AddressSanitizer/UndefinedBehaviorSanitizer phải phát hiện đúng bản lỗi và không báo lỗi với bản FIXED trên cùng ca kiểm thử.", "MEDIUM"],
+            ["NFR-1", "Mutation aggregate Order–Payment–Inventory chạy trong 1 transaction Serializable trên PostgreSQL; lưu PROCESSING/REFUND_PENDING trước khi gọi gateway, finalize là transaction thứ 2. Hệ thống dùng 0 distributed transaction; khoảng hở được 1 recovery worker đối soát.", "HIGH"],
+            ["NFR-2", "Branch coverage tối thiểu 90% cho target đã đo. Snapshot 22/10/2026: InputValidator 97,22%, MoneyAmounts 100%, fuzz target 97,50% (3 target, không đại diện toàn ứng dụng).", "HIGH"],
+            ["NFR-3", "Log lỗi chỉ dùng allowlist 8 trường (correlationId, orderId, userId, paymentId, event, status, errorCode, durationMs); 0 mật khẩu/JWT/Jwt:Key/connection string/raw body trong log và audit.", "HIGH"],
+            ["NFR-4", "Secret và connection string nằm ngoài source control; Jwt:Key dài tối thiểu 32 ký tự (256-bit HS256), 0 secret hard-code trong repository.", "HIGH"],
+            ["NFR-5", "5 module C BUGGY/FIXED chạy 22/22 case sanitizer; bản BUGGY phải phát hiện đủ 5/5 lỗi (CWE-120/401/415/416), bản FIXED 0 báo cáo ASan/UBSan trên cùng input.", "MEDIUM"],
         ],
     },
     "RangBuoc": {
@@ -108,10 +112,9 @@ SHEETS = {
         "widths": [48],
         "rows": [
             ["CongThucCTL"],
-            ["AG(no_invalid_transition)"],
-            ["EF(payment_processing)"],
+            ["AG(!violation)"],
+            ["EF(main_locked)"],
             ["EF(payment_success)"],
-            ["EF(refund_pending)"],
             ["EF(refunded)"],
             ["EF(terminal)"],
         ],
@@ -154,7 +157,7 @@ SHEETS = {
             ["TC-6", "REQ-6", "Payment phải bằng đúng tổng Order", "Order PAYMENT_PENDING, TotalAmount=100", "Tạo Payment Amount=99", "Bị từ chối; Order vẫn PAYMENT_PENDING", "HIGH"],
             ["TC-7", "REQ-6", "Payment thành công chuyển Order sang PAID", "Order PAYMENT_PENDING, TotalAmount=100", "Tạo Payment SUCCESS Amount=100", "Tạo đúng một Payment và Order chuyển sang PAID", "HIGH"],
             ["TC-8", "REQ-7", "Retry payment có tính idempotent", "Order PAYMENT_PENDING, request có khóa stable-client-request-id", "Gửi cùng request hai lần\nSau đó thử cùng khóa với Amount khác", "Hai lần đầu trả cùng Payment/TransactionCode và chỉ lưu một bản ghi; Amount khác bị từ chối", "HIGH"],
-            ["TC-9", "REQ-5, REQ-14, NFR-6", "Đối chiếu model Order ban đầu và model recovery", "Có evidence model ban đầu và recovery model", "Đọc results/order_state_model.results.json\nChạy python3 security-analysis/verify_recovery_model.py và python3 security-analysis/audit_liveness.py", "Model Order ban đầu có P1–P4 PASS trong phạm vi cũ; recovery 15 state là phạm vi mở rộng. Raw liveness recovery=false, progress-only=true theo policy lọc cạnh; không nhập nhằng hai model.", "HIGH"],
+            ["TC-9", "REQ-5, REQ-14, NFR-6", "Đối chiếu model Order ban đầu và model recovery", "Có evidence model ban đầu và recovery model", "Đọc results/order_state_model.results.json\nChạy python3 security-analysis/verify_recovery_model.py và python3 security-analysis/audit_liveness.py", "Model Order ban đầu có P1–P4 PASS trong phạm vi cũ; recovery 14 state là phạm vi mở rộng. Raw liveness recovery=false, progress-only=true theo policy lọc cạnh; không nhập nhằng hai model.", "HIGH"],
             ["TC-10", "REQ-5", "Counterexample hồi sinh Order", "Model BUGGY có cạnh CANCELLED → PAID_AFTER_CANCELLED", "Đọc results/order_state_model_buggy.results.json\nChạy python3 security-analysis/verify_recovery_model.py để kiểm mutation tương ứng", "P1 FAIL với witness CREATED → CANCELLED → PAID_AFTER_CANCELLED; mutation phải được phát hiện, đây là kết quả âm mong đợi.", "HIGH"],
             ["TC-11", "REQ-9, REQ-10, REQ-11, REQ-12, REQ-13", "Sanitizer phát hiện đủ 5 bản C lỗi", "GCC, Make, ASan/UBSan khả dụng", "cd security-analysis/c-memory\nmake\nmake test", "Bản buggy lần lượt báo stack-buffer-overflow, heap-buffer-overflow, heap-use-after-free, memory leak và double-free", "HIGH"],
             ["TC-12", "REQ-9, REQ-10, REQ-11, REQ-12, REQ-13", "Bản FIXED sạch sanitizer và đúng biên chuỗi", "Đã build cả *_fixed", "Chạy cùng kịch bản lỗi\nThử Product/User với độ dài 0, 1, 31, 32, 128 byte", "Bản FIXED không có báo cáo sanitizer; nhận tối đa 31 byte và từ chối từ 32 byte; toàn bộ 22/22 case PASS", "HIGH"],
@@ -186,9 +189,10 @@ def apply_recovery_model() -> None:
         ["updated_date", "2026-10-22 (Asia/Bangkok)"],
         ["evidence_baseline", "Evidence hiện lưu ngày 22/10/2026: 149/149 unit + 35/35 integration PASS, 0 SKIP (results/application_tests.results.json). Số liệu lấy từ lần chạy toàn suite gần nhất; đọc trực tiếp suites.unit/suites.integration thay vì chép tay."],
         ["coverage_baseline", "InputValidator branch 97,22%; MoneyAmounts 100%; fuzz target branch 97,50%. Nguồn: security-analysis/results/coverage_summary.json và application_fuzzing.results.json; chỉ áp dụng target được đo."],
-        ["model_scope", "MoHinhTrangThai là recovery model trừu tượng 15 state, 37 event, 7 contract, không phải enum OrderStatus. PAYMENT_PROCESSING/PAYMENT_RETRY/PAYMENT_PROCESSING_FINAL kết hợp Order và Payment; CONFIRMATION_RETRY thuộc mở rộng thiết kế, chưa có scheduler/counter runtime. Xem IMPLEMENTATION_CONTRACTS.md."],
+        ["model_scope", "MoHinhTrangThai là recovery model trừu tượng 14 state, 35 event, 7 contract, không phải enum OrderStatus. PAYMENT_PROCESSING/PAYMENT_RETRY/PAYMENT_PROCESSING_FINAL kết hợp Order và Payment; không còn state confirmation-retry vì runtime không có scheduler/counter tương ứng. Workbook thêm cụm khóa minh họa theo ATPM §3.5. Xem IMPLEMENTATION_CONTRACTS.md."],
+        ["lock_cluster_scope", "Cụm free/main_holds/log_holds/conflict được thêm đúng checklist ATPM §3.5–3.7. Nhãn safe/main_locked/log_locked/violation và cạnh main_holds→conflict là bài tập phát hiện lỗi: pipeline sẽ báo CWE-667/CWE-693 tại conflict. Đây là hành vi đúng thiết kế của đề bài, không phải lỗi runtime của OrderPaymentMicroservice; 14 state nghiệp vụ vẫn được kiểm bởi recovery checker."],
         ["liveness_scope", "P10 progress-only lọc cạnh stutter; audit_liveness.py xác nhận raw AG AF terminal=false, progress-only=true. Đây không phải thuật toán fair-CTL đầy đủ; kết thúc còn phụ thuộc provider và hành động confirm/complete."],
-        ["generator_scope", "HamSinhMa mô tả 5 module C BUGGY/FIXED học tập; không phải lỗi bộ nhớ của C# managed. KiemTraSoHoc là các bài toán số nguyên/cents, không phải phép toán Int32 trực tiếp trong production; app dùng decimal/guard, SMT dùng Z3 ngoài runtime."],
+        ["generator_scope", "HamSinhMa mô tả 5 module C BUGGY/FIXED và 2 hàm Python (divide/magic_value) học tập; không phải lỗi bộ nhớ của C# managed. KiemTraSoHoc là các bài toán cộng dồn số nguyên/cents theo ngưỡng int16/uint16/int32/uint32 của ATPM, không phải phép toán Int32 trực tiếp trong production; app dùng decimal/guard, SMT dùng Z3 ngoài runtime."],
         ["verification_sources", "Nguồn trong security-analysis/: PHAM_VI_KIEM_CHUNG.md; IMPLEMENTATION_CONTRACTS.md; OPERATIONS.md; report/BAO_CAO.md; results/*.json và results/traceability_matrix.csv. Các tham chiếu rút gọn results/... trong workbook tính từ security-analysis/; lệnh chạy từ gốc repository."],
         ["limitations", "Gateway là DurableFake local, chưa provider thu tiền thật. Chưa chứng minh mọi interleaving/crash window, partition, failover, power loss hoặc SLA production. Evidence/hash lúc đóng gói không tự chứng minh source của lần chạy lịch sử."],
         ["future_work", "Ngoài nghiệm thu: tách DB migration/runtime role, retention job, webhook thật, shared Redis limiter, gateway thật, Kubernetes. Confirmation retry tự động còn là thiết kế; load chưa crossover/lặp để suy thống kê."],
@@ -199,7 +203,7 @@ def apply_recovery_model() -> None:
     requirements["REQ-5"][1] = "Order đi CREATED → VALIDATED → PAYMENT_PENDING → PAID → CONFIRMED → COMPLETED; cho phép cancel trước charge, FAILED khi decline, PAID/CONFIRMED → REFUND_PENDING → REFUNDED. Guard cấm hồi sinh terminal; model có các state trừu tượng bổ sung, không đồng nhất với enum runtime."
     SHEETS["YeuCauChucNang"]["rows"].extend([
         ["REQ-15", "Mỗi trạng thái Order-Payment phải đặc tả sự cố, cách phát hiện, biện pháp xử lý và trạng thái tiếp theo; không được có sự cố không có đường phục hồi hoặc kết thúc.", "safety", "HIGH"],
-        ["REQ-16", "PaymentService giới hạn charge tối đa 2 attempts cho cùng logical payment/key. Hết budget mà UNKNOWN vẫn giữ reservation và chỉ lookup/reconcile; không suy thành FAILED. Bounded confirmation retry chỉ có trong model, chưa hiện thực scheduler/counter tự động.", "safety", "HIGH"],
+        ["REQ-16", "PaymentService giới hạn charge tối đa 2 attempts cho cùng logical payment/key. Hết budget mà UNKNOWN vẫn giữ reservation và chỉ lookup/reconcile; không suy thành FAILED. Không có automatic confirmation retry trong source; Admin confirm hoặc refund thủ công.", "safety", "HIGH"],
         ["REQ-17", "Charge đã xảy ra nhưng finalize PAID lỗi phải được lookup bằng cùng key và hoàn tất SUCCESS/PAID, không charge mù hoặc đổi FAILED. Khi yêu cầu refund cho Order PAID/CONFIRMED, dùng REFUND_PENDING → REFUNDED, giữ dấu vết charge và release kho một lần.", "safety", "HIGH"],
         ["REQ-18", "Payment và cancellation trên cùng Order phải được serialize; không được đồng thời sở hữu critical resource hoặc tạo hai Payment SUCCESS.", "safety", "HIGH"],
         ["REQ-19", "PROCESSING/UNKNOWN phải được worker reconciliation hỏi trạng thái charge cũ; REFUND_PENDING hỏi trạng thái refund cũ. Lookup không tăng AttemptCount, không tự phát charge/refund; UNKNOWN giữ reservation và chặn cancel.", "safety", "HIGH"],
@@ -214,17 +218,17 @@ def apply_recovery_model() -> None:
     ])
     SHEETS["YeuCauPhiChucNang"]["rows"].append([
         "NFR-6",
-        "Pipeline kiểm chứng phải duyệt toàn bộ model hữu hạn, lưu counterexample cho model lỗi và ghi rõ bound, fairness, assumptions và giới hạn kết luận.",
+        "Pipeline kiểm chứng phải duyệt toàn bộ 14 state/35 event của model hữu hạn, kiểm 15 property và 6 mutation; lưu counterexample cho model lỗi, ghi rõ bound, fairness, assumptions và 0 kết luận vượt phạm vi.",
         "HIGH",
     ])
     SHEETS["YeuCauPhiChucNang"]["rows"].extend([
-        ["NFR-7", "Timeout wrapper charge/refund/status mặc định 5000ms, startup validate 50..60000ms. Caller không chờ vô hạn; late result không tự ghi state. Adapter không hợp tác chưa có cơ chế cưỡng chế dừng, backpressure vẫn là giới hạn.", "HIGH"],
-        ["NFR-8", "AuditEvents append-only chặn UPDATE/DELETE/TRUNCATE bằng PostgreSQL trigger; COMMIT audit chỉ bảo vệ Orders/Payments. Không chống DBA đổi schema/disable trigger; chưa có retention job hoặc chữ ký chống sửa log.", "HIGH"],
-        ["NFR-9", "Kết quả nghiệm thu phải ghi total/pass/fail/skip, thời điểm, source/artifact hash khi có và giới hạn. Demo filtered tests không ghi đè summary toàn suite; snapshot evidence không là lần chạy mới.", "HIGH"],
-        ["NFR-10", "Load/race phải kiểm no duplicate, conservation stock, bounded attempts và COMMIT count. Báo raw samples/p95/p99/status; workload hai API process hữu hạn và limiter local không chứng minh shared quota hoặc SLA production.", "MEDIUM"],
+        ["NFR-7", "Timeout wrapper charge/refund/status mặc định 5000ms; startup validate cấu hình trong khoảng 50..60000ms. 0 caller chờ vô hạn; late result không tự ghi state.", "HIGH"],
+        ["NFR-8", "AuditEvents append-only bằng 4 PostgreSQL trigger chặn UPDATE/DELETE/TRUNCATE; 0 mutation audit được phép, COMMIT audit chỉ bảo vệ Orders/Payments.", "HIGH"],
+        ["NFR-9", "Kết quả nghiệm thu ghi total/pass/fail/skip, thời điểm và hash artifact. Snapshot 22/10/2026: unit 149/149, integration 35/35, fail 0, skip 0.", "HIGH"],
+        ["NFR-10", "Load/race đo trên 2 API process, 8 user, 4 product và 96 logical request mỗi scenario; báo raw sample, p95, p99 và 0 duplicate charge/oversell trong workload đã chạy.", "MEDIUM"],
     ])
     SHEETS["RangBuoc"]["rows"].extend([
-        ["CON-7", "Runtime MaxChargeAttempts=2. Model PAYMENT_PROCESSING_FINAL vẫn có cạnh final_payment_unknown/final_charged_but_commit_failed → PAYMENT_RETRY để giữ UNKNOWN; graph không mã hóa đầy đủ counter runtime và không là proof bound mọi đường thực thi.", "HIGH"],
+        ["CON-7", "Runtime MaxChargeAttempts=2. Model PAYMENT_PROCESSING_FINAL vẫn có cạnh stutter final_payment_unknown/final_charged_but_commit_failed → PAYMENT_RETRY để giữ UNKNOWN; workbook dùng progress projection (bỏ cạnh stutter) nên không tạo charge loop. Graph đầy đủ vẫn không chứng minh bound mọi đường thực thi.", "HIGH"],
         ["CON-8", "Weak fairness là assumption được khai báo trong model. Checker hiện bỏ cạnh metadata stutter để kiểm progress-only, kể cả vài cạnh đổi state; raw AG AF terminal=false. Không diễn giải PASS thành fair-CTL hoặc bảo đảm provider cuối cùng trả kết quả.", "HIGH"],
         ["CON-9", "Refund có idempotency key riêng, bind charge transaction reference; replay/lookup không refund lần hai. Gateway callback được xác thực chỉ là assumption của model, chưa có webhook adapter thật.", "HIGH"],
         ["CON-10", "Order Idempotency-Key: một header value, 1..128 ký tự visible ASCII; DB lưu SHA-256 key/payload và original receipt, unique(CustomerId, CreationKeyHash). Khác Payment.IdempotencyKey trong JSON; không suy hai namespace là một.", "HIGH"],
@@ -234,68 +238,99 @@ def apply_recovery_model() -> None:
         ["CON-14", "Local PostgreSQL stop/start, OS process kill, backup/restore và browser được kiểm trên tài nguyên test tạm. DB RBAC tách role, retention, webhook/gateway thật, distributed limiter và Kubernetes nằm ngoài nghiệm thu.", "MEDIUM"],
     ])
 
+    # The workbook Kripke graph is the *progress projection* of the recovery
+    # model (stutter/retry self-edges removed, terminal self-loops retained to
+    # satisfy the lecturer's no-deadlock rule) plus the mandatory 4-state lock
+    # cluster from the ATPM Excel guide, section 3.5.
     state_rows = [["TrangThai", "KhoiTao", "Nhan", "ChuyenDenCacTrangThai"]]
     for state in model["states"]:
         targets = []
         for transition in state["normal"] + state["incidents"]:
+            if transition.get("kind") == "stutter":
+                continue
             if transition["to"] not in targets:
                 targets.append(transition["to"])
-        labels = [*state["labels"], "no_invalid_transition", "no_resource_conflict"]
+        if not targets:
+            if "terminal" not in state["labels"]:
+                raise ValueError(f"Non-terminal state {state['id']} has no progress transition")
+            targets = [state["id"]]
         state_rows.append([
             state["id"],
             "x" if state["id"] == "CREATED" else "",
-            ", ".join(labels),
+            ", ".join(state["labels"]),
             ", ".join(targets),
         ])
+
+    # Deliberate lock cluster required by the workbook checklist.  ``conflict``
+    # is intentionally reachable and carries the ``violation`` label so the
+    # lecturer's pipeline reports CWE-667/CWE-693; the guide explicitly calls
+    # this a correct-by-design detection exercise, not a runtime defect of the
+    # C# service.
+    state_rows.extend([
+        ["free", "x", "safe", "main_holds, log_holds"],
+        ["main_holds", "", "main_locked", "free, conflict"],
+        ["log_holds", "", "log_locked", "free"],
+        ["conflict", "", "main_locked, log_locked, violation", "free"],
+    ])
     SHEETS["MoHinhTrangThai"]["rows"] = state_rows
     SHEETS["MoHinhTrangThai"]["widths"] = [28, 12, 68, 66]
 
     SHEETS["ThuocTinhAnToan"]["rows"] = [
         ["CongThucCTL"],
-            ["AG(no_invalid_transition)"],
-            ["AG(no_resource_conflict)"],
-        ["EF(payment_processing)"],
+        ["AG(!violation)"],
+        ["EF(main_locked)"],
+        ["AG(payment_pending -> AF(paid | cancelled | failed))"],
+        ["AG(payment_processing -> AF(paid | failed))"],
+        ["AG(paid -> AF(completed | refunded))"],
+        ["AG(confirmed -> AF(completed | refunded))"],
+        ["AG(refund_pending -> AF(refunded))"],
         ["EF(payment_success)"],
-        ["EF(refund_pending)"],
         ["EF(refunded)"],
         ["EF(terminal)"],
     ]
     SHEETS["ThuocTinhAnToan"]["widths"] = [75]
     SHEETS["LoaiTruLanNhau"]["rows"] = [
         ["MenhDe1", "MenhDe2"],
+        ["main_locked", "log_locked"],
+        ["violation", "safe"],
         ["payment_pending", "payment_success"],
+        ["paid", "failed"],
+        ["completed", "cancelled"],
+        ["inventory_reserved", "inventory_released"],
     ]
     SHEETS["HamSinhMa"]["rows"] = [
         ["Ten", "NgonNgu", "Loai", "ThamSo", "KichThuocBuffer", "Loi", "GiaTriBiMat1", "GiaTriBiMat2"],
-        ["register_user", "c", "buffer_copy", "input", 32, "buffer-overflow", 31, 32],
-        ["import_product_name", "c", "buffer_copy", "input", 32, "buffer-overflow", 31, 32],
-        ["remove_cart_item", "c", "alloc_release", "removed", 16, "use-after-free", 101, 1],
-        ["cancel_order", "c", "alloc_release", "order, order->items", 48, "memory-leak", 3, 5],
-        ["cleanup_payment", "c", "alloc_release", "transaction_code", 32, "double-free", 1, 2],
+        ["register_user", "c", "buffer_copy", "input", 32, "buffer-overflow", "", ""],
+        ["import_product_name", "c", "buffer_copy", "input", 32, "buffer-overflow", "", ""],
+        ["remove_cart_item", "c", "alloc_release", "removed", 16, "use-after-free", "", ""],
+        ["cancel_order", "c", "alloc_release", "order, order->items", 48, "memory-leak", "", ""],
+        ["cleanup_payment", "c", "alloc_release", "transaction_code", 32, "double-free", "", ""],
+        ["return_rate_ratio", "python", "divide", "returned, borrowed", 16, "", "", ""],
+        ["payment_override_code", "python", "magic_value", "code_a, code_b", 16, "", 6284, 4917],
     ]
     SHEETS["KiemTraSoHoc"]["rows"] = [
         ["Ten", "BienSoNguyen", "DieuKien", "BieuThucTran"],
-        ["order_item_subtotal_cents", "quantity, unit_price_cents", "1 <= quantity <= 10000 and 1 <= unit_price_cents <= 99999999 and quantity * unit_price_cents > 2147483647", "quantity * unit_price_cents"],
-        ["order_total_cents", "subtotal1, subtotal2", "subtotal1 >= 0 and subtotal2 >= 0 and subtotal1 + subtotal2 > 2147483647", "subtotal1 + subtotal2"],
-        ["two_payment_total_cents", "payment1_cents, payment2_cents", "payment1_cents >= 0 and payment2_cents >= 0 and payment1_cents + payment2_cents > 2147483647", "payment1_cents + payment2_cents"],
-        ["inventory_after_reserve", "stock, quantity", "0 <= stock <= 2147483647 and 1 <= quantity <= 10000 and stock - quantity < 0", "stock - quantity"],
-        ["retry_counter_increment", "retry_count, one", "0 <= retry_count <= 2147483647 and one == 1 and retry_count + one > 2147483647", "retry_count + one"],
-        ["refund_total_cents", "paid_cents, refunded_cents", "paid_cents >= 0 and refunded_cents >= 0 and paid_cents + refunded_cents > 2147483647", "paid_cents + refunded_cents"],
+        ["order_total_cents", "order_subtotal_cents, shipping_fee_cents", "order_subtotal_cents >= 0 and shipping_fee_cents >= 0 and order_subtotal_cents + shipping_fee_cents > 2000000000", "order_subtotal_cents + shipping_fee_cents"],
+        ["payment_total_cents", "payment1_cents, payment2_cents", "payment1_cents >= 0 and payment2_cents >= 0 and payment1_cents + payment2_cents > 2000000000", "payment1_cents + payment2_cents"],
+        ["daily_order_counter", "orders_today, orders_backlog", "orders_today >= 0 and orders_backlog >= 0 and orders_today + orders_backlog > 32767", "orders_today + orders_backlog"],
+        ["active_session_counter", "active_sessions, reserved_sessions", "active_sessions >= 0 and reserved_sessions >= 0 and active_sessions + reserved_sessions > 65535", "active_sessions + reserved_sessions"],
+        ["backup_size_bytes", "full_backup_bytes, incremental_bytes", "full_backup_bytes >= 0 and incremental_bytes >= 0 and full_backup_bytes + incremental_bytes > 4294967295", "full_backup_bytes + incremental_bytes"],
+        ["refund_ledger_cents", "paid_cents, refunded_cents", "paid_cents >= 0 and refunded_cents >= 0 and paid_cents + refunded_cents > 2000000000", "paid_cents + refunded_cents"],
     ]
     SHEETS["TestCase"]["rows"].extend([
-        ["TC-16", "REQ-15, REQ-16, NFR-6", "Kiểm chứng recovery model hữu hạn", "order_payment_recovery_model.json hợp lệ", "Chạy python3 security-analysis/verify_recovery_model.py\nĐọc results/order_payment_recovery_model.results.json", "7 contract, 15 state, 37 event; P1–P15 PASS theo semantics của checker, mọi state reachable và 6/6 negative mutations được phát hiện. P10 chỉ progress-only; CONFIRMATION_RETRY thuộc thiết kế.", "HIGH"],
+        ["TC-16", "REQ-15, REQ-16, NFR-6", "Kiểm chứng recovery model hữu hạn", "order_payment_recovery_model.json hợp lệ", "Chạy python3 security-analysis/verify_recovery_model.py\nĐọc results/order_payment_recovery_model.results.json", "7 contract, 14 state, 35 event; P1–P15 PASS theo semantics của checker, mọi state reachable và 6/6 negative mutations được phát hiện. P10 chỉ progress-only; không còn state confirmation-retry không có runtime.", "HIGH"],
         ["TC-17", "REQ-5, REQ-15", "Phản ví dụ CANCELLED bị thanh toán", "Mutation BUG-CANCELLED-PAID được bật", "Thêm cạnh CANCELLED → PAID_AFTER_CANCELLED\nChạy lại toàn bộ thuộc tính", "P1 và P4 FAIL; witness đi từ CREATED tới CANCELLED rồi PAID_AFTER_CANCELLED", "HIGH"],
         ["TC-18", "REQ-6, REQ-15", "Phản ví dụ payment sai amount", "Mutation BUG-WRONG-AMOUNT được bật", "Bỏ amount guard tại PAYMENT_PROCESSING\nChuyển tới PAID_WRONG_AMOUNT", "P1 FAIL và trả witness tới state amount_mismatch", "HIGH"],
         ["TC-19", "REQ-7, REQ-18", "Phản ví dụ hai payment SUCCESS", "Mutation BUG-DUPLICATE-SUCCESS được bật", "Bỏ idempotency guard tại PAID\nTạo state PAID_TWICE", "P1 FAIL và trả witness tới state two_success_payments", "HIGH"],
         ["TC-20", "REQ-18, NFR-1", "Phản ví dụ payment-cancel conflict", "Mutation BUG-RESOURCE-CONFLICT được bật", "Cho payment và cancel cùng sở hữu resource\nChạy kiểm chứng", "P1 và P7 FAIL với witness tới PAY_CANCEL_CONFLICT", "HIGH"],
-        ["TC-21", "REQ-16, REQ-17, REQ-19", "Retry hết budget vẫn giữ UNKNOWN an toàn", "PaymentServiceTests; provider trả UNKNOWN", "Retry đến AttemptCount=2 rồi retry/reconcile tiếp; thử cancel\nĐọc source PaymentService và results/application_tests.results.json", "Không charge attempt thứ ba; UNKNOWN và reservation được giữ, cancel bị chặn; definitive result mới cho finalize. Confirmation retry tự động chưa hiện thực.", "HIGH"],
+        ["TC-21", "REQ-16, REQ-17, REQ-19", "Retry hết budget vẫn giữ UNKNOWN an toàn", "PaymentServiceTests; provider trả UNKNOWN", "Retry đến AttemptCount=2 rồi retry/reconcile tiếp; thử cancel\nĐọc source PaymentService và results/application_tests.results.json", "Không charge attempt thứ ba; UNKNOWN và reservation được giữ, cancel bị chặn; definitive result mới cho finalize. Confirmation failure giữ PAID để Admin confirm/refund, không tự charge lại.", "HIGH"],
         ["TC-22", "REQ-4, REQ-6", "Kiểm chứng SMT cho tổng tiền và thanh toán", "Z3 có trên PATH", "Chạy python security-analysis/verify_payment_smt.py", "7/7 ca SAT/UNSAT đúng kỳ vọng; có counterexample tràn Int32 và bằng chứng giới hạn tổng tiền", "HIGH"],
         ["TC-23", "REQ-1, REQ-2, REQ-3, REQ-7, REQ-18", "Kiểm tra threat model Chương 1", "threat_model.json hợp lệ", "Chạy python security-analysis/verify_threat_model.py", "ID và tham chiếu hợp lệ; đủ CIA, 6/6 STRIDE, risk score và liên kết evidence/property", "HIGH"],
         ["TC-24", "REQ-9, REQ-10, REQ-11, REQ-12, REQ-13, NFR-5", "Static analysis BUGGY/FIXED và alignment", "GCC và cppcheck có trên PATH", "Chạy make -C security-analysis/c-memory static-check", "Scanner bắt đủ 5 lỗi BUGGY, FIXED sạch theo rule; lưu finding cppcheck và layout thực tế", "HIGH"],
         ["TC-25", "REQ-1, REQ-2, REQ-7, REQ-18, NFR-1", "Integration HTTP với PostgreSQL thật", "Docker hoặc PostgreSQL binaries cục bộ khả dụng", "Chạy dotnet test cho OrderPaymentMicroservice.IntegrationTests", "Tất cả test PASS, không SKIP; số lượng và verdict lấy từ application_tests.results.json. Kiểm tra quyền, idempotency, payment-cancel, validation và migration trên PostgreSQL", "HIGH"],
         ["TC-26", "REQ-4, REQ-5, REQ-6, NFR-2", "Fuzzing xác định validator và state machine", "Corpus; seed=20261009; timeout=120s", "Chạy python3 security-analysis/run_fuzzing.py\nĐọc results/application_fuzzing.results.json và application-fuzzing-coverage.cobertura.xml", "4 campaign: corpus, validator random, state-pair random và stateful aggregate (2.000 sequence × tối đa 20 step). Random campaign dùng 25.000 iteration; stateful kiểm Order–Payment–Inventory invariant sau mỗi thao tác. Coverage chỉ áp dụng target được đo, không là coverage toàn app hoặc fuzz HTTP/concurrency/gateway thật.", "HIGH"],
         ["TC-27", "REQ-5, REQ-14, REQ-16, REQ-17, NFR-6", "TLC kiểm chứng đặc tả TLA+ trong bound", "Có tla2tools.jar; đây là model TLA+ riêng", "Chạy python3 security-analysis/run_tlc.py --jar /duong-dan/tla2tools.jar\nĐọc results/tlc/OrderPayment.tlc.results.json", "Evidence TLC lịch sử: 35 state sinh, 20 phân biệt, độ sâu 9, không lỗi trong model/bound/assumptions đã khai báo. Không đổi nhãn thành lượt mới; không thay kết quả raw liveness của recovery graph hoặc proof runtime.", "HIGH"],
-        ["TC-28", "REQ-5, REQ-14, NFR-6", "Tương thích bộ công cụ ATPM của giảng viên", "Workbook và JSON pipeline đã sinh", "Chạy python security-analysis/verify_teacher_spec.py", "Checker độc lập: schema đúng 10 sheet; Excel/JSON đồng nghĩa; Kripke total và reachable; 7/7 CTL PASS. Không thay thế lần chạy công cụ Windows của giảng viên.", "HIGH"],
+        ["TC-28", "REQ-5, REQ-14, NFR-6", "Tương thích bộ công cụ ATPM của giảng viên", "Workbook và JSON pipeline đã sinh", "Chạy python security-analysis/verify_teacher_spec.py", "Checker độc lập: schema đúng 10 sheet; Excel/JSON đồng nghĩa; Kripke total và reachable; 10 CTL (9 đúng, AG(!violation) false có chủ đích); 6 cặp mutex, dòng đầu bị conflict vi phạm có chủ đích → CWE-667/693. Không thay lần chạy công cụ Windows của giảng viên.", "HIGH"],
         ["TC-29", "REQ-14, CON-8, NFR-6", "Audit riêng semantics liveness", "Recovery graph đầy đủ có cạnh stutter", "Chạy python3 security-analysis/audit_liveness.py\nĐọc results/liveness_audit.results.json và counterexample_lasso", "Raw AG AF terminal=false và có lasso; progress-only=true sau lọc cạnh. Verdict audit PASS là phát hiện đúng khác biệt này, không là proof fair-CTL hoặc runtime luôn kết thúc.", "HIGH"],
         ["TC-30", "REQ-17, REQ-20", "Kill API sau charge journal, trước finalize", "ProcessRestartTests; PostgreSQL/ledger tạm", "Kill OS process tại marker sau journal publish; khởi động process mới cùng DB/ledger\nĐọc results/process_restart.results.json", "Worker mới tự phục hồi SUCCESS/PAID, một payment/journal charge, AttemptCount=1, journal không đổi và kho vẫn reserved. Chỉ bao phủ crash window đã chọn.", "HIGH"],
         ["TC-31", "REQ-17, REQ-20, CON-9", "Kill API sau refund journal, trước finalize", "RefundRestartTests; charge thành công, refund pending", "Kill process sau refund publish; restart cùng DB/ledger và đợi worker\nĐọc results/refund_restart.results.json", "REFUNDED, charge reference giữ nguyên, journal refund không đổi, PendingSince xóa và stock release đúng một lần; replay không tạo refund mới.", "HIGH"],
@@ -368,8 +403,7 @@ def validate_teacher_schema() -> None:
         if missing:
             raise ValueError(f"{row[0]} references unknown requirements: {sorted(missing)}")
 
-    if len(SHEETS["LoaiTruLanNhau"]["rows"]) != 2:
-        raise ValueError("Spec Verification Lab accepts at most one mutual-exclusion pair")
+    import re
 
     state_rows = SHEETS["MoHinhTrangThai"]["rows"][1:]
     states = {row[0] for row in state_rows}
@@ -388,18 +422,70 @@ def validate_teacher_schema() -> None:
         if unknown:
             raise ValueError(f"{state} transitions to unknown states: {sorted(unknown)}")
 
-    import re
-    ctl_pattern = re.compile(r"^(AG|EF|AF|EG|AX|EX)\((!?)([A-Za-z_][A-Za-z0-9_]*)\)$")
-    for formula, in SHEETS["ThuocTinhAnToan"]["rows"][1:]:
-        match = ctl_pattern.fullmatch(formula)
-        if match is None or (match.group(2) and match.group(1) != "AG"):
-            raise ValueError(f"Unsupported CTL formula for Spec Verification Lab: {formula}")
-        if match.group(3) not in labels:
-            raise ValueError(f"CTL formula references an undeclared label: {formula}")
+    required_lock_states = {"free", "main_holds", "log_holds", "conflict"}
+    if not required_lock_states <= states:
+        raise ValueError("MoHinhTrangThai must contain the 4-state free/main_holds/log_holds/conflict cluster")
+    if not {"safe", "main_locked", "log_locked", "violation"} <= labels:
+        raise ValueError("The lock cluster must declare safe/main_locked/log_locked/violation labels")
+    if "violation" not in {
+        label.strip()
+        for state, _, state_labels, _ in state_rows
+        if state == "conflict"
+        for label in str(state_labels).split(",")
+    }:
+        raise ValueError("The conflict state must carry the violation label")
 
-    mutex = SHEETS["LoaiTruLanNhau"]["rows"][1]
-    if any(atom not in labels for atom in mutex):
-        raise ValueError("Mutual-exclusion atoms must both occur in the state model")
+    mutex_rows = SHEETS["LoaiTruLanNhau"]["rows"][1:]
+    if len(mutex_rows) < 5:
+        raise ValueError("ATPM checklist requires at least five documented mutual-exclusion pairs")
+    for pair in mutex_rows:
+        if len(pair) != 2 or not pair[0] or not pair[1] or pair[0] == pair[1]:
+            raise ValueError(f"Invalid mutual-exclusion pair: {pair}")
+        if any(atom not in labels for atom in pair):
+            raise ValueError("Mutual-exclusion atoms must both occur in the state model")
+
+    for formula, in SHEETS["ThuocTinhAnToan"]["rows"][1:]:
+        try:
+            parsed = ctl.parse(formula)
+        except ctl.CtlSyntaxError as error:
+            raise ValueError(f"Unsupported CTL formula for Spec Verification Lab: {formula}") from error
+        unknown = ctl.atoms(parsed) - labels
+        if unknown:
+            raise ValueError(f"CTL formula {formula} references undeclared labels: {sorted(unknown)}")
+
+    if len(SHEETS["YeuCauChucNang"]["rows"]) < 6:
+        raise ValueError("YeuCauChucNang requires at least five data rows")
+    if len(SHEETS["YeuCauPhiChucNang"]["rows"]) < 6:
+        raise ValueError("YeuCauPhiChucNang requires at least five data rows")
+    for row in SHEETS["YeuCauPhiChucNang"]["rows"][1:]:
+        if not re.search(r"\d", str(row[1])):
+            raise ValueError(f"{row[0]} must contain a concrete numeric measure")
+
+    functions = SHEETS["HamSinhMa"]["rows"][1:]
+    kinds = {(row[1], row[2]) for row in functions}
+    if ("python", "divide") not in kinds or ("python", "magic_value") not in kinds:
+        raise ValueError("HamSinhMa must contain both Python divide and magic_value functions")
+    bug_kinds = {row[5] for row in functions if row[1] == "c"}
+    required_bugs = {"buffer-overflow", "memory-leak", "double-free", "use-after-free"}
+    if not required_bugs <= bug_kinds:
+        raise ValueError(f"HamSinhMa is missing C bug kinds: {sorted(required_bugs - bug_kinds)}")
+    for row in functions:
+        if row[2] == "buffer_copy" and int(row[4]) != 32:
+            raise ValueError(f"{row[0]} buffer size must match the 32-byte constraint in CON-5")
+
+    arithmetic = SHEETS["KiemTraSoHoc"]["rows"][1:]
+    if len(arithmetic) < 5:
+        raise ValueError("KiemTraSoHoc requires at least five rows")
+    thresholds = {"32767", "65535", "2000000000", "4294967295"}
+    combined = " ".join(str(row[2]) for row in arithmetic)
+    missing = {value for value in thresholds if value not in combined}
+    if missing:
+        raise ValueError(f"KiemTraSoHoc is missing ATPM thresholds: {sorted(missing)}")
+    for row in arithmetic:
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*(\s*[+\-*]\s*[A-Za-z_][A-Za-z0-9_]*)+", str(row[3]).strip()):
+            raise ValueError(f"{row[0]} overflow expression must be a pure sum/product of variables")
+    if len(SHEETS["TestCase"]["rows"]) < 6:
+        raise ValueError("TestCase requires at least five data rows")
 
 
 def build_pipeline_json() -> dict[str, object]:

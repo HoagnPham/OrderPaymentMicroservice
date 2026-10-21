@@ -94,7 +94,7 @@
     },
     {
       "id": "REQ-16",
-      "text": "PaymentService giới hạn charge tối đa 2 attempts cho cùng logical payment/key. Hết budget mà UNKNOWN vẫn giữ reservation và chỉ lookup/reconcile; không suy thành FAILED. Bounded confirmation retry chỉ có trong model, chưa hiện thực scheduler/counter tự động.",
+      "text": "PaymentService giới hạn charge tối đa 2 attempts cho cùng logical payment/key. Hết budget mà UNKNOWN vẫn giữ reservation và chỉ lookup/reconcile; không suy thành FAILED. Không có automatic confirmation retry trong source; Admin confirm hoặc refund thủ công.",
       "category": "safety",
       "priority": "HIGH"
     },
@@ -174,133 +174,115 @@
       "PAYMENT_RETRY",
       "PAYMENT_PROCESSING_FINAL",
       "PAID",
-      "CONFIRMATION_RETRY",
       "CONFIRMED",
       "REFUND_PENDING",
       "COMPLETED",
       "CANCELLED",
       "PRE_PAYMENT_REJECTED",
       "FAILED",
-      "REFUNDED"
+      "REFUNDED",
+      "free",
+      "main_holds",
+      "log_holds",
+      "conflict"
     ],
     "initial": [
-      "CREATED"
+      "CREATED",
+      "free"
     ],
     "labeling": {
       "CREATED": [
         "created",
-        "inventory_unreserved",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "inventory_unreserved"
       ],
       "VALIDATED": [
         "validated",
         "inventory_reserved",
-        "amount_verified",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "amount_verified"
       ],
       "PAYMENT_PENDING": [
         "payment_pending",
         "inventory_reserved",
-        "amount_verified",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "amount_verified"
       ],
       "PAYMENT_PROCESSING": [
         "payment_processing",
         "inventory_reserved",
         "amount_verified",
-        "payment_lock",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "payment_lock"
       ],
       "PAYMENT_RETRY": [
         "payment_retry",
         "inventory_reserved",
-        "amount_verified",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "amount_verified"
       ],
       "PAYMENT_PROCESSING_FINAL": [
         "payment_processing",
         "final_retry",
         "inventory_reserved",
         "amount_verified",
-        "payment_lock",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "payment_lock"
       ],
       "PAID": [
         "paid",
         "payment_success",
         "amount_verified",
-        "inventory_reserved",
-        "no_invalid_transition",
-        "no_resource_conflict"
-      ],
-      "CONFIRMATION_RETRY": [
-        "paid",
-        "payment_success",
-        "confirmation_retry",
-        "amount_verified",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "inventory_reserved"
       ],
       "CONFIRMED": [
         "confirmed",
         "paid",
         "payment_success",
-        "amount_verified",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "amount_verified"
       ],
       "REFUND_PENDING": [
         "paid",
         "payment_success",
         "refund_pending",
-        "amount_verified",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "amount_verified"
       ],
       "COMPLETED": [
         "completed",
         "paid",
         "payment_success",
         "amount_verified",
-        "terminal",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "terminal"
       ],
       "CANCELLED": [
         "cancelled",
         "inventory_released",
-        "terminal",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "terminal"
       ],
       "PRE_PAYMENT_REJECTED": [
         "failed",
         "pre_payment_failure",
         "inventory_unreserved",
-        "terminal",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "terminal"
       ],
       "FAILED": [
         "failed",
         "inventory_released",
-        "terminal",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "terminal"
       ],
       "REFUNDED": [
         "refunded",
         "payment_compensated",
         "inventory_released",
-        "terminal",
-        "no_invalid_transition",
-        "no_resource_conflict"
+        "terminal"
+      ],
+      "free": [
+        "safe"
+      ],
+      "main_holds": [
+        "main_locked"
+      ],
+      "log_holds": [
+        "log_locked"
+      ],
+      "conflict": [
+        "main_locked",
+        "log_locked",
+        "violation"
       ]
     },
     "transitions": [
@@ -329,10 +311,6 @@
         "CANCELLED"
       ],
       [
-        "PAYMENT_PENDING",
-        "PAYMENT_PENDING"
-      ],
-      [
         "PAYMENT_PROCESSING",
         "PAID"
       ],
@@ -343,20 +321,12 @@
       [
         "PAYMENT_PROCESSING",
         "FAILED"
-      ],
-      [
-        "PAYMENT_PROCESSING",
-        "PAYMENT_PROCESSING"
       ],
       [
         "PAYMENT_RETRY",
         "PAYMENT_PROCESSING_FINAL"
       ],
       [
-        "PAYMENT_RETRY",
-        "PAYMENT_RETRY"
-      ],
-      [
         "PAYMENT_PROCESSING_FINAL",
         "PAID"
       ],
@@ -365,31 +335,11 @@
         "FAILED"
       ],
       [
-        "PAYMENT_PROCESSING_FINAL",
-        "PAYMENT_RETRY"
-      ],
-      [
         "PAID",
         "CONFIRMED"
       ],
       [
         "PAID",
-        "PAID"
-      ],
-      [
-        "PAID",
-        "CONFIRMATION_RETRY"
-      ],
-      [
-        "PAID",
-        "REFUND_PENDING"
-      ],
-      [
-        "CONFIRMATION_RETRY",
-        "CONFIRMED"
-      ],
-      [
-        "CONFIRMATION_RETRY",
         "REFUND_PENDING"
       ],
       [
@@ -403,10 +353,6 @@
       [
         "REFUND_PENDING",
         "REFUNDED"
-      ],
-      [
-        "REFUND_PENDING",
-        "REFUND_PENDING"
       ],
       [
         "COMPLETED",
@@ -427,21 +373,48 @@
       [
         "REFUNDED",
         "REFUNDED"
+      ],
+      [
+        "free",
+        "main_holds"
+      ],
+      [
+        "free",
+        "log_holds"
+      ],
+      [
+        "main_holds",
+        "free"
+      ],
+      [
+        "main_holds",
+        "conflict"
+      ],
+      [
+        "log_holds",
+        "free"
+      ],
+      [
+        "conflict",
+        "free"
       ]
     ]
   },
   "safety_properties": [
-    "AG(no_invalid_transition)",
-    "AG(no_resource_conflict)",
-    "EF(payment_processing)",
+    "AG(!violation)",
+    "EF(main_locked)",
+    "AG(payment_pending -> AF(paid | cancelled | failed))",
+    "AG(payment_processing -> AF(paid | failed))",
+    "AG(paid -> AF(completed | refunded))",
+    "AG(confirmed -> AF(completed | refunded))",
+    "AG(refund_pending -> AF(refunded))",
     "EF(payment_success)",
-    "EF(refund_pending)",
     "EF(refunded)",
     "EF(terminal)"
   ],
   "mutual_exclusion": {
-    "atom1": "payment_pending",
-    "atom2": "payment_success"
+    "atom1": "main_locked",
+    "atom2": "log_locked"
   },
   "functions": [
     {
@@ -494,61 +467,85 @@
       ],
       "buffer_size": 32,
       "bug": "double-free"
+    },
+    {
+      "name": "return_rate_ratio",
+      "language": "python",
+      "kind": "divide",
+      "params": [
+        "returned",
+        "borrowed"
+      ],
+      "buffer_size": 16
+    },
+    {
+      "name": "payment_override_code",
+      "language": "python",
+      "kind": "magic_value",
+      "params": [
+        "code_a",
+        "code_b"
+      ],
+      "buffer_size": 16,
+      "magic_values": [
+        6284,
+        4917
+      ]
     }
   ],
   "arithmetic_checks": [
     {
-      "name": "order_item_subtotal_cents",
-      "int_vars": [
-        "quantity",
-        "unit_price_cents"
-      ],
-      "condition": "1 <= quantity <= 10000 and 1 <= unit_price_cents <= 99999999 and quantity * unit_price_cents > 2147483647",
-      "overflow_expr": "quantity * unit_price_cents"
-    },
-    {
       "name": "order_total_cents",
       "int_vars": [
-        "subtotal1",
-        "subtotal2"
+        "order_subtotal_cents",
+        "shipping_fee_cents"
       ],
-      "condition": "subtotal1 >= 0 and subtotal2 >= 0 and subtotal1 + subtotal2 > 2147483647",
-      "overflow_expr": "subtotal1 + subtotal2"
+      "condition": "order_subtotal_cents >= 0 and shipping_fee_cents >= 0 and order_subtotal_cents + shipping_fee_cents > 2000000000",
+      "overflow_expr": "order_subtotal_cents + shipping_fee_cents"
     },
     {
-      "name": "two_payment_total_cents",
+      "name": "payment_total_cents",
       "int_vars": [
         "payment1_cents",
         "payment2_cents"
       ],
-      "condition": "payment1_cents >= 0 and payment2_cents >= 0 and payment1_cents + payment2_cents > 2147483647",
+      "condition": "payment1_cents >= 0 and payment2_cents >= 0 and payment1_cents + payment2_cents > 2000000000",
       "overflow_expr": "payment1_cents + payment2_cents"
     },
     {
-      "name": "inventory_after_reserve",
+      "name": "daily_order_counter",
       "int_vars": [
-        "stock",
-        "quantity"
+        "orders_today",
+        "orders_backlog"
       ],
-      "condition": "0 <= stock <= 2147483647 and 1 <= quantity <= 10000 and stock - quantity < 0",
-      "overflow_expr": "stock - quantity"
+      "condition": "orders_today >= 0 and orders_backlog >= 0 and orders_today + orders_backlog > 32767",
+      "overflow_expr": "orders_today + orders_backlog"
     },
     {
-      "name": "retry_counter_increment",
+      "name": "active_session_counter",
       "int_vars": [
-        "retry_count",
-        "one"
+        "active_sessions",
+        "reserved_sessions"
       ],
-      "condition": "0 <= retry_count <= 2147483647 and one == 1 and retry_count + one > 2147483647",
-      "overflow_expr": "retry_count + one"
+      "condition": "active_sessions >= 0 and reserved_sessions >= 0 and active_sessions + reserved_sessions > 65535",
+      "overflow_expr": "active_sessions + reserved_sessions"
     },
     {
-      "name": "refund_total_cents",
+      "name": "backup_size_bytes",
+      "int_vars": [
+        "full_backup_bytes",
+        "incremental_bytes"
+      ],
+      "condition": "full_backup_bytes >= 0 and incremental_bytes >= 0 and full_backup_bytes + incremental_bytes > 4294967295",
+      "overflow_expr": "full_backup_bytes + incremental_bytes"
+    },
+    {
+      "name": "refund_ledger_cents",
       "int_vars": [
         "paid_cents",
         "refunded_cents"
       ],
-      "condition": "paid_cents >= 0 and refunded_cents >= 0 and paid_cents + refunded_cents > 2147483647",
+      "condition": "paid_cents >= 0 and refunded_cents >= 0 and paid_cents + refunded_cents > 2000000000",
       "overflow_expr": "paid_cents + refunded_cents"
     }
   ]

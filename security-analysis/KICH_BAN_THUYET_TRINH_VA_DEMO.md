@@ -14,8 +14,8 @@ Tên project là OrderPaymentMicroservice nhưng hiện thực hiện tại là 
 | --------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
 | Toàn bộ unit/regression   | **149/149 PASS, 0 SKIP**                              | Build và các kiểm tra logic hiện có chạy được                                           |
 | Toàn bộ integration       | **35/35 PASS, 0 SKIP**                                | Có HTTP, PostgreSQL, cạnh tranh, restart/reconnect, browser, backup/restore và load hữu hạn |
-| Workbook checker            | **PASS**                                              | 10 sheet, 27 yêu cầu chức năng, 15 state, 31 cặp cạnh, 7 CTL, 50 testcase đặc tả        |
-| Recovery model              | **15/15 property PASS; 6/6 mutation bị phát hiện** | 15 state, 37 chuyển tiếp có event, 7 contract; P10 có điều kiện progress-only             |
+| Workbook checker            | **PASS với phát hiện cố ý**                          | 10 sheet, 27 yêu cầu chức năng, 18 state (14 nghiệp vụ + 4 khóa), 28 cặp cạnh, 10 CTL (9 đúng, 1 vi phạm cố ý), 6 cặp mutex |
+| Recovery model              | **15/15 property PASS; 6/6 mutation bị phát hiện** | 14 state, 35 chuyển tiếp có event, 7 contract; P10 có điều kiện progress-only             |
 | Liveness audit              | **PASS phép đối chiếu**                           | Raw `AG AF terminal = false`; progress-only = true                                             |
 | Payment SMT / inventory SMT | **7/7 và 3/3 PASS**                                  | SAT/UNSAT đúng oracle, không phải tất cả phải UNSAT                                       |
 | C static / dynamic          | **Static PASS; dynamic 22/22 PASS**                   | Bản lỗi phải có đúng diagnostic; bản sửa và ca biên đạt                              |
@@ -71,16 +71,16 @@ TRX của lần chạy mới nằm tại `/tmp/orderpayment-assessment-verified/
 | Checklist của PDF                                                               | Workbook/project hiện tại                                                                                                    | Đánh giá                                                                                                             |
 | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- |
 | 10 sheet; yêu cầu, ràng buộc và testcase có truy vết                      | Đủ 10 sheet; 27 FR, 10 NFR, 14 ràng buộc, 50 testcase; đủ category functional/safety/liveness/memory                     | Đã có                                                                                                                |
-| `LoaiTruLanNhau` ít nhất 5 dòng, pipeline đọc dòng đầu                 | Hiện chỉ 1 cặp `payment_pending/payment_success`                                                                          | Thiếu theo checklist; checker hiện lại ép đúng 1 cặp, cần điều chỉnh đồng bộ nếu bổ sung                |
-| `HamSinhMa` có 4 nhóm lỗi C và 2 loại Python `divide`, `magic_value`  | Có đủ nhóm C qua 5 hàm; **không có 2 hàm Python**                                                                | Chưa đầy đủ demo fuzz bằng pipeline của thầy; fuzz C# riêng đã có                                           |
-| Cụm khóa free/main_holds/log_holds/conflict; CTL safety và liveness theo mẫu | Dùng recovery graph nghiệp vụ; 7 công thức đơn AG/EF; không có nguyên cụm khóa và công thức lồng theo mẫu PDF | Chưa khớp checklist mẫu; cần mô hình bổ sung có ý nghĩa, không đổi nhãn sai sự thật chỉ để PASS      |
-| Mỗi NFR có số đo cụ thể                                                    | Một số có ngưỡng 90%, 32 ký tự, 5000 ms; một số chỉ mô tả định tính                                             | Cần tiêu chí đo cho từng NFR nếu áp dụng nghiêm checklist                                                      |
-| Số học theo biểu thức/ngưỡng quy định                                    | Có 6 bài toán nghiệp vụ, gồm cộng, nhân và trừ; checker hiện kiểm cú pháp biểu thức                            | Cần đối chiếu từng case với parser/overflow checker của EXE; bài inventory âm không đồng nghĩa tràn int32 |
+| `LoaiTruLanNhau` ít nhất 5 dòng, pipeline đọc dòng đầu                 | 6 dòng; dòng đầu `main_locked/log_locked`, các cặp còn lại đã kiểm không vi phạm                          | Đã có; pipeline chỉ tự kiểm dòng đầu, checker kiểm cả 6                                                |
+| `HamSinhMa` có 4 nhóm lỗi C và 2 loại Python `divide`, `magic_value`  | 5 hàm C đủ 4 nhóm lỗi + `return_rate_ratio` (divide) + `payment_override_code` (magic 6284/4917)                 | Đã có; GUI Windows vẫn là lần chạy xác nhận cuối                                                           |
+| Cụm khóa free/main_holds/log_holds/conflict; CTL safety và liveness theo mẫu | Có cụm 4 state + nhãn violation; 10 CTL gồm `AG(!violation)`, `EF(main_locked)` và 5 công thức lồng `AG(...->AF(...))` | Đã khớp mẫu; `conflict` cố ý reachable để pipeline báo CWE-667/CWE-693      |
+| Mỗi NFR có số đo cụ thể                                                    | Đã bổ sung số đo cho cả 10 NFR (coverage, timeout, trigger, test, load, model)                                  | Giữ phân biệt số đo snapshot và cam kết production                                                           |
+| Số học theo biểu thức/ngưỡng quy định                                    | 6 bài toán cộng dồn phủ đủ ngưỡng 32767 / 65535 / 2.000.000.000 / 4.294.967.295; BieuThucTran là tổng biến       | Checker kiểm cú pháp; GUI Windows vẫn là lần chạy xác nhận cuối                                               |
 | Nạp Excel, chạy hết pipeline, xuất đủ kết quả                            | Checker độc lập PASS; GUI Windows chưa được chạy tại đây                                                            | Chưa xác nhận E2E bằng công cụ thầy                                                                              |
 
 Không tự thêm dữ liệu vô nghĩa để đủ số dòng. `KhoiTao` để trống ở state không khởi tạo là biểu diễn có chủ đích. Nếu thầy yêu cầu bám nguyên mẫu, cập nhật generator, workbook, JSON và checker cùng nhau; không sửa riêng Excel rồi dùng generator ghi đè mất thay đổi.
 
-**Giới hạn sản phẩm:** gateway vẫn là mô phỏng local, limiter theo process, chưa webhook/provider thật, shared limiter, tách DB role migration/runtime, retention job hay deployment Kubernetes. `CONFIRMATION_RETRY` còn là trạng thái thiết kế trong model, chưa có scheduler/counter tương ứng. Chưa chứng minh mọi interleaving, network partition, failover, mất điện hoặc SLA. Đây là future work, không làm mất giá trị các kịch bản đã kiểm thử.
+**Giới hạn sản phẩm:** gateway vẫn là mô phỏng local, limiter theo process, chưa webhook/provider thật, shared limiter, tách DB role migration/runtime, retention job hay deployment Kubernetes. Model đã bỏ state `CONFIRMATION_RETRY` vì runtime chỉ có Admin confirm/refund, không có scheduler/counter tự động. Chưa chứng minh mọi interleaving, network partition, failover, mất điện hoặc SLA. Đây là future work, không làm mất giá trị các kịch bản đã kiểm thử.
 
 ## 2. Dùng các file EXE, JSON và XLSX trong ATPM như thế nào?
 
@@ -93,7 +93,7 @@ Không tự thêm dữ liệu vô nghĩa để đủ số dòng. `KhoiTao` để
 | `OrderPaymentMicroservice_Security_Spec.xlsx` tại gốc                                                 | Đặc tả hiện tại của chính project                                                                 | **File chính để trình thầy**; còn các khoảng trống checklist ở §1.3                                        |
 | `security-analysis/order_payment_pipeline_spec.json`                                                    | Bản machine-readable khớp phần pipeline của workbook                                                 | **Dùng thay XLSX khi demo phần pipeline**                                                                           |
 | `ATPM/Template_Software_Security_iot_gateway_spec.xlsx`                                                 | Mẫu workbook cho đề tài IoT gateway                                                                  | Dùng học cấu trúc; **không nộp như đặc tả Order–Payment**                                                  |
-| `ATPM/specs/specs/order_payment_microservice_spec.json`                                                 | Đặc tả Order–Payment cũ: 18 yêu cầu, 32 cạnh, 7 hàm gồm 2 Python                               | Dùng tham khảo; **không dùng làm nguồn chính hiện tại**. Bản mới có 27 yêu cầu, 31 cặp cạnh, 5 hàm C |
+| `ATPM/specs/specs/order_payment_microservice_spec.json`                                                 | Đặc tả Order–Payment cũ: 18 yêu cầu, 32 cạnh, 7 hàm gồm 2 Python                               | Dùng tham khảo; **không dùng làm nguồn chính hiện tại**. Bản mới có 27 yêu cầu, 28 cặp cạnh, 5 hàm C + 2 hàm Python |
 | `ATPM/specs/specs/*.json` còn lại                                                                     | Đặc tả mẫu đầy đủ của session, upload, IoT, resource pool…                                     | Nạp vào phần **Spec/Pipeline**, dùng kiểm tra công cụ hoặc minh họa, không coi là kết quả project        |
 | `ATPM/verification/verification/*.json`                                                                 | Graph Kripke trực tiếp: `states`, `initial`, `labeling`, `transitions`, có thể có `flows` | Nạp vào **tab Kripke của SecLabFramework**                                                                         |
 | `security-analysis/order_payment_recovery_model.json`                                                   | Model mở rộng có state object, incident, event, contract                                              | Chạy `verify_recovery_model.py`; **không nhập trực tiếp vào parser Kripke/Spec của EXE**                     |
@@ -127,8 +127,8 @@ Mở PowerShell tại thư mục gốc bản sao project trên Windows:
 ```
 
 1. Chọn **“Nap tu file Excel khac (.xlsx)...”**, chọn `OrderPaymentMicroservice_Security_Spec.xlsx` tại gốc. Không cần di chuyển workbook vào thư mục EXE.
-2. Xem yêu cầu và đồ thị. Chọn **“1) Sinh Kripke + kiểm chứng (Ch1)”**. Đối chiếu 15 state, 31 cặp cạnh và 7 công thức của workbook.
-3. Chọn **“2) Sinh mã C/Python từ đặc tả”**. Với workbook hiện tại, cần thấy 5 hàm C; không hứa có fuzz Python vì chưa khai báo hàm Python.
+2. Xem yêu cầu và đồ thị. Chọn **“1) Sinh Kripke + kiểm chứng (Ch1)”**. Đối chiếu 18 state (14 nghiệp vụ + 4 khóa), 28 cặp cạnh và 10 công thức của workbook.
+3. Chọn **“2) Sinh mã C/Python từ đặc tả”**. Với workbook hiện tại, cần thấy 5 hàm C và 2 hàm Python (`return_rate_ratio` divide, `payment_override_code` magic_value).
 4. Chọn **“3) Chạy TOÀN BỘ Pipeline”**. Xem từng kết quả, phản ví dụ, cảnh báo/lỗi; không chỉ nhìn thông báo chạy xong.
 5. Dùng **“Xuất báo cáo TÍCH HỢP (PDF/DOCX)”** nếu chạy thành công. Lưu report và ảnh với tên có ngày chạy.
 6. Có thể nạp `security-analysis/order_payment_pipeline_spec.json` qua **“Nap tu file JSON khac...”** để đối chiếu phần graph/requirements/functions. Chạy lại với file được chọn; không nhầm output của hai lượt.
@@ -176,7 +176,7 @@ print(out)
 PY
 ```
 
-Mang file vừa tạo sang Windows và nạp vào tab Kripke. Đây là **phép chiếu graph**: còn 31 cặp state, không còn đầy đủ metadata 37 event, incident và 7 contract. Không dùng kết quả GUI này thay cho checker recovery.
+Mang file vừa tạo sang Windows và nạp vào tab Kripke. Đây là **phép chiếu progress**: 22 cặp vòng đời (+6 cặp khóa = 28), không còn đầy đủ metadata 35 event, incident và 7 contract. Không dùng kết quả GUI này thay cho checker recovery.
 
 ## 3. Chuẩn bị buổi bảo vệ
 
@@ -354,7 +354,7 @@ python3 security-analysis/audit_liveness.py
 
 > “Em dùng STRIDE để xác định giả mạo, sửa dữ liệu, chối bỏ, lộ thông tin, từ chối dịch vụ và nâng quyền. Các yêu cầu được nối với biện pháp và evidence. Checker threat model kiểm sự nhất quán của tài liệu, không tự chứng minh mọi nguy cơ đã được loại bỏ.
 >
-> Model recovery có 15 state và 37 event. Bảy contract chỉ rõ trách nhiệm, điều kiện và kết quả của từng thao tác. Các safety property yêu cầu trạng thái đã trả tiền phải có evidence, đơn hủy không chứa charge thành công, terminal không được hồi sinh và UNKNOWN không được tự trả kho.
+> Model recovery có 14 state và 35 event. Bảy contract chỉ rõ trách nhiệm, điều kiện và kết quả của từng thao tác. Các safety property yêu cầu trạng thái đã trả tiền phải có evidence, đơn hủy không chứa charge thành công, terminal không được hồi sinh và UNKNOWN không được tự trả kho.
 >
 > Em cố ý tạo sáu mutation sai để yêu cầu checker sinh phản ví dụ. DETECTED là kết quả đúng của phép thử âm. Với liveness, graph đầy đủ có thể chờ provider mãi nên AG AF terminal là false. Khi lọc cạnh stutter theo policy thì true; đó không phải chứng minh mọi lần chạy thực đều chắc chắn kết thúc.”
 
@@ -482,7 +482,7 @@ Lời kết khoảng 45 giây:
 | Có chắc không bị trừ tiền hai lần?            | Các case đã thử cho một charge với cùng operation/key; chưa chứng minh mọi provider hay mọi interleaving ngoài mô hình                                         |
 | Timeout sao không chuyển FAILED và trả kho?      | Timeout chỉ cho biết chưa nhận được kết quả; gateway có thể đã charge. UNKNOWN giữ kho và chờ outcome đáng tin cậy                                        |
 | Idempotency có nghĩa gì?                          | Gửi lại cùng key và cùng nội dung nhận lại kết quả cũ; tái sử dụng key với nội dung không khớp phải bị chặn                                             |
-| 15 state có phải 15 giá trị enum OrderStatus?    | Không. Model kết hợp Order, Payment, Inventory và cả state trừu tượng; có state thiết kế chưa là scheduler runtime                                              |
+| 14 state có phải 14 giá trị enum OrderStatus?    | Không. Model kết hợp Order, Payment, Inventory; PRE_PAYMENT_REJECTED là quan sát reject trước persist, không phải enum runtime                                              |
 | 50 testcase Excel và 184 test có quan hệ gì?     | Một testcase đặc tả có thể ánh xạ nhiều test thực thi hoặc checker model; số lượng không bằng nhau                                                           |
 | Vì sao model checker PASS mà AG AF terminal false? | P10 kiểm graph progress-only; audit cố ý xác nhận graph đầy đủ chưa bảo đảm kết thúc vô điều kiện                                                         |
 | Có làm white-box/concolic chưa?                   | Ứng dụng có fuzz sinh dữ liệu và oracle; chưa có engine concolic trên C#. Toolkit ATPM có ví dụ riêng, không tính thành hiện thực của project             |
@@ -494,7 +494,7 @@ Lời kết khoảng 45 giây:
 
 | Mục đích               | Lệnh/chỗ mở                                                    | Kết quả cần đọc                                              |
 | ------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------- |
-| Kiểm workbook hiện tại | `python3 security-analysis/verify_teacher_spec.py`              | 10 sheet, 15 state, 7 CTL, 50 testcase; không thay checklist PDF |
+| Kiểm workbook hiện tại | `python3 security-analysis/verify_teacher_spec.py`              | 10 sheet, 18 state, 10 CTL (1 vi phạm cố ý), 6 cặp mutex; không thay checklist PDF |
 | Recovery model            | `python3 security-analysis/verify_recovery_model.py`            | 15 property + 6 mutation                                          |
 | Liveness                  | `python3 security-analysis/audit_liveness.py`                   | raw false, progress-only true                                     |
 | Safety/recovery thực     | `python3 security-analysis/run_recovery_demo.py`                | Charge/refund count và ready 200→503→200                       |

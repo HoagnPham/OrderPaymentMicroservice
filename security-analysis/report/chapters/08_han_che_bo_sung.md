@@ -3,7 +3,7 @@
 | Loại | Ví dụ hiện tại | Hệ quả |
 | --- | --- | --- |
 | Abstraction | Model không có stock cụ thể, identity hoặc durable gateway | Không suy safety của các phần bị lược bỏ |
-| Thiết kế chưa hiện thực | CONFIRMATION_RETRY tự động; callback authenticity | Cần mapping rõ hoặc thay model để khớp policy source |
+| Thiết kế chưa hiện thực | Callback authenticity; retry confirmation tự động (đã bỏ khỏi model) | Không suy model là implementation đầy đủ |
 | Environment assumption | Gateway cuối cùng trả definitive outcome | Liveness có điều kiện, không cam kết thời hạn hoàn tất |
 | Audit scope | COMMIT nguyên tử với Orders/Payments; BEGIN/RESULT vẫn riêng; DBA có thể disable trigger | Retention/least-privilege và outbox nếu thêm external sink |
 | Tool capability | Scanner syntax-specific; cppcheck false negative | Kết hợp review và dynamic, không lấy zero finding làm proof |
@@ -12,9 +12,9 @@
 
 ### 8.2. Ưu tiên cải thiện theo tiêu chí đóng vấn đề
 
-Ưu tiên một đã có kết quả local: cancel UNKNOWN đồng bộ model/source,
-confirmation tự động được đánh dấu DESIGN_EXTENSION; gateway journal bền vững
-và process-kill recovery sau charge PASS. Refund crash sau journal và PostgreSQL
+Ưu tiên một đã có kết quả local: cancel UNKNOWN đồng bộ model/source;
+retry confirmation tự động đã bỏ khỏi model để khớp policy Admin confirm/refund;
+gateway journal bền vững và process-kill recovery sau charge PASS. Refund crash sau journal và PostgreSQL
 reconnect đã có kiểm chứng; cửa sổ trước charge là hướng kiểm thử thêm nếu cần.
 Provider sandbox nằm ngoài nghiệm thu hiện tại; không suy từ test local sang xác thực gateway thật.
 

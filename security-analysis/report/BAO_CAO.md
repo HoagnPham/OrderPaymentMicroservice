@@ -394,10 +394,11 @@ còn recovery:P3 là “COMPLETED có payment evidence”. Không ghép kết qu
 
 ### 3.2. Aggregate state và invariant
 
-Recovery có 15 state; source Order có 10 trạng thái, Payment có 7. Ví dụ
+Recovery có 14 state; source Order có 10 trạng thái, Payment có 7. Ví dụ
 PAYMENT_PROCESSING=(Order PAYMENT_PENDING, Payment PROCESSING),
 PAYMENT_RETRY=(PAYMENT_PENDING, UNKNOWN), PAID=(PAID,SUCCESS).
-CONFIRMATION_RETRY là state thiết kế giữ PAID/SUCCESS; PRE_PAYMENT_REJECTED là
+Không còn state confirmation-retry vì source không có scheduler/counter tự động;
+PAID ở lại PAID để Admin confirm hoặc refund. PRE_PAYMENT_REJECTED là
 quan sát việc reject trước persist, không phải tên enum trong implementation.
 
 Safety được diễn giải thành điều kiện: paid phải có evidence; cancelled không
@@ -486,15 +487,19 @@ model mutated, chưa phải trace HTTP/PostgreSQL của ứng dụng đang tri�
 
 ### 3.7. Phép chiếu recovery sang workbook
 
-Graph recovery có 37 event transition. Workbook bỏ event/action/kind và gộp các
-cặp (from,to) trùng, còn 31 cặp; phép đối chiếu hai tập cạnh cho kết quả bằng nhau.
+Graph recovery có 35 event transition. Workbook dùng **progress projection**: bỏ các
+cạnh stutter/retry self-loop để CTL AF có nghĩa, giữ self-loop ở terminal theo luật
+no-deadlock, rồi gộp các cặp (from,to) trùng còn 22 cặp vòng đời.
+Workbook thêm đúng 6 cạnh của cụm khóa minh họa free/main_holds/log_holds/conflict,
+nên tổng cộng 28 cặp nguồn–đích. Phép đối chiếu 22 cặp vòng đời cho kết quả bằng nhau.
 Nhiều event như request trùng và amount sai cùng giữ PAYMENT_PENDING sẽ hợp thành
 một cạnh self-loop. Do đó phép chiếu giữ quan hệ state đích nhưng làm mất lý do,
 biện pháp xử lý và assumption gắn trên event.
 
 Không kết luận property preservation toàn bộ từ equality của tập cạnh: workbook
-có 7 CTL, recovery có 15 checks gồm checks cấu trúc và hợp đồng. TLA+ còn có attempt
-counter nên 20 trạng thái reachable của TLC không mâu thuẫn 15 aggregate state.
+có 10 CTL (9 đúng, 1 vi phạm cố ý tại `conflict`), recovery có 15 checks gồm checks
+cấu trúc và hợp đồng. TLA+ còn có attempt counter nên 20 trạng thái reachable của
+TLC không mâu thuẫn 14 aggregate state.
 
 ### 3.8. Đối chiếu thiết kế với source
 
@@ -502,7 +507,7 @@ counter nên 20 trạng thái reachable của TLC không mâu thuẫn 15 aggrega
 | --- | --- | --- |
 | CREATED→VALIDATED→PAYMENT_PENDING | CreateOrderAsync chuyển trong cùng thao tác trước persist | Ánh xạ thiết kế; không phải ba commit riêng |
 | Retry cuối có bound | MaxChargeAttempts=2; UNKNOWN giữ logical payment/key | Có unit; chưa chứng minh mọi crash window |
-| CONFIRMATION_RETRY→refund sau exhaustion | Source cho Admin gọi confirm/refund; không có retry counter tự động cho confirmation | MODEL_ONLY cho cơ chế retry tự động |
+| Confirmation thất bại | Source giữ PAID; Admin gọi confirm/refund thủ công, không tự charge lại | IMPLEMENTED_POLICY; không có auto-retry counter |
 | Cancel tại PAYMENT_RETRY khi outcome UNKNOWN | Model đã giữ PAYMENT_RETRY; CancelOrderAsync từ chối, giữ reservation | IMPLEMENTED_POLICY; regression cancel UNKNOWN |
 | Gateway persistence và callback xác thực | DurableFake journal; process restart test có worker bật | Persistence local đã test; callback authenticity vẫn ASSUMPTION_ONLY |
 | Atomic payment-cancel | Serializable, Version và unique payment per order | PostgreSQL test cho interleaving đã chạy; chưa refinement proof |
@@ -1003,8 +1008,8 @@ Nguồn: [kịch bản thuyết trình và demo](../KICH_BAN_THUYET_TRINH_VA_DEM
 | Recovery | 15/15 thuộc tính; 6 mutation detected | Graph hữu hạn, giả định được khai báo |
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |
 | Inventory SMT | 3/3 đúng kỳ vọng | Hai dòng của một sản phẩm |
-| Workbook checker | 10 sheet; 7 CTL PASS | Checker độc lập, không chạy công cụ Windows giảng viên |
-| Model projection | 37 event → 31 cặp | Tập cạnh sau phép chiếu bằng nhau |
+| Workbook checker | 10 sheet; 9/10 CTL đúng, 1 vi phạm cố ý | Checker độc lập; CWE-667/693 tại conflict là chủ đích |
+| Model projection | 35 event → 22 cặp vòng đời | Tập cạnh sau phép chiếu progress bằng nhau |
 
 Bảng truy vết máy đọc được nằm ở ../results/traceability_matrix.csv. Manifest ghi
 hash artifact và base commit; working tree còn thay đổi chưa commit nên không gán
@@ -1081,7 +1086,7 @@ Không dùng PASS của suite hiện tại để gọi hệ thống production-r
 | Loại | Ví dụ hiện tại | Hệ quả |
 | --- | --- | --- |
 | Abstraction | Model không có stock cụ thể, identity hoặc durable gateway | Không suy safety của các phần bị lược bỏ |
-| Thiết kế chưa hiện thực | CONFIRMATION_RETRY tự động; callback authenticity | Cần mapping rõ hoặc thay model để khớp policy source |
+| Thiết kế chưa hiện thực | Callback authenticity; retry confirmation tự động (đã bỏ khỏi model) | Không suy model là implementation đầy đủ |
 | Environment assumption | Gateway cuối cùng trả definitive outcome | Liveness có điều kiện, không cam kết thời hạn hoàn tất |
 | Audit scope | COMMIT nguyên tử với Orders/Payments; BEGIN/RESULT vẫn riêng; DBA có thể disable trigger | Retention/least-privilege và outbox nếu thêm external sink |
 | Tool capability | Scanner syntax-specific; cppcheck false negative | Kết hợp review và dynamic, không lấy zero finding làm proof |
@@ -1090,9 +1095,9 @@ Không dùng PASS của suite hiện tại để gọi hệ thống production-r
 
 ### 8.2. Ưu tiên cải thiện theo tiêu chí đóng vấn đề
 
-Ưu tiên một đã có kết quả local: cancel UNKNOWN đồng bộ model/source,
-confirmation tự động được đánh dấu DESIGN_EXTENSION; gateway journal bền vững
-và process-kill recovery sau charge PASS. Refund crash sau journal và PostgreSQL
+Ưu tiên một đã có kết quả local: cancel UNKNOWN đồng bộ model/source;
+retry confirmation tự động đã bỏ khỏi model để khớp policy Admin confirm/refund;
+gateway journal bền vững và process-kill recovery sau charge PASS. Refund crash sau journal và PostgreSQL
 reconnect đã có kiểm chứng; cửa sổ trước charge là hướng kiểm thử thêm nếu cần.
 Provider sandbox nằm ngoài nghiệm thu hiện tại; không suy từ test local sang xác thực gateway thật.
 

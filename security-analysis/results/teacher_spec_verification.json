@@ -4,26 +4,67 @@
   "pipeline_json": "security-analysis/order_payment_pipeline_spec.json",
   "sheet_count": 10,
   "requirements": 27,
-  "states": 15,
-  "transitions": 31,
-  "reachable_states": 15,
+  "states": 18,
+  "transitions": 28,
+  "reachable_states": 18,
   "ctl": {
-    "AG(no_invalid_transition)": true,
-    "AG(no_resource_conflict)": true,
-    "EF(payment_processing)": true,
+    "AG(!violation)": false,
+    "EF(main_locked)": true,
+    "AG(payment_pending -> AF(paid | cancelled | failed))": true,
+    "AG(payment_processing -> AF(paid | failed))": true,
+    "AG(paid -> AF(completed | refunded))": true,
+    "AG(confirmed -> AF(completed | refunded))": true,
+    "AG(refund_pending -> AF(refunded))": true,
     "EF(payment_success)": true,
-    "EF(refund_pending)": true,
     "EF(refunded)": true,
     "EF(terminal)": true
   },
   "mutual_exclusion": {
-    "atoms": [
-      "payment_pending",
-      "payment_success"
+    "primary": [
+      "main_locked",
+      "log_locked"
     ],
-    "holds": true
+    "holds": false,
+    "violation_states": [
+      "conflict"
+    ],
+    "documented_pairs": 6,
+    "other_pairs_hold": true
   },
-  "generated_functions": 5,
+  "intentional_findings": {
+    "ctl_false": [
+      "AG(!violation)"
+    ],
+    "mutex_violation_states": [
+      "conflict"
+    ],
+    "detected_cwe": [
+      "CWE-667",
+      "CWE-693"
+    ],
+    "rationale": "ATPM Excel guide §3.5 and §4 require one deliberate conflict state and a reachable mutex violation; the pipeline reporting CWE-667/CWE-693 is correct-by-design."
+  },
+  "lock_cluster": {
+    "states": [
+      "conflict",
+      "free",
+      "log_holds",
+      "main_holds"
+    ],
+    "labels": [
+      "safe",
+      "main_locked",
+      "log_locked",
+      "violation"
+    ]
+  },
+  "generated_functions": 7,
+  "generated_kinds": [
+    "c:alloc_release",
+    "c:buffer_copy",
+    "python:divide",
+    "python:magic_value"
+  ],
   "arithmetic_checks": 6,
   "test_cases": 50
 }

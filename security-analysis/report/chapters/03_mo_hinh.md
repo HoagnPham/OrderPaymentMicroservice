@@ -21,10 +21,11 @@ còn recovery:P3 là “COMPLETED có payment evidence”. Không ghép kết qu
 
 ### 3.2. Aggregate state và invariant
 
-Recovery có 15 state; source Order có 10 trạng thái, Payment có 7. Ví dụ
+Recovery có 14 state; source Order có 10 trạng thái, Payment có 7. Ví dụ
 PAYMENT_PROCESSING=(Order PAYMENT_PENDING, Payment PROCESSING),
 PAYMENT_RETRY=(PAYMENT_PENDING, UNKNOWN), PAID=(PAID,SUCCESS).
-CONFIRMATION_RETRY là state thiết kế giữ PAID/SUCCESS; PRE_PAYMENT_REJECTED là
+Không còn state confirmation-retry vì source không có scheduler/counter tự động;
+PAID ở lại PAID để Admin confirm hoặc refund. PRE_PAYMENT_REJECTED là
 quan sát việc reject trước persist, không phải tên enum trong implementation.
 
 Safety được diễn giải thành điều kiện: paid phải có evidence; cancelled không
@@ -100,15 +101,19 @@ model mutated, chưa phải trace HTTP/PostgreSQL của ứng dụng đang tri�
 
 ### 3.7. Phép chiếu recovery sang workbook
 
-Graph recovery có 37 event transition. Workbook bỏ event/action/kind và gộp các
-cặp (from,to) trùng, còn @@PIPELINE_PAIRS@@ cặp; phép đối chiếu hai tập cạnh cho kết quả bằng nhau.
+Graph recovery có 35 event transition. Workbook dùng **progress projection**: bỏ các
+cạnh stutter/retry self-loop để CTL AF có nghĩa, giữ self-loop ở terminal theo luật
+no-deadlock, rồi gộp các cặp (from,to) trùng còn @@PIPELINE_PAIRS@@ cặp vòng đời.
+Workbook thêm đúng 6 cạnh của cụm khóa minh họa free/main_holds/log_holds/conflict,
+nên tổng cộng 28 cặp nguồn–đích. Phép đối chiếu 22 cặp vòng đời cho kết quả bằng nhau.
 Nhiều event như request trùng và amount sai cùng giữ PAYMENT_PENDING sẽ hợp thành
 một cạnh self-loop. Do đó phép chiếu giữ quan hệ state đích nhưng làm mất lý do,
 biện pháp xử lý và assumption gắn trên event.
 
 Không kết luận property preservation toàn bộ từ equality của tập cạnh: workbook
-có 7 CTL, recovery có 15 checks gồm checks cấu trúc và hợp đồng. TLA+ còn có attempt
-counter nên 20 trạng thái reachable của TLC không mâu thuẫn 15 aggregate state.
+có 10 CTL (9 đúng, 1 vi phạm cố ý tại `conflict`), recovery có 15 checks gồm checks
+cấu trúc và hợp đồng. TLA+ còn có attempt counter nên 20 trạng thái reachable của
+TLC không mâu thuẫn 14 aggregate state.
 
 ### 3.8. Đối chiếu thiết kế với source
 
@@ -116,7 +121,7 @@ counter nên 20 trạng thái reachable của TLC không mâu thuẫn 15 aggrega
 | --- | --- | --- |
 | CREATED→VALIDATED→PAYMENT_PENDING | CreateOrderAsync chuyển trong cùng thao tác trước persist | Ánh xạ thiết kế; không phải ba commit riêng |
 | Retry cuối có bound | MaxChargeAttempts=2; UNKNOWN giữ logical payment/key | Có unit; chưa chứng minh mọi crash window |
-| CONFIRMATION_RETRY→refund sau exhaustion | Source cho Admin gọi confirm/refund; không có retry counter tự động cho confirmation | MODEL_ONLY cho cơ chế retry tự động |
+| Confirmation thất bại | Source giữ PAID; Admin gọi confirm/refund thủ công, không tự charge lại | IMPLEMENTED_POLICY; không có auto-retry counter |
 | Cancel tại PAYMENT_RETRY khi outcome UNKNOWN | Model đã giữ PAYMENT_RETRY; CancelOrderAsync từ chối, giữ reservation | IMPLEMENTED_POLICY; regression cancel UNKNOWN |
 | Gateway persistence và callback xác thực | DurableFake journal; process restart test có worker bật | Persistence local đã test; callback authenticity vẫn ASSUMPTION_ONLY |
 | Atomic payment-cancel | Serializable, Version và unique payment per order | PostgreSQL test cho interleaving đã chạy; chưa refinement proof |

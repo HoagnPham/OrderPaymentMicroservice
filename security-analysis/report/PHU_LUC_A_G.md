@@ -51,7 +51,7 @@ thay thế trực tiếp state Order.
 | REQ-13 | Payment cleanup không được free TransactionCode hai lần; con trỏ sở hữu phải được đặt NULL sau lần free đầu. | memory | HIGH |
 | REQ-14 | Liveness có điều kiện: checker progress-only đạt terminal khi lọc các cạnh đánh dấu stutter. Raw AG AF terminal trên graph đầy đủ là false; không suy ra runtime luôn kết thúc khi provider còn UNKNOWN. | liveness | HIGH |
 | REQ-15 | Mỗi trạng thái Order-Payment phải đặc tả sự cố, cách phát hiện, biện pháp xử lý và trạng thái tiếp theo; không được có sự cố không có đường phục hồi hoặc kết thúc. | safety | HIGH |
-| REQ-16 | PaymentService giới hạn charge tối đa 2 attempts cho cùng logical payment/key. Hết budget mà UNKNOWN vẫn giữ reservation và chỉ lookup/reconcile; không suy thành FAILED. Bounded confirmation retry chỉ có trong model, chưa hiện thực scheduler/counter tự động. | safety | HIGH |
+| REQ-16 | PaymentService giới hạn charge tối đa 2 attempts cho cùng logical payment/key. Hết budget mà UNKNOWN vẫn giữ reservation và chỉ lookup/reconcile; không suy thành FAILED. Không có automatic confirmation retry trong source; Admin confirm hoặc refund thủ công. | safety | HIGH |
 | REQ-17 | Charge đã xảy ra nhưng finalize PAID lỗi phải được lookup bằng cùng key và hoàn tất SUCCESS/PAID, không charge mù hoặc đổi FAILED. Khi yêu cầu refund cho Order PAID/CONFIRMED, dùng REFUND_PENDING → REFUNDED, giữ dấu vết charge và release kho một lần. | safety | HIGH |
 | REQ-18 | Payment và cancellation trên cùng Order phải được serialize; không được đồng thời sở hữu critical resource hoặc tạo hai Payment SUCCESS. | safety | HIGH |
 | REQ-19 | PROCESSING/UNKNOWN phải được worker reconciliation hỏi trạng thái charge cũ; REFUND_PENDING hỏi trạng thái refund cũ. Lookup không tăng AttemptCount, không tự phát charge/refund; UNKNOWN giữ reservation và chặn cancel. | safety | HIGH |
@@ -128,7 +128,6 @@ riêng. Hash/authenticity của gateway response chưa được mock chứng min
 | PAYMENT_RETRY | PAYMENT_PENDING | UNKNOWN | payment_retry, inventory_reserved, amount_verified | Resolve an unknown gateway outcome without creating a second logical charge. |
 | PAYMENT_PROCESSING_FINAL | PAYMENT_PENDING | PROCESSING | payment_processing, final_retry, inventory_reserved, amount_verified, payment_lock | Execute the final bounded payment reconciliation/attempt. |
 | PAID | PAID | SUCCESS | paid, payment_success, amount_verified, inventory_reserved | Represent exactly one successful payment whose amount matches the order. |
-| CONFIRMATION_RETRY | PAID | SUCCESS | paid, payment_success, confirmation_retry, amount_verified | Retry fulfillment confirmation without issuing another charge. |
 | CONFIRMED | CONFIRMED | SUCCESS | confirmed, paid, payment_success, amount_verified | Order is paid and accepted for fulfillment. |
 | REFUND_PENDING | REFUND_PENDING | REFUND_PENDING | paid, payment_success, refund_pending, amount_verified | Compensate a successful charge that cannot lead to completion. |
 | COMPLETED | COMPLETED | SUCCESS | completed, paid, payment_success, amount_verified, terminal | Successful terminal state. |
@@ -165,10 +164,8 @@ riêng. Hash/authenticity của gateway response chưa được mock chứng min
 | PAYMENT_PROCESSING_FINAL | final_charged_but_commit_failed | PAYMENT_RETRY | stutter | Reconcile the existing charge; do not increase the charge attempt counter |
 | PAID | confirmation_ok | CONFIRMED | progress | Confirm fulfillment and preserve the successful payment evidence. |
 | PAID | duplicate_success | PAID | stutter | Return the original payment; do not insert or charge again |
-| PAID | confirmation_transient_failure | CONFIRMATION_RETRY | progress | Keep PAID and retry confirmation without charging again |
+| PAID | confirmation_transient_failure | PAID | stutter | Keep PAID and let an operator retry confirmation or start compensation; no automatic retry counter exists |
 | PAID | fulfillment_unrecoverable | REFUND_PENDING | progress | Start compensation; never silently change PAID to FAILED |
-| CONFIRMATION_RETRY | confirmation_retry_ok | CONFIRMED | progress | Persist confirmation. |
-| CONFIRMATION_RETRY | confirmation_retry_exhausted | REFUND_PENDING | progress | Escalate to compensating refund |
 | CONFIRMED | delivery_completed | COMPLETED | progress | Close the successful order. |
 | CONFIRMED | confirmed_fulfillment_failed | REFUND_PENDING | progress | Start a refund and release inventory when compensation completes |
 | REFUND_PENDING | refund_success | REFUNDED | progress | Persist refund evidence and release inventory. |
@@ -203,7 +200,7 @@ riêng. Hash/authenticity của gateway response chưa được mock chứng min
 
 Model cơ sở có witness CREATED → CANCELLED → PAID_AFTER_CANCELLED. Sáu negative mutation của recovery và witness đầy đủ nằm trong ../results/order_payment_recovery_model.results.json.
 
-37 event → 31 cặp state; hai tập cạnh sau phép chiếu bằng nhau. Property workbook có ngữ nghĩa riêng; EF(terminal) chỉ chứng minh tồn tại đường tới terminal.
+35 event → 22 cặp vòng đời (+ 6 cặp cụm khóa minh họa); hai tập cạnh vòng đời sau phép chiếu progress bằng nhau. Workbook có 10 CTL; AG(!violation) false tại conflict là phát hiện cố ý, không phải lỗi runtime.
 
 ### B.6. Chi tiết hợp đồng F1–F7
 
@@ -276,13 +273,11 @@ Precondition: Successful payment evidence exists.
 | --- | --- | --- |
 | PAID | confirmation_ok | CONFIRMED |
 | PAID | duplicate_success | PAID |
-| PAID | confirmation_transient_failure | CONFIRMATION_RETRY |
+| PAID | confirmation_transient_failure | PAID |
 | PAID | fulfillment_unrecoverable | REFUND_PENDING |
-| CONFIRMATION_RETRY | confirmation_retry_ok | CONFIRMED |
-| CONFIRMATION_RETRY | confirmation_retry_exhausted | REFUND_PENDING |
 
-- Confirmation retry never charges the customer again.
-- A paid order that cannot be confirmed enters compensation instead of FAILED.
+- A failed or repeated confirmation never charges the customer again.
+- A paid order that cannot be confirmed either stays PAID for manual retry or enters compensation instead of FAILED.
 
 #### F5_COMPLETE_OR_COMPENSATE
 

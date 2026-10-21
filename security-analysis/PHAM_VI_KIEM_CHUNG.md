@@ -30,6 +30,7 @@ Các mục dưới đây phải chạy lại được trên máy demo và phải
 | B13 | Giao diện thật | Chrome + PostgreSQL + API thật hoàn tất flow, không lỗi JS chưa bắt | `application_smoke.results.json` |
 | B14 | Truy vết | Mỗi requirement có test/check và mức evidence | `traceability_matrix.csv` |
 | B15 | Đóng gói | Manifest có base commit, dirty flag và hash source/evidence | `evidence_manifest.json` |
+| B16 | Workbook ATPM | 10 sheet; 18 state; 10 CTL (9 đúng, 1 vi phạm cố ý); 6 cặp mutex; có Python `divide` + `magic_value` | `teacher_spec_verification.json`; GUI Windows vẫn là xác nhận cuối |
 
 ## 2. Tiêu chí chất lượng của evidence
 
@@ -65,12 +66,13 @@ JSON/TRX làm chuẩn và sửa bản sao.
 - Chứng minh mọi interleaving hoặc toàn bộ API an toàn.
 - Chứng minh C# managed an toàn bộ nhớ; các module C chỉ là demo học tập.
 - Kết luận từ một filtered test thay cho toàn suite.
+- Chạy GUI `SpecVerificationLab.exe`/`SecLabFramework.exe` trên Windows trong môi trường Linux hiện tại. Đây là mục **BLOCKED về môi trường**, không phải PASS: checker độc lập đã kiểm schema/CTL/mutex, nhưng lần nạp Excel và chạy 4 chương bằng EXE của giảng viên vẫn phải thực hiện thủ công theo hướng dẫn trong `KICH_BAN_THUYET_TRINH_VA_DEMO.md` mục 2.
 
 ## 5. Bốn chương học phần và mức evidence
 
 | Chương | Nội dung | Mức evidence hiện có | Giới hạn phải nói |
 | --- | --- | --- | --- |
-| 1 | Kripke, CTL/LTL, model checking | Model + checker duyệt toàn bộ 15 state; TLA+ có fairness | Chưa có fair-CTL đầy đủ; một số state là trừu tượng |
+| 1 | Kripke, CTL/LTL, model checking | Model + checker duyệt toàn bộ 14 state; workbook thêm cụm khóa 4 state; TLA+ có fairness | Chưa có fair-CTL đầy đủ; một số state là trừu tượng |
 | 2 | C memory safety, static analysis | 5 module, ASan/UBSan 22/22 | Cppcheck false negative 4/5; chưa Valgrind/clang-tidy |
 | 3 | SAT/SMT/BMC | 10 query Z3 đúng verdict; bounded ở mức mô hình | Chưa CBMC; chưa pipeline CNF |
 | 4 | Fuzzing, coverage | 4 campaign seed cố định; coverage theo target | Chưa coverage-guided; chưa HTTP fuzz |

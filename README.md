@@ -121,9 +121,11 @@ quantity cùng ProductId được cộng dồn trước khi kiểm stock. Unique
 Serializable transaction và CHECK bổ sung bảo vệ ở PostgreSQL.
 
 Coverage InputValidator 97,22% branch và MoneyAmounts 100% chỉ thuộc target đã đo.
-Model recovery có 15 states, 37 events, 7 contracts và 6 negative mutations.
+Model recovery có 14 states, 35 events, 7 contracts và 6 negative mutations.
 Raw AG AF terminal trên graph đầy đủ là false; progress-only true phụ thuộc policy
-lọc cạnh, không phải proof fair-CTL đầy đủ. Các kết luận đều có giới hạn trong report.
+lọc cạnh, không phải proof fair-CTL đầy đủ. Workbook có thêm cụm khóa 4 state theo
+ATPM; conflict cố ý reachable để pipeline phát hiện CWE-667/693. Các kết luận đều có
+giới hạn trong report.
 
 Giữ JWT/ownership/Admin hiện có. DB migration/runtime RBAC, retention job,
 webhook thật, shared Redis limiter, gateway thật và Kubernetes là future work

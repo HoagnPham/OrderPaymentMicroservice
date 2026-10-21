@@ -10,8 +10,8 @@ Các số dưới đây lấy từ **evidence đã lưu**, không phải kết q
 | --- | --- |
 | Unit/regression | 149/149 PASS, 0 fail, 0 skip; lượt chạy ngày 22/10/2026 |
 | Integration | 35/35 PASS, 0 fail, 0 skip; lượt chạy ngày 22/10/2026 |
-| Recovery model | 15 state, 37 event/transition có metadata, 7 contract, 15 property; 6/6 mutation âm được phát hiện |
-| Excel specification | 10 sheet, 27 yêu cầu chức năng, 50 testcase đặc tả; checker độc lập PASS |
+| Recovery model | 14 state, 35 event/transition có metadata, 7 contract, 15 property; 6/6 mutation âm được phát hiện |
+| Excel specification | 10 sheet, 27 yêu cầu chức năng, 50 testcase đặc tả; checker độc lập PASS, 1 vi phạm cố ý |
 | C memory demos | 5 module BUGGY/FIXED, 22/22 ca dynamic PASS theo diagnostic kỳ vọng |
 | Payment SMT / inventory SMT | 7/7 và 3/3 ca SAT/UNSAT đúng kỳ vọng |
 | Unit coverage của InputValidator | Line 85,71%; branch 97,22%; helper MoneyAmounts branch 100% |
@@ -340,8 +340,8 @@ Các tài liệu rời từng có như `IMPLEMENTATION_CONTRACTS.md`, `OPERATION
 | `order_payment_recovery_model.results.json` | 15 property/7 contract, reachable và kết quả 6 mutation. |
 | `order_payment_state_response_matrix.csv` | Mỗi state/event: sự cố, phát hiện, cách xử lý, next state. |
 | `liveness_audit.results.json` | Raw false/progress-only true, lasso, filtering semantics và limitations. |
-| `model_projection.results.json` | 37 event chiếu xuống 31 cặp source-target; graph workbook/JSON khớp recovery sau bỏ metadata. |
-| `teacher_spec_verification.json` | Schema workbook/JSON và 7 công thức CTL PASS; không thay 15 recovery properties. |
+| `model_projection.results.json` | 35 event chiếu xuống 22 cặp vòng đời (+6 cặp khóa = 28); workbook khớp recovery sau progress projection. |
+| `teacher_spec_verification.json` | Schema workbook/JSON; 10 CTL (9 đúng, `AG(!violation)` false cố ý tại conflict); không thay 15 recovery properties. |
 | `payment_verification.results.json` | 7 ca SMT payment, sat/unsat/models và giới hạn. |
 | `inventory_verification.results.json` | 3 ca SMT duplicate lines/stock, command/version/hash/time. |
 | `threat_model_results.json` | Kiểm consistency threat model và các tham chiếu. |
@@ -431,10 +431,10 @@ Ví dụ PAID có nhãn `payment_success`; CANCELLED có nhãn `terminal` và `i
 Có ba artifact cần phân biệt:
 
 1. **Model Order cơ sở**: 8 state trong `order_state_model.json`, không có nonterminal waiting self-loop. Kết quả P1–P4 thuộc phạm vi mô hình đơn giản ban đầu, không thay recovery model hiện tại.
-2. **Recovery model**: 15 state, 37 event, 7 function contracts trong `order_payment_recovery_model.json`. Một state có thể là kết hợp Order/Payment; `PAYMENT_RETRY` biểu diễn UNKNOWN, không phải enum OrderStatus cùng tên.
-3. **Graph workbook/pipeline**: vẫn 15 state nhưng có **31 cặp nguồn–đích khác nhau** sau bỏ trùng event và metadata. 37 event không mâu thuẫn với 31 cặp cạnh; một cặp state có thể có nhiều event.
+2. **Recovery model**: 14 state, 35 event, 7 function contracts trong `order_payment_recovery_model.json`. Một state có thể là kết hợp Order/Payment; `PAYMENT_RETRY` biểu diễn UNKNOWN, không phải enum OrderStatus cùng tên.
+3. **Graph workbook/pipeline**: 18 state (14 nghiệp vụ + 4 khóa minh họa) với **28 cặp nguồn–đích**: 22 cặp vòng đời và 6 cặp lock cluster. 35 event không mâu thuẫn với 22 cặp vòng đời; một cặp state có thể có nhiều event.
 
-`CONFIRMATION_RETRY` trong recovery model là **mở rộng thiết kế**. Source hiện chưa có scheduler/counter tự động retry confirmation; không dùng graph để khẳng định tính năng này đã chạy.
+Recovery model **không còn** `CONFIRMATION_RETRY`: runtime chỉ có Admin confirm hoặc refund, không có scheduler/counter tự động. Trạng thái `conflict` trong workbook là bài tập CWE-667 cố ý, không thuộc recovery model.
 
 ### B.4. Kiểm property, tìm witness và kiểm chính checker
 
@@ -463,9 +463,9 @@ Sáu **mutation âm** cố ý sửa model để kiểm tra checker có bắt sai
 
 Ví dụ witness: `CREATED → CANCELLED → PAID_AFTER_CANCELLED`. Verdict FAIL trên bản mutation là **kết quả mong đợi**; mutation checker tổng thể PASS khi phát hiện đúng lỗi và có witness.
 
-Workbook kiểm 7 CTL formula hỗ trợ bởi schema, như `AG(no_invalid_transition)` và `EF(refunded)`. `AG p` nghĩa p đúng ở mọi state reachable trên mọi nhánh; `EF p` nghĩa tồn tại đường đi tới một state có p. `EF(refunded)` chỉ chứng minh **có thể** tới refund, không chứng minh mọi order sẽ refund/kết thúc.
+Workbook kiểm 10 CTL formula, gồm `AG(!violation)`, `EF(main_locked)`, các công thức lồng `AG(payment_pending -> AF(paid | cancelled | failed))` và `AG(paid -> AF(completed | refunded))`. `AG p` nghĩa p đúng ở mọi state reachable trên mọi nhánh; `AF p` nghĩa mọi nhánh cuối cùng đạt p. `EF(refunded)` chỉ chứng minh **có thể** tới refund, không chứng minh mọi order sẽ refund/kết thúc.
 
-Các nhãn `no_invalid_transition`/`no_resource_conflict` trong workbook được generator gán theo model đúng; verifier CTL dựa vào nhãn đã cung cấp, không tự suy ra toàn bộ semantics của service. Vì vậy cần checker contracts/mutations và implementation tests bổ sung; 7 CTL workbook không tương đương 15 recovery properties.
+Cụm khóa `free/main_holds/log_holds/conflict` được thêm đúng checklist ATPM. `conflict` mang nhãn `violation` và cố ý reachable, nên `AG(!violation)` false và cặp mutex chính bị vi phạm; pipeline sẽ báo CWE-667/CWE-693. Đây là hành vi đúng thiết kế của bài tập, không phải lỗi runtime của service. Vì vậy vẫn cần checker contracts/mutations và implementation tests bổ sung; 10 CTL workbook không tương đương 15 recovery properties.
 
 ### B.5. Liveness: kết quả phải diễn giải chính xác
 
@@ -734,7 +734,7 @@ Cách giới thiệu ngắn, chính xác: **“Fuzz có cấu trúc, seed cố �
 
 Ví dụ: hai `if` độc lập có 4 tổ hợp path. Chạy một input true/true và một input false/false có thể đạt cả hai outcome của từng `if`, nhưng chưa chạy true/false và false/true. Vì vậy **100% branch không bảo đảm 100% path**, cũng không chứng minh không còn bug.
 
-Đừng trộn business edge `PAID→CONFIRMED` với CFG edge của các lệnh `if/switch` trong implementation. Và model reachable 15/15 state không đồng nghĩa C# source line coverage 100%.
+Đừng trộn business edge `PAID→CONFIRMED` với CFG edge của các lệnh `if/switch` trong implementation. Và model reachable 14/14 state không đồng nghĩa C# source line coverage 100%.
 
 ### E.5. Đọc số coverage đang lưu
 

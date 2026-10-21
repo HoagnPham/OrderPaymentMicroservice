@@ -1,12 +1,11 @@
 {
   "model": {
     "system_name": "Order-Payment recovery model",
-    "state_count": 15,
-    "transition_count": 37,
+    "state_count": 14,
+    "transition_count": 35,
     "reachable_states": [
       "CANCELLED",
       "COMPLETED",
-      "CONFIRMATION_RETRY",
       "CONFIRMED",
       "CREATED",
       "FAILED",
@@ -72,13 +71,12 @@
         "responsibility": "Confirm a paid order or start compensation when confirmation cannot succeed.",
         "precondition": "Successful payment evidence exists.",
         "states": [
-          "CONFIRMATION_RETRY",
           "PAID"
         ],
-        "outcome_count": 6,
+        "outcome_count": 4,
         "guarantees": [
-          "Confirmation retry never charges the customer again.",
-          "A paid order that cannot be confirmed enters compensation instead of FAILED."
+          "A failed or repeated confirmation never charges the customer again.",
+          "A paid order that cannot be confirmed either stays PAID for manual retry or enters compensation instead of FAILED."
         ],
         "holds": true
       },
@@ -558,7 +556,7 @@
       "guard_or_detection": "Successful payment evidence exists.",
       "solution": "Confirm fulfillment and preserve the successful payment evidence.",
       "next_state": "CONFIRMED",
-      "guarantees": "Confirmation retry never charges the customer again. | A paid order that cannot be confirmed enters compensation instead of FAILED.",
+      "guarantees": "A failed or repeated confirmation never charges the customer again. | A paid order that cannot be confirmed either stays PAID for manual retry or enters compensation instead of FAILED.",
       "kind": "progress"
     },
     {
@@ -572,7 +570,7 @@
       "guard_or_detection": "The order already has a SUCCESS payment for the idempotency key",
       "solution": "Return the original payment; do not insert or charge again",
       "next_state": "PAID",
-      "guarantees": "Confirmation retry never charges the customer again. | A paid order that cannot be confirmed enters compensation instead of FAILED.",
+      "guarantees": "A failed or repeated confirmation never charges the customer again. | A paid order that cannot be confirmed either stays PAID for manual retry or enters compensation instead of FAILED.",
       "kind": "stutter"
     },
     {
@@ -583,11 +581,11 @@
       "case": "INCIDENT",
       "event": "confirmation_transient_failure",
       "problem": "Transient confirmation failure",
-      "guard_or_detection": "Fulfillment confirmation fails with a retryable error",
-      "solution": "Keep PAID and retry confirmation without charging again",
-      "next_state": "CONFIRMATION_RETRY",
-      "guarantees": "Confirmation retry never charges the customer again. | A paid order that cannot be confirmed enters compensation instead of FAILED.",
-      "kind": "progress"
+      "guard_or_detection": "Fulfillment confirmation fails before the order is confirmed",
+      "solution": "Keep PAID and let an operator retry confirmation or start compensation; no automatic retry counter exists",
+      "next_state": "PAID",
+      "guarantees": "A failed or repeated confirmation never charges the customer again. | A paid order that cannot be confirmed either stays PAID for manual retry or enters compensation instead of FAILED.",
+      "kind": "stutter"
     },
     {
       "function": "F4_CONFIRM_OR_COMPENSATE",
@@ -600,35 +598,7 @@
       "guard_or_detection": "Permanent inventory or fulfillment failure",
       "solution": "Start compensation; never silently change PAID to FAILED",
       "next_state": "REFUND_PENDING",
-      "guarantees": "Confirmation retry never charges the customer again. | A paid order that cannot be confirmed enters compensation instead of FAILED.",
-      "kind": "progress"
-    },
-    {
-      "function": "F4_CONFIRM_OR_COMPENSATE",
-      "state": "CONFIRMATION_RETRY",
-      "order_status": "PAID",
-      "payment_status": "SUCCESS",
-      "case": "NORMAL",
-      "event": "confirmation_retry_ok",
-      "problem": "None; normal precondition holds",
-      "guard_or_detection": "Successful payment evidence exists.",
-      "solution": "Persist confirmation.",
-      "next_state": "CONFIRMED",
-      "guarantees": "Confirmation retry never charges the customer again. | A paid order that cannot be confirmed enters compensation instead of FAILED.",
-      "kind": "progress"
-    },
-    {
-      "function": "F4_CONFIRM_OR_COMPENSATE",
-      "state": "CONFIRMATION_RETRY",
-      "order_status": "PAID",
-      "payment_status": "SUCCESS",
-      "case": "INCIDENT",
-      "event": "confirmation_retry_exhausted",
-      "problem": "Confirmation retry budget exhausted",
-      "guard_or_detection": "Bounded confirmation retry counter reaches its limit",
-      "solution": "Escalate to compensating refund",
-      "next_state": "REFUND_PENDING",
-      "guarantees": "Confirmation retry never charges the customer again. | A paid order that cannot be confirmed enters compensation instead of FAILED.",
+      "guarantees": "A failed or repeated confirmation never charges the customer again. | A paid order that cannot be confirmed either stays PAID for manual retry or enters compensation instead of FAILED.",
       "kind": "progress"
     },
     {

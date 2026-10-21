@@ -1,12 +1,15 @@
 {
   "passed": true,
-  "recovery_event_transitions": 37,
-  "recovery_unique_state_pairs": 31,
-  "pipeline_state_pairs": 31,
+  "recovery_event_transitions": 35,
+  "recovery_unique_state_pairs": 17,
+  "pipeline_state_pairs": 22,
+  "pipeline_lock_cluster_pairs": 6,
+  "expected_progress_pairs": 22,
   "only_recovery": [],
   "only_pipeline": [],
-  "projection": "Drop event/action/kind metadata and deduplicate source-target pairs.",
+  "projection": "Drop event/action/kind metadata, drop stutter edges, keep terminal self-loops, then add the mandated 4-state lock cluster (excluded from the lifecycle comparison).",
   "limitations": [
-    "Matching edges does not make the seven workbook CTL properties equivalent to all fifteen recovery properties."
+    "Matching lifecycle edges does not make the ten workbook CTL properties equivalent to all fifteen recovery properties.",
+    "The reachable conflict state is a deliberate ATPM CWE-667 exercise, not a recovery-model state."
   ]
 }

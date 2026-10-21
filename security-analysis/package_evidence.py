@@ -60,14 +60,25 @@ def compare_models():
     recovery = json.loads((ROOT / 'security-analysis/order_payment_recovery_model.json').read_text())
     pipeline = json.loads((ROOT / 'security-analysis/order_payment_pipeline_spec.json').read_text())
     edges = module.transitions(recovery)
-    detailed = {(e['from'], e['to']) for e in edges}
-    projected = {tuple(edge) for edge in pipeline['state_machine']['transitions']}
-    return {'passed': detailed == projected,
-            'recovery_event_transitions': len(edges), 'recovery_unique_state_pairs': len(detailed),
+    # The workbook uses the *progress projection* of the recovery graph: stutter
+    # retry/self edges are removed so plain CTL AF properties are meaningful,
+    # while terminal self-loops stay to satisfy the no-deadlock rule.
+    detailed = {(e['from'], e['to']) for e in edges if e.get('kind') != 'stutter'}
+    terminal = {s['id'] for s in recovery['states'] if 'terminal' in s['labels']}
+    expected = detailed | {(state, state) for state in terminal}
+    lock_states = {'free', 'main_holds', 'log_holds', 'conflict'}
+    projected_all = {tuple(edge) for edge in pipeline['state_machine']['transitions']}
+    projected = {pair for pair in projected_all if pair[0] not in lock_states and pair[1] not in lock_states}
+    return {'passed': expected == projected,
+            'recovery_event_transitions': len(edges),
+            'recovery_unique_state_pairs': len(detailed),
             'pipeline_state_pairs': len(projected),
-            'only_recovery': sorted(detailed - projected), 'only_pipeline': sorted(projected - detailed),
-            'projection': 'Drop event/action/kind metadata and deduplicate source-target pairs.',
-            'limitations': ['Matching edges does not make the seven workbook CTL properties equivalent to all fifteen recovery properties.']}
+            'pipeline_lock_cluster_pairs': len(projected_all) - len(projected),
+            'expected_progress_pairs': len(expected),
+            'only_recovery': sorted(expected - projected), 'only_pipeline': sorted(projected - expected),
+            'projection': 'Drop event/action/kind metadata, drop stutter edges, keep terminal self-loops, then add the mandated 4-state lock cluster (excluded from the lifecycle comparison).',
+            'limitations': ['Matching lifecycle edges does not make the ten workbook CTL properties equivalent to all fifteen recovery properties.',
+                            'The reachable conflict state is a deliberate ATPM CWE-667 exercise, not a recovery-model state.']}
 
 TRACE = [
     ('SEC-ADMISSION-01', 'Reject oversized body/items; auth IP and verified-user quotas', 'ApiAdmissionOptions; RequestBodyLimitMiddleware; ASP.NET RateLimiter; InputValidator', 'AdmissionBoundaryTests; BodyLimitTests; RateLimitsUseSeparateAuthBucketAndSeparateVerifiedUserBuckets; BodyAndItemLimitsRejectBeforeOrderPersistence; StreamingBodyWithoutLengthIsRejectedBeforeJsonBinding', 'application_tests.results.json', 'UNIT_HTTP_POSTGRES', 'Single-process fixed windows; no load/distributed guarantees'),

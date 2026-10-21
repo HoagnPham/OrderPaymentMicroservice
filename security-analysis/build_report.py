@@ -251,13 +251,16 @@ Kiến trúc, API, input/output và danh mục requirement: [Phụ lục A](PHU_
 
 Project có ba cách biểu diễn phục vụ mục đích khác nhau: Kripke Order cơ sở,
 recovery model theo event và đặc tả TLA+. Kết quả model không tự chứng minh mọi hành
-vi của implementation. Recovery model hiện có 15 trạng thái, 37 chuyển tiếp có event,
+vi của implementation. Recovery model hiện có 14 trạng thái, 35 chuyển tiếp có event,
 7 hợp đồng chức năng và 15 thuộc tính. Sáu mutation được dùng để kiểm tra khả năng
 phát hiện sai trạng thái, sai tiền, trùng charge và compensation sai.
 
-Workbook xuất graph còn 32 cặp nguồn–đích vì bỏ metadata event/action/kind và gộp
-những cặp trùng. Checker đối chiếu xác nhận hai tập cạnh sau phép chiếu bằng nhau.
-Bảy CTL trong workbook là tập thuộc tính riêng, không đồng nghĩa toàn bộ P1–P15.
+Workbook xuất graph 28 cặp nguồn–đích: 22 cặp vòng đời sau phép chiếu progress và
+6 cặp của cụm khóa minh họa bắt buộc. 22 cặp vòng đời khớp recovery model sau khi bỏ
+metadata event/action/kind, bỏ cạnh stutter và giữ self-loop terminal.
+Mười CTL trong workbook là tập thuộc tính riêng, không đồng nghĩa toàn bộ P1–P15.
+Một công thức `AG(!violation)` và cặp mutex chính cố ý sai tại `conflict` để pipeline
+ATPM phát hiện CWE-667/CWE-693, đúng yêu cầu bài tập.
 
 Liveness phụ thuộc giả định tiến triển/fairness và cách xử lý stutter. Thực tế một
 gateway có thể tiếp tục UNKNOWN; lúc đó hệ thống giữ reservation để tránh hoàn kho
@@ -319,8 +322,8 @@ mọi cửa sổ crash; process-kill sau charge đã có evidence riêng. Cấu 
     ['Recovery', '15/15 thuộc tính; 6 mutation detected', 'Graph hữu hạn, giả định được khai báo'],
     ['Payment SMT', '7/7 đúng kỳ vọng', 'Số học integer cents'],
     ['Inventory SMT', '3/3 đúng kỳ vọng', 'Hai dòng của một sản phẩm'],
-    ['Workbook checker', f"{workbook['sheet_count']} sheet; {len(workbook['ctl'])} CTL PASS", 'Checker độc lập, không chạy công cụ Windows giảng viên'],
-    ['Model projection', f"37 event → {mapping['pipeline_state_pairs']} cặp", 'Tập cạnh sau phép chiếu bằng nhau'],
+    ['Workbook checker', f"{workbook['sheet_count']} sheet; 9/10 CTL đúng, 1 vi phạm cố ý", 'Checker độc lập; CWE-667/693 tại conflict là chủ đích'],
+    ['Model projection', f"35 event → {mapping['pipeline_state_pairs']} cặp vòng đời", 'Tập cạnh sau phép chiếu progress bằng nhau'],
 ])}
 Bảng truy vết máy đọc được nằm ở ../results/traceability_matrix.csv. Manifest ghi
 hash artifact và base commit; working tree còn thay đổi chưa commit nên không gán
@@ -405,7 +408,7 @@ thay thế trực tiếp state Order.
               '### B.4. Thuộc tính\n', table(['ID','Loại','Nội dung'], [[p['id'],p['type'],p['description']] for p in model['properties']]),
               '### B.5. Đối chiếu và counterexample\n',
               'Model cơ sở có witness CREATED → CANCELLED → PAID_AFTER_CANCELLED. Sáu negative mutation của recovery và witness đầy đủ nằm trong ../results/order_payment_recovery_model.results.json.\n',
-              f"37 event → {mapping['pipeline_state_pairs']} cặp state; hai tập cạnh sau phép chiếu bằng nhau. Property workbook có ngữ nghĩa riêng; EF(terminal) chỉ chứng minh tồn tại đường tới terminal.\n",
+              f"35 event → {mapping['pipeline_state_pairs']} cặp vòng đời (+ {mapping['pipeline_lock_cluster_pairs']} cặp cụm khóa minh họa); hai tập cạnh vòng đời sau phép chiếu progress bằng nhau. Workbook có 10 CTL; AG(!violation) false tại conflict là phát hiện cố ý, không phải lỗi runtime.\n",
               '## Phụ lục C — Static và bộ nhớ\n',
               '### C.1. CWE và phạm vi\n', table(['Module','Lỗi BUGGY','CWE'], [['Order','Owned allocation leak','CWE-401'],['Payment','Double free','CWE-415'],['Cart','Use after free','CWE-416'],['Product','Heap buffer copy','CWE-120'],['User','Stack buffer copy','CWE-120']]),
               'GCC/cppcheck version, finding và layout: ../c-memory/evidence/static-analysis.json. Pattern rules là scanner riêng; cppcheck có false negative được ghi rõ trong ../c-memory/README.md. Không tuyên bố Clang-Tidy/Clang Analyzer đã chạy.\n',

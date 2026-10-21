@@ -11,11 +11,15 @@ from __future__ import annotations
 import ast
 import json
 import re
+import sys
 from collections import deque
 from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree as ET
 from zipfile import ZipFile
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import ctl  # noqa: E402  (local helper module)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -44,7 +48,6 @@ SUPPORTED_KINDS = {
     "python": {"divide", "magic_value"},
 }
 SUPPORTED_BUGS = {"", "buffer-overflow", "memory-leak", "double-free", "use-after-free"}
-CTL_PATTERN = re.compile(r"^(AG|EF|AF|EG|AX|EX)\((!?)([A-Za-z_][A-Za-z0-9_]*)\)$")
 
 
 def _split(value: object) -> list[str]:
@@ -152,44 +155,14 @@ def _reachable(spec: dict[str, Any]) -> set[str]:
 
 
 def evaluate_ctl(spec: dict[str, Any], formula: str) -> bool:
-    match = CTL_PATTERN.fullmatch(formula)
-    if match is None or (match.group(2) and match.group(1) != "AG"):
-        raise ValueError(f"Unsupported lecturer-pipeline CTL formula: {formula}")
-    operator, negation, atom = match.groups()
     machine = spec["state_machine"]
-    states = set(machine["states"])
-    graph = {state: set() for state in states}
-    for source, target in machine["transitions"]:
-        graph[source].add(target)
-    atom_states = {state for state, labels in machine["labeling"].items() if atom in labels}
-    if negation:
-        atom_states = states - atom_states
-    initial = set(machine["initial"])
-    reachable = _reachable(spec)
-
-    if operator == "AG":
-        return reachable <= atom_states
-    if operator == "EF":
-        return bool(reachable & atom_states)
-    if operator == "EX":
-        return all(bool(graph[state] & atom_states) for state in initial)
-    if operator == "AX":
-        return all(graph[state] and graph[state] <= atom_states for state in initial)
-    if operator == "AF":
-        fixed = set(atom_states)
-        while True:
-            expanded = fixed | {state for state in states if graph[state] and graph[state] <= fixed}
-            if expanded == fixed:
-                return initial <= fixed
-            fixed = expanded
-    if operator == "EG":
-        fixed = set(atom_states)
-        while True:
-            reduced = {state for state in fixed if graph[state] & fixed}
-            if reduced == fixed:
-                return bool(initial & fixed)
-            fixed = reduced
-    raise AssertionError(operator)
+    return ctl.evaluate(
+        ctl.parse(formula),
+        machine["states"],
+        machine["labeling"],
+        [tuple(edge) for edge in machine["transitions"]],
+        machine["initial"],
+    )
 
 
 def _validate_arithmetic(check: dict[str, Any]) -> None:
@@ -235,17 +208,47 @@ def validate(path: Path = WORKBOOK, json_path: Path = PIPELINE_JSON) -> dict[str
         raise ValueError(f"Unreachable states: {sorted(states - reachable)}")
 
     ctl_results = {formula: evaluate_ctl(spec, formula) for formula in spec["safety_properties"]}
-    if not all(ctl_results.values()):
-        raise ValueError(f"CTL failures: {[key for key, value in ctl_results.items() if not value]}")
-
-    atom1 = spec["mutual_exclusion"]["atom1"]
-    atom2 = spec["mutual_exclusion"]["atom2"]
-    mutex_violations = [
-        state for state in reachable
-        if atom1 in machine["labeling"][state] and atom2 in machine["labeling"][state]
+    intentional_false = {
+        formula for formula in ctl_results
+        if formula.replace(" ", "") == "AG(!violation)"
+    }
+    if not intentional_false:
+        raise ValueError("The workbook must document AG(!violation) for the primary lock cluster")
+    unexpected_false = [
+        formula for formula, value in ctl_results.items()
+        if not value and formula not in intentional_false
     ]
-    if mutex_violations:
-        raise ValueError(f"Mutual exclusion violated in {mutex_violations}")
+    unexpected_true = [formula for formula in intentional_false if ctl_results[formula]]
+    if unexpected_false:
+        raise ValueError(f"CTL failures outside the deliberate lock-cluster finding: {unexpected_false}")
+    if unexpected_true:
+        raise ValueError("AG(!violation) must be false because the deliberate conflict state is reachable")
+
+    mutex_rows = [[str(value) for value in row] for row in sheets["LoaiTruLanNhau"][1:]]
+    if len(mutex_rows) < 5:
+        raise ValueError("LoaiTruLanNhau requires at least five documented pairs")
+    declared_labels = {
+        label for values in machine["labeling"].values() for label in values
+    }
+    for pair in mutex_rows:
+        if len(pair) != 2 or pair[0] == pair[1]:
+            raise ValueError(f"Invalid mutual-exclusion pair: {pair}")
+        if any(atom not in declared_labels for atom in pair):
+            raise ValueError(f"Mutual-exclusion atom is not declared in MoHinhTrangThai: {pair}")
+    primary = mutex_rows[0]
+    primary_violations = sorted(
+        state for state in reachable
+        if primary[0] in machine["labeling"][state] and primary[1] in machine["labeling"][state]
+    )
+    if not primary_violations:
+        raise ValueError("The primary lock pair must be reachable at the deliberate conflict state")
+    for pair in mutex_rows[1:]:
+        bad = sorted(
+            state for state in reachable
+            if pair[0] in machine["labeling"][state] and pair[1] in machine["labeling"][state]
+        )
+        if bad:
+            raise ValueError(f"Documented mutual-exclusion pair {pair} is violated in {bad}")
 
     allowed_categories = {"safety", "liveness", "memory", "functional"}
     allowed_priorities = {"HIGH", "MEDIUM", "LOW"}
@@ -255,13 +258,38 @@ def validate(path: Path = WORKBOOK, json_path: Path = PIPELINE_JSON) -> dict[str
     all_ids.update(row[0] for row in sheets["RangBuoc"][1:])
     if any(row[2] not in allowed_categories or row[3] not in allowed_priorities for row in requirements):
         raise ValueError("Unsupported requirement category or priority")
+    if len(requirements) < 5:
+        raise ValueError("YeuCauChucNang requires at least five rows")
+    if len(sheets["YeuCauPhiChucNang"]) < 6:
+        raise ValueError("YeuCauPhiChucNang requires at least five rows")
+    if len(sheets["RangBuoc"]) < 6:
+        raise ValueError("RangBuoc requires at least five rows")
+    for row in sheets["YeuCauPhiChucNang"][1:]:
+        if not re.search(r"\d", str(row[1])):
+            raise ValueError(f"{row[0]} must contain a concrete numeric measure")
     for row in sheets["TestCase"][1:]:
         missing = set(_split(row[1])) - all_ids
         if missing:
             raise ValueError(f"{row[0]} references unknown requirement IDs: {sorted(missing)}")
+    if len(sheets["TestCase"]) < 6:
+        raise ValueError("TestCase requires at least five rows")
 
-    if len(sheets["LoaiTruLanNhau"]) != 2:
-        raise ValueError("Only one mutual-exclusion pair is accepted by the lecturer pipeline")
+    lock_states = {"free", "main_holds", "log_holds", "conflict"}
+    if not lock_states <= states:
+        raise ValueError("The 4-state free/main_holds/log_holds/conflict cluster is missing")
+    labels = {label for values in machine["labeling"].values() for label in values}
+    if not {"safe", "main_locked", "log_locked", "violation"} <= labels:
+        raise ValueError("The lock cluster labels are incomplete")
+    if "violation" not in machine["labeling"]["conflict"]:
+        raise ValueError("The conflict state must carry the violation label")
+
+    kinds = {(function["language"], function["kind"]) for function in spec["functions"]}
+    if ("python", "divide") not in kinds or ("python", "magic_value") not in kinds:
+        raise ValueError("HamSinhMa must contain both Python divide and magic_value functions")
+    bugs = {function.get("bug", "") for function in spec["functions"] if function["language"] == "c"}
+    required_bugs = {"buffer-overflow", "memory-leak", "double-free", "use-after-free"}
+    if not required_bugs <= bugs:
+        raise ValueError(f"HamSinhMa is missing C bug kinds: {sorted(required_bugs - bugs)}")
     for function in spec["functions"]:
         language = function["language"]
         if language not in SUPPORTED_KINDS or function["kind"] not in SUPPORTED_KINDS[language]:
@@ -270,8 +298,27 @@ def validate(path: Path = WORKBOOK, json_path: Path = PIPELINE_JSON) -> dict[str
             raise ValueError(f"Unsupported injected bug: {function.get('bug')}")
         if function["kind"] == "magic_value" and len(function.get("magic_values", [])) != 2:
             raise ValueError("magic_value requires exactly two secret values")
+        if function["kind"] == "buffer_copy" and function.get("buffer_size") != 32:
+            raise ValueError(f"{function['name']} buffer size must match CON-5 (32 bytes)")
+
+    if len(spec["arithmetic_checks"]) < 5:
+        raise ValueError("KiemTraSoHoc requires at least five rows")
+    threshold_text = " ".join(str(check["condition"]) for check in spec["arithmetic_checks"])
+    missing_thresholds = {
+        value for value in ("32767", "65535", "2000000000", "4294967295")
+        if value not in threshold_text
+    }
+    if missing_thresholds:
+        raise ValueError(f"KiemTraSoHoc is missing ATPM thresholds: {sorted(missing_thresholds)}")
     for check in spec["arithmetic_checks"]:
         _validate_arithmetic(check)
+        declared = set(check["int_vars"])
+        expression = str(check["overflow_expr"]).replace(" ", "")
+        names = set(re.findall(r"[A-Za-z_][A-Za-z0-9_]*", expression))
+        if not names <= declared:
+            raise ValueError(f"{check['name']} overflow expression uses undeclared variables")
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*([+\-*][A-Za-z_][A-Za-z0-9_]*)+", expression):
+            raise ValueError(f"{check['name']} overflow expression is not a pure arithmetic sum/product")
 
     result = {
         "passed": True,
@@ -283,8 +330,28 @@ def validate(path: Path = WORKBOOK, json_path: Path = PIPELINE_JSON) -> dict[str
         "transitions": len(machine["transitions"]),
         "reachable_states": len(reachable),
         "ctl": ctl_results,
-        "mutual_exclusion": {"atoms": [atom1, atom2], "holds": True},
+        "mutual_exclusion": {
+            "primary": primary,
+            "holds": False,
+            "violation_states": primary_violations,
+            "documented_pairs": len(mutex_rows),
+            "other_pairs_hold": True,
+        },
+        "intentional_findings": {
+            "ctl_false": sorted(intentional_false),
+            "mutex_violation_states": primary_violations,
+            "detected_cwe": ["CWE-667", "CWE-693"],
+            "rationale": (
+                "ATPM Excel guide §3.5 and §4 require one deliberate conflict state and a reachable "
+                "mutex violation; the pipeline reporting CWE-667/CWE-693 is correct-by-design."
+            ),
+        },
+        "lock_cluster": {
+            "states": sorted(lock_states),
+            "labels": ["safe", "main_locked", "log_locked", "violation"],
+        },
         "generated_functions": len(spec["functions"]),
+        "generated_kinds": sorted(f"{language}:{kind}" for language, kind in kinds),
         "arithmetic_checks": len(spec["arithmetic_checks"]),
         "test_cases": len(sheets["TestCase"]) - 1,
     }
@@ -295,10 +362,16 @@ def validate(path: Path = WORKBOOK, json_path: Path = PIPELINE_JSON) -> dict[str
 
 def main() -> None:
     result = validate()
+    findings = result["intentional_findings"]
     print(
         "Teacher spec compatibility: PASS "
         f"({result['sheet_count']} sheets, {result['states']} states, "
         f"{len(result['ctl'])} CTL properties, {result['test_cases']} test cases)"
+    )
+    print(
+        "Intentional detections: "
+        f"{', '.join(findings['detected_cwe'])} at {findings['mutex_violation_states']} "
+        f"(CTL false: {', '.join(findings['ctl_false'])})"
     )
     print(f"Result: {RESULT}")
 
