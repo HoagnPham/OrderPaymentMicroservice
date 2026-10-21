@@ -1,6 +1,6 @@
 # Giải thích dự án và kiểm chứng an toàn theo 4 chương
 
-Ngày đối chiếu: **15/10/2026**, múi giờ Asia/Bangkok. Tài liệu giải thích source, model, script và evidence hiện có **ngoài thư mục `ATPM/`**. Các file sinh tự động, ảnh và font được giải thích theo nhóm; các file source nghiệp vụ và kiểm chứng được liệt kê theo tên.
+Ngày đối chiếu: **22/10/2026**, múi giờ Asia/Bangkok. Tài liệu giải thích source, model, script và evidence hiện có **ngoài thư mục `ATPM/`**. Các file sinh tự động, ảnh và font được giải thích theo nhóm; các file source nghiệp vụ và kiểm chứng được liệt kê theo tên.
 
 Đề tài Group 14: **Xây dựng và kiểm chứng an toàn hệ thống xử lý đơn hàng và thanh toán trực tuyến**. Hệ thống thực tế là một host ASP.NET Core, các module User/Product/Cart/Order/Payment dùng chung PostgreSQL. Gateway thanh toán là mô phỏng local; chưa tích hợp nhà cung cấp thu tiền thật.
 
@@ -8,14 +8,14 @@ Các số dưới đây lấy từ **evidence đã lưu**, không phải kết q
 
 | Hạng mục | Kết quả và phạm vi |
 | --- | --- |
-| Unit/regression | 148/148 PASS, 0 fail, 0 skip; snapshot ngày 14/10/2026 |
-| Integration | 35/35 PASS, 0 fail, 0 skip; snapshot ngày 14/10/2026 |
+| Unit/regression | 149/149 PASS, 0 fail, 0 skip; lượt chạy ngày 22/10/2026 |
+| Integration | 35/35 PASS, 0 fail, 0 skip; lượt chạy ngày 22/10/2026 |
 | Recovery model | 15 state, 37 event/transition có metadata, 7 contract, 15 property; 6/6 mutation âm được phát hiện |
 | Excel specification | 10 sheet, 27 yêu cầu chức năng, 50 testcase đặc tả; checker độc lập PASS |
 | C memory demos | 5 module BUGGY/FIXED, 22/22 ca dynamic PASS theo diagnostic kỳ vọng |
 | Payment SMT / inventory SMT | 7/7 và 3/3 ca SAT/UNSAT đúng kỳ vọng |
 | Unit coverage của InputValidator | Line 85,71%; branch 97,22%; helper MoneyAmounts branch 100% |
-| Fuzz coverage của 5 target | Line 91,05% = 112/123; branch 96,66% = 116/120 |
+| Fuzz coverage của 5 target | Line 91,05% = 112/123; branch 97,50% = 117/120 |
 | TLC | Evidence lịch sử: 35 state sinh, 20 state phân biệt, độ sâu graph 9 |
 
 **50 testcase trong Excel không bằng 50 test xUnit**: một testcase đặc tả có thể ứng với nhiều unit/integration test hoặc một nhóm kiểm chứng model.
@@ -694,7 +694,7 @@ Generator random **không đọc rồi mutate 8 JSON seed**. Corpus là campaign
 
 **Bước 4 — Xây oracle.** Input validator trả về thành công thì harness kiểm IDs/bounds/cents/tổng; reject bằng ArgumentException là kết quả hợp lệ cho input sai. Null gây ArgumentNullException cũng thuộc họ ArgumentException. Random state pairs so với bảng chuyển tham chiếu viết riêng và kiểm cả state sau transition hoặc sau reject.
 
-**Bước 5 — Chạy ba campaign.**
+**Bước 5 — Chạy bốn campaign.**
 
 | Test method | Công việc |
 | --- | --- |
@@ -706,7 +706,7 @@ Generator random **không đọc rồi mutate 8 JSON seed**. Corpus là campaign
 
 **Bước 6 — Phân loại failure.** Campaign fail khi có exception bất ngờ, assertion invariant sai, test failure hoặc timeout. InvalidOperationException khi thử **cạnh state bị cấm** được Assert.Throws mong đợi, không là crash bất ngờ. Không có “HTTP 400=crash” vì target hiện được gọi trực tiếp, không qua HTTP.
 
-**Bước 7 — Đo coverage và lưu bằng chứng.** Script nhận 3/3 test PASS, không timeout, branch target≥90% thì kết quả tổng mới PASS. Evidence ghi source hashes/seed/budget/command/time, XML giữ line/branch counts. Snapshot đang lưu: 3/3 PASS, exit=0, line=91,05%, branch=96,66%.
+**Bước 7 — Đo coverage và lưu bằng chứng.** Script nhận 4/4 test PASS, không timeout, branch target≥90% thì kết quả tổng mới PASS. Campaign thứ tư chạy 2.000 chuỗi stateful, tối đa 20 thao tác mỗi chuỗi, rồi kiểm invariant Order–Payment–Inventory sau từng thao tác. Nếu fail, test in seed, sequence, trace và trạng thái aggregate để tái lập. Evidence ghi source hashes/seed/budget/command/time, XML giữ line/branch counts. Không gọi đây là fuzz HTTP, PostgreSQL concurrency hay gateway thật.
 
 **Bước 8 — Regression sau khi phát hiện lỗi.** Quy trình nên dùng khi có failure: lưu request hoặc state pair gây lỗi, thu nhỏ bằng tay tới input tối thiểu, thêm corpus/xUnit case, sửa source, chạy lại test cụ thể rồi fuzz. **Chưa có auto minimizer/shrinker, tự lưu mọi input theo iteration hay tự deduplicate crash** trong harness hiện tại. Muốn tái lập thì cần cùng source/runtime và seed; seed cố định một mình không khóa mọi khác biệt giữa các môi trường.
 
@@ -744,7 +744,7 @@ Hai lượt đo khác nhau:
 | --- | --- | --- | --- |
 | Unit validator | InputValidator 85,71% | InputValidator 97,22% | `coverage_summary.json`, file input-validator.cobertura.xml. |
 | Unit helper | MoneyAmounts 100% | MoneyAmounts 100% | Helper cùng lượt unit validator. |
-| Fuzz | 91,05% (112/123) | 96,66% (116/120) | Tổng 5 target trong application-fuzzing-coverage.cobertura.xml. |
+| Fuzz | 91,05% (112/123) | 97,50% (117/120) | Tổng 5 target trong application-fuzzing-coverage.cobertura.xml. |
 
 Trong **lượt fuzz**, từng class có số riêng: InputValidator line 83,92%/branch 91,66%; MoneyAmounts 100%/100%; OrderStateMachine 100%/100%; PaymentStateMachine 100%/96,87%; PaymentValidator 89,47%/100%. Coverage InputValidator 97,22% là **lượt unit**, không là số riêng của class trong fuzz.
 

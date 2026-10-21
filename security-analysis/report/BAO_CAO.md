@@ -1,6 +1,6 @@
 # Báo cáo kiểm chứng an toàn OrderPaymentMicroservice
 
-Ngày tổng hợp: 15/10/2026. Các thời điểm thực thi cụ thể nằm trong evidence.
+Ngày tổng hợp: 22/10/2026. Các thời điểm thực thi cụ thể nằm trong evidence.
 
 ## 1. Mục tiêu, phương pháp và mô hình đe dọa
 
@@ -30,7 +30,7 @@ chứng cho điều kiện chuyển, thay vì chỉ một happy path.
 | Q6 | Người đọc có thể tái lập và truy vết kết luận không? | Có source/model, command, tool version, outcome, hash và giới hạn từng evidence | Manifest, phụ lục và verifier |
 
 Các tiêu chí này giới hạn kết luận theo phép kiểm. “Đủ sáu nhóm STRIDE” là coverage
-của hoạt động phân tích đe dọa; “148 unit PASS” là outcome của các ca thực thi;
+của hoạt động phân tích đe dọa; “149 unit PASS” là outcome của các ca thực thi;
 “UNSAT” là kết luận trên tập ràng buộc. Ba loại kết quả không thay thế nhau.
 
 ### 1.3. Phạm vi và giả định vận hành
@@ -757,10 +757,10 @@ model solver được giữ tại Phụ lục D, không đưa verdict suy đoán
 
 ## 6. Kiểm thử động và fuzzing
 
-Bộ test ứng dụng mới nhất ghi nhận 148/148 unit test và
+Bộ test ứng dụng mới nhất ghi nhận 149/149 unit test và
 35/35 integration test PASS, không SKIP.
 Ba campaign fuzz cũng nằm trong unit suite; đợt này đo lại coverage campaign.
-Branch coverage 96.66% áp dụng InputValidator,
+Branch coverage 97.5% áp dụng InputValidator,
 PaymentValidator, hai state machine và MoneyAmounts. InputValidator có branch coverage 97.22%,
 không phải coverage toàn ứng dụng.
 
@@ -871,10 +871,10 @@ Không gọi browser test là end-to-end HTTP hoặc kết quả chịu tải pr
 
 | Kịch bản | Phạm vi / outcome | Timing trong lần chạy |
 | --- | --- | --- |
-| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 64.3 ms; restore 157.3 ms; API recovery 1666.5 ms |
-| read | 200 requests; concurrency 8; 200: 200 | 348.95 req/s; successful 348.95/s; p95 48.12 ms |
-| write | 96 requests; concurrency 8; 201: 26, 409: 70 | 67.24 req/s; successful 18.21/s; p95 456.74 ms |
-| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 122.24 req/s; successful 30.56/s; p95 145.24 ms |
+| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 53.1 ms; restore 222.6 ms; API recovery 2327.9 ms |
+| read | 200 requests; concurrency 8; 200: 200 | 249.37 req/s; successful 249.37/s; p95 67.41 ms |
+| write | 96 requests; concurrency 8; 201: 25, 409: 71 | 38.33 req/s; successful 9.98/s; p95 809.96 ms |
+| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 53.30 req/s; successful 13.32/s; p95 344.79 ms |
 | Refund process kill | 2 journal entries giữ hash; charge reference giữ nguyên; stock release một lần | PASS; DB outage live=200, ready/status=503 |
 
 
@@ -953,8 +953,8 @@ Evidence: [charge](../results/postgres_reconnect_charge.results.json),
 
 | Policy | Đơn thành công | HTTP attempts | p95 logical (gồm backoff) | Đơn thành công/s |
 | --- | --- | --- | --- | --- |
-| Gửi một lần | 48/96 (50.0%) | 96 | 779.65 ms | 18.36 |
-| Retry tối đa 4 lần | 95/96 (99.0%) | 142 | 928.26 ms | 27.93 |
+| Gửi một lần | 39/96 (40.6%) | 96 | 588.44 ms | 16.88 |
+| Retry tối đa 4 lần | 94/96 (97.9%) | 143 | 888.79 ms | 25.39 |
 
 
 Cùng 96 logical requests/scenario, 8 users và 4 products, concurrency=8 qua hai OS
@@ -998,7 +998,7 @@ Nguồn: [kịch bản thuyết trình và demo](../KICH_BAN_THUYET_TRINH_VA_DEM
 
 | Phép kiểm | Kết quả | Phạm vi |
 | --- | --- | --- |
-| Unit | 148/148 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
+| Unit | 149/149 PASS | Source hiện tại; regression lifecycle, timeout, precision và conflict |
 | HTTP/PostgreSQL | 35/35 PASS | Database tạm, migration/seed và test host |
 | Recovery | 15/15 thuộc tính; 6 mutation detected | Graph hữu hạn, giả định được khai báo |
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |

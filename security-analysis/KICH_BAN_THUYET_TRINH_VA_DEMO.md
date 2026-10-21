@@ -12,19 +12,19 @@ Tên project là OrderPaymentMicroservice nhưng hiện thực hiện tại là 
 
 | Hạng mục                  | Kết quả mới                                              | Ý nghĩa                                                                                        |
 | --------------------------- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| Toàn bộ unit/regression   | **148/148 PASS, 0 SKIP**                              | Build và các kiểm tra logic hiện có chạy được                                           |
+| Toàn bộ unit/regression   | **149/149 PASS, 0 SKIP**                              | Build và các kiểm tra logic hiện có chạy được                                           |
 | Toàn bộ integration       | **35/35 PASS, 0 SKIP**                                | Có HTTP, PostgreSQL, cạnh tranh, restart/reconnect, browser, backup/restore và load hữu hạn |
 | Workbook checker            | **PASS**                                              | 10 sheet, 27 yêu cầu chức năng, 15 state, 31 cặp cạnh, 7 CTL, 50 testcase đặc tả        |
 | Recovery model              | **15/15 property PASS; 6/6 mutation bị phát hiện** | 15 state, 37 chuyển tiếp có event, 7 contract; P10 có điều kiện progress-only             |
 | Liveness audit              | **PASS phép đối chiếu**                           | Raw `AG AF terminal = false`; progress-only = true                                             |
 | Payment SMT / inventory SMT | **7/7 và 3/3 PASS**                                  | SAT/UNSAT đúng oracle, không phải tất cả phải UNSAT                                       |
 | C static / dynamic          | **Static PASS; dynamic 22/22 PASS**                   | Bản lỗi phải có đúng diagnostic; bản sửa và ca biên đạt                              |
-| Fuzz ứng dụng             | **3/3 campaign test PASS**                            | Seed 20261009; 25.000 vòng/campaign ngẫu nhiên; branch 96,66%, line 91,05% trên 5 target     |
+| Fuzz ứng dụng             | Xem evidence lượt chạy mới                             | Seed 20261009; hai campaign random 25.000 vòng và một campaign stateful 2.000 chuỗi × tối đa 20 bước; coverage chỉ trên 5 target     |
 | Threat model consistency    | **PASS**                                              | 6 tài sản, 4 trust boundary, 9 threat, đủ 6 nhóm STRIDE; vẫn có threat mở                |
 
 Lệnh toàn suite dùng để đánh giá:
 
-**183 = 148 unit + 35 integration.** Chạy file solution `.slnx` sẽ chạy cả hai project test. Nếu chỉ muốn 148 unit test:
+**184 = 149 unit + 35 integration.** Chạy file solution `.slnx` sẽ chạy cả hai project test. Nếu chỉ muốn 149 unit test:
 
 ```bash
 dotnet test OrderPaymentMicroservice.Tests/OrderPaymentMicroservice.Tests.csproj --no-restore --nologo
@@ -434,7 +434,7 @@ python3 security-analysis/run_fuzzing.py
 
 > “Em fuzz năm target: InputValidator, PaymentValidator, OrderStateMachine, PaymentStateMachine và MoneyAmounts. Có corpus ca biên riêng và các campaign sinh dữ liệu với seed cố định để tái lập. Oracle phân biệt input bị từ chối đúng bằng ArgumentException với lỗi ngoài dự kiến hoặc vi phạm invariant.
 >
-> Kết quả mới có ba campaign test đạt, branch coverage 96,66% trên tập target được chọn. Đây là generation-based fuzzing kết hợp oracle và đo coverage; chưa phải engine coverage-guided, symbolic hay concolic fuzzing trên toàn API.”
+> Campaign gồm corpus, validator random, state-pair random và chuỗi stateful Order–Payment–Inventory. Campaign stateful kiểm invariant sau từng thao tác và in seed/trace nếu fail. Đây là generation-based fuzzing kết hợp oracle và đo coverage; chưa phải engine coverage-guided, symbolic hay concolic fuzzing trên toàn API.”
 
 Mở `OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs`, `FuzzCorpus/order_requests.json`, `results/application_fuzzing.results.json`. Không nói 25.000 vòng là 25.000 HTTP request; target ở mức hàm/state machine. Cũng không dùng con số coverage này để đại diện toàn controller/service/UI/database.
 
@@ -472,7 +472,7 @@ Các evidence cần mở: `results/backup_restore.results.json`, `load_probe.res
 
 Lời kết khoảng 45 giây:
 
-> “Kết quả chính của em là ứng dụng chạy được cùng một bộ bằng chứng ở nhiều tầng: đặc tả và mô hình, C sanitizer, SMT, unit/integration, browser và fuzz. Lượt đánh giá mới có 148 unit và 35 integration PASS, không skip. Điểm nhấn là giữ nhất quán Order–Payment–Inventory khi gửi lặp hoặc gián đoạn.
+> “Kết quả chính của em là ứng dụng chạy được cùng một bộ bằng chứng ở nhiều tầng: đặc tả và mô hình, C sanitizer, SMT, unit/integration, browser và fuzz. Lượt đánh giá mới có 149 unit và 35 integration PASS, không skip. Điểm nhấn là giữ nhất quán Order–Payment–Inventory khi gửi lặp hoặc gián đoạn.
 >
 > Giới hạn là gateway chưa thu tiền thật, kiến trúc hiện một host, liveness còn phụ thuộc môi trường và model chưa chứng minh mọi thực thi của source. Em còn cần hoàn chỉnh workbook theo checklist của thầy và xác nhận pipeline trên Windows. Hướng phát triển tiếp là provider/webhook thật, cơ chế dùng chung giữa nhiều instance và kiểm chứng sâu hơn các cửa sổ sự cố.”
 
@@ -483,7 +483,7 @@ Lời kết khoảng 45 giây:
 | Timeout sao không chuyển FAILED và trả kho?      | Timeout chỉ cho biết chưa nhận được kết quả; gateway có thể đã charge. UNKNOWN giữ kho và chờ outcome đáng tin cậy                                        |
 | Idempotency có nghĩa gì?                          | Gửi lại cùng key và cùng nội dung nhận lại kết quả cũ; tái sử dụng key với nội dung không khớp phải bị chặn                                             |
 | 15 state có phải 15 giá trị enum OrderStatus?    | Không. Model kết hợp Order, Payment, Inventory và cả state trừu tượng; có state thiết kế chưa là scheduler runtime                                              |
-| 50 testcase Excel và 183 test có quan hệ gì?     | Một testcase đặc tả có thể ánh xạ nhiều test thực thi hoặc checker model; số lượng không bằng nhau                                                           |
+| 50 testcase Excel và 184 test có quan hệ gì?     | Một testcase đặc tả có thể ánh xạ nhiều test thực thi hoặc checker model; số lượng không bằng nhau                                                           |
 | Vì sao model checker PASS mà AG AF terminal false? | P10 kiểm graph progress-only; audit cố ý xác nhận graph đầy đủ chưa bảo đảm kết thúc vô điều kiện                                                         |
 | Có làm white-box/concolic chưa?                   | Ứng dụng có fuzz sinh dữ liệu và oracle; chưa có engine concolic trên C#. Toolkit ATPM có ví dụ riêng, không tính thành hiện thực của project             |
 | Những CWE trong report là lỗ hổng production?    | Các lỗi C là lỗi cố ý trong mô hình học tập. CWE phân loại loại lỗi; không suy ra C# có lỗi đó hoặc project được cấp mã CVE                         |

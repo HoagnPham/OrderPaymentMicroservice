@@ -6,22 +6,19 @@ namespace OrderPaymentMicroservice.Services.Interfaces;
 public interface IOrderService
 {
     /// <summary>
-    /// Create a new order
-    /// TODO: Fuzzing target - validate all inputs
+    /// Create a new order. Input bounds are checked by InputValidator and fuzz campaigns.
     /// </summary>
     Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request, string? idempotencyKey = null);
 
     /// <summary>
-    /// Get all orders
-    /// TODO: Add pagination in future
+    /// Get all orders. Known limitation: no pagination or filtering yet.
     /// </summary>
     Task<List<OrderResponse>> GetAllOrdersAsync();
 
     Task<List<OrderResponse>> GetOrdersByCustomerIdAsync(int customerId);
 
     /// <summary>
-    /// Get order by ID
-    /// TODO: Security test - check order exists
+    /// Get order by ID; callers enforce ownership before returning the response.
     /// </summary>
     Task<OrderResponse?> GetOrderByIdAsync(int orderId);
 

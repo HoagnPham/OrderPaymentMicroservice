@@ -2,6 +2,27 @@
   "passed": true,
   "seed": 20261009,
   "iterations_per_random_campaign": 25000,
+  "stateful_campaign": {
+    "sequences": 2000,
+    "steps_per_sequence": 20,
+    "operations": [
+      "validate",
+      "persist",
+      "start_payment",
+      "charge_succeeded",
+      "charge_unknown",
+      "retry_payment",
+      "charge_declined",
+      "cancel",
+      "confirm",
+      "complete",
+      "start_refund",
+      "refund_succeeded",
+      "illegal_transition"
+    ],
+    "oracle": "Checks Order + Payment + Inventory aggregate invariants after every operation; a failure reports seed, sequence, operation trace and aggregate state.",
+    "scope": "In-process state-machine aggregate; it does not fuzz HTTP, PostgreSQL concurrency or a real gateway."
+  },
   "corpus": "OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json",
   "targets": [
     "InputValidator",
@@ -10,7 +31,7 @@
     "PaymentStateMachine",
     "MoneyAmounts"
   ],
-  "run_at_utc": "2026-10-15T09:46:52.259979+00:00",
+  "run_at_utc": "2026-10-21T02:28:25.861652+00:00",
   "source_sha256": {
     "OrderPaymentMicroservice/Security/InputValidator.cs": "373a995295dfd0e76d26545b9f6f19c3381d21df7d3df3750edae300f288796c",
     "OrderPaymentMicroservice/Security/PaymentValidator.cs": "63bfa1321a2ad0f8ae47bb60913448cac3e498ea4d8b752481c5b976ae758abb",
@@ -18,20 +39,20 @@
     "OrderPaymentMicroservice/Security/PaymentStateMachine.cs": "003427a568632c3d89141f83d7ef9f0f6573185f000469184fd4adc5425f9ea2",
     "OrderPaymentMicroservice/Models/Payment.cs": "03134aa5486ab4436e6a33289fe0f6a2414da6602b16557e087a4caaaaa2203d",
     "OrderPaymentMicroservice/Security/MoneyAmountAttribute.cs": "9f9d3cb4dd396b2d0db750d596ce5bc5df308132a8cfea5f16eb3ffb64fa224d",
-    "OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs": "a7a273b6b889a5eb5fda70c0e331d4b0fd0fd32b5a1a2890cce8fb499b9606e6"
+    "OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs": "7da15eff5e2816e2750df8514da82f1cfb37d053ae8a78c63709f8bb67cbc773"
   },
   "crash_policy": "ArgumentException is a controlled rejection; timeout, any other exception, invariant mismatch or test failure is a crash.",
   "timeout_seconds": 120,
   "timed_out": false,
-  "duration_seconds": 2.928,
+  "duration_seconds": 3.761,
   "tests": {
-    "passed": 3,
+    "passed": 4,
     "failed": 0,
-    "total": 3
+    "total": 4
   },
   "coverage": {
     "line_percent": 91.05,
-    "branch_percent": 96.66,
+    "branch_percent": 97.5,
     "file": "security-analysis/results/application-fuzzing-coverage.cobertura.xml"
   },
   "branch_coverage_threshold_percent": 90.0,

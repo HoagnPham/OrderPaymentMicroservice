@@ -33,8 +33,7 @@ public class PaymentsController : ControllerBase
     /// POST /api/payments
     /// </summary>
     /// <remarks>
-    /// TODO: Fuzzing target - test with various payment amounts
-    /// TODO: SMT verification - amount constraints
+    /// Amount bounds are covered by SecurityFuzzingTests and PaymentVerification.z3.
     /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -91,7 +90,7 @@ public class PaymentsController : ControllerBase
     /// GET /api/payments/{id}
     /// </summary>
     /// <remarks>
-    /// TODO: Security test - check payment access control
+    /// Access control: ownership is checked against the payment's order.
     /// </remarks>
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]

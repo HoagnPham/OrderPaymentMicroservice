@@ -5,7 +5,7 @@ thanh toán trực tuyến**. Trọng tâm là idempotency, crash recovery và c
 Order–Payment–Inventory, với bằng chứng từ model, SMT, regression và PostgreSQL.
 Các module hiện chạy trong một host ASP.NET Core và dùng chung PostgreSQL.
 
-Mốc nghiệm thu 14/10/2026: **148 unit + 35 integration PASS, không SKIP**.
+Lượt kiểm chứng 22/10/2026: **149 unit + 35 integration PASS, không SKIP**.
 Charge/refund khi PostgreSQL stop/start được đối soát với cùng API process;
 `ready` chuyển 200 → 503 → 200, không gọi lại charge/refund và refund trả kho một lần.
 Gateway là DurableFake local, chưa phải provider thu tiền thật hoặc production proof.

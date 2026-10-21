@@ -1,9 +1,8 @@
 namespace OrderPaymentMicroservice.Models;
 
 /// <summary>
-/// Order item entity - represents a product line in an order
-/// TODO: SMT verification - SubTotal = Quantity * UnitPrice
-/// TODO: Fuzzing target - Quantity and Prices must be positive
+/// Order item entity - one product line. SubTotal = Quantity * UnitPrice;
+/// bounds are enforced by InputValidator and modelled in PaymentVerification.z3.
 /// </summary>
 public class OrderItem
 {
@@ -20,22 +19,19 @@ public class OrderItem
     public int ProductId { get; set; }
 
     /// <summary>
-    /// Product quantity
-    /// TODO: Fuzzing input - must be > 0
-    /// TODO: Security test - validate quantity <= reasonable limit
+    /// Product quantity; 1..10000 enforced by InputValidator and
+    /// CK_OrderItems_Quantity_Positive.
     /// </summary>
     public int Quantity { get; set; }
 
     /// <summary>
-    /// Unit price (in cents or base currency unit)
-    /// TODO: Fuzzing input - must be >= 0
-    /// TODO: Security test - detect price manipulation
+    /// Unit price. The client value is not trusted: OrderService reprices from the
+    /// server catalog before persisting.
     /// </summary>
     public decimal UnitPrice { get; set; }
 
     /// <summary>
-    /// Subtotal = Quantity * UnitPrice
-    /// TODO: SMT verification - SubTotal >= 0
+    /// Subtotal = Quantity * UnitPrice; overflow is checked with checked() in InputValidator.
     /// </summary>
     public decimal SubTotal { get; set; }
 

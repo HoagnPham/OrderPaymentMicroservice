@@ -4,11 +4,9 @@ using OrderPaymentMicroservice.DTOs.Orders;
 namespace OrderPaymentMicroservice.Security;
 
 /// <summary>
-/// Input validation for orders
-/// This is the foundation for security analysis and fuzzing
-/// TODO: Enhance with more sophisticated validation rules
-/// TODO: Integrate with SMT solver for constraint verification
-/// TODO: Add Fuzzing targets here
+/// Order input validation: bounds, integer cents and total/item consistency.
+/// SMT counterpart: Security/PaymentVerification.z3 (TEST2/TEST6/TEST7) and
+/// Security/InventoryVerification.z3; fuzz counterpart: SecurityFuzzingTests.
 /// </summary>
 public class InputValidator
 {
@@ -23,9 +21,8 @@ public class InputValidator
     private const decimal MAX_PRICE = 999999.99m;
 
     /// <summary>
-    /// Validate create order request
-    /// TODO: Fuzzing target - test boundary conditions and overflow
-    /// TODO: SMT verification - amount consistency
+    /// Validate create order request. Boundary and overflow cases are covered by
+    /// SecurityFuzzingTests and by SMT TEST2/TEST6/TEST7.
     /// </summary>
     public void ValidateCreateOrderRequest(CreateOrderRequest request)
     {
@@ -63,7 +60,7 @@ public class InputValidator
             calculatedTotal += item.Quantity * item.UnitPrice;
         }
 
-        // TODO: SMT verification - TotalAmount must match sum of items
+        // TotalAmount must match the sum of items; modelled in PaymentVerification.z3 TEST2.
         // Monetary values are stored with two decimal places, so a difference of
         // one cent is the largest rounding difference accepted at this boundary.
         const decimal tolerance = 0.01m;
@@ -76,8 +73,7 @@ public class InputValidator
     }
 
     /// <summary>
-    /// Validate order item
-    /// TODO: Fuzzing target - test invalid quantities and prices
+    /// Validate one order item: quantity, unit price and overflow.
     /// </summary>
     private void ValidateOrderItem(CreateOrderItemRequest item)
     {

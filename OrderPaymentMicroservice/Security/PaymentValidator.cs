@@ -3,10 +3,9 @@ using OrderPaymentMicroservice.DTOs.Payments;
 namespace OrderPaymentMicroservice.Security;
 
 /// <summary>
-/// Payment validation
-/// This is the foundation for payment security analysis
-/// TODO: Integrate with SMT solver for amount verification
-/// TODO: Add fuzzing targets for payment amount validation
+/// Payment validation: amount bounds, integer cents and idempotency key shape.
+/// SMT counterpart: Security/PaymentVerification.z3, checked by verify_payment_smt.py.
+/// Fuzz counterpart: SecurityFuzzingTests payment-amount campaign.
 /// </summary>
 public class PaymentValidator
 {
@@ -15,9 +14,9 @@ public class PaymentValidator
     private const decimal MAX_PAYMENT_AMOUNT = 999999.99m;
 
     /// <summary>
-    /// Validate create payment request
-    /// TODO: Fuzzing target - test various payment amounts
-    /// TODO: SMT verification - amount must be positive and reasonable
+    /// Validate create payment request.
+    /// Bounds are mirrored by PaymentVerification.z3 TEST4/TEST5 and by the
+    /// payment-amount fuzz campaign.
     /// </summary>
     public void ValidateCreatePaymentRequest(CreatePaymentRequest request)
     {
@@ -46,7 +45,7 @@ public class PaymentValidator
         if (request.IdempotencyKey.Length > 128)
             throw new ArgumentException("IdempotencyKey cannot exceed 128 characters", nameof(request.IdempotencyKey));
 
-        // TODO: SMT verification - verify amount matches order total or is within acceptable range
-        // This would require knowing the order amount, which should be checked in the service layer
+        // The validator has no order context, so amount-versus-order-total is
+        // enforced in PaymentService; PaymentVerification.z3 TEST1/TEST3 model both sides.
     }
 }

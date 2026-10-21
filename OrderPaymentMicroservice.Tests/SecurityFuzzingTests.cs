@@ -4,6 +4,7 @@ using OrderPaymentMicroservice.DTOs.Payments;
 using OrderPaymentMicroservice.Models;
 using OrderPaymentMicroservice.Security;
 using Xunit;
+using Xunit.Sdk;
 
 namespace OrderPaymentMicroservice.Tests;
 
@@ -16,6 +17,8 @@ public sealed class SecurityFuzzingTests
 {
     private const int Seed = 20261009;
     private const int Iterations = 25_000;
+    private const int StatefulSequences = 2_000;
+    private const int StatefulStepsPerSequence = 20;
 
     [Fact]
     public void SeedCorpusMatchesExpectedValidatorOutcome()
@@ -71,6 +74,10 @@ public sealed class SecurityFuzzingTests
             {
                 // Invalid input is an expected, controlled outcome.
             }
+            catch (Exception ex)
+            {
+                throw FuzzFailure("validator", iteration, new { orderRequest }, ex);
+            }
 
             var paymentRequest = new CreatePaymentRequest
             {
@@ -90,6 +97,10 @@ public sealed class SecurityFuzzingTests
             catch (ArgumentException)
             {
                 // Invalid input is an expected, controlled outcome.
+            }
+            catch (Exception ex)
+            {
+                throw FuzzFailure("payment-validator", iteration, new { paymentRequest }, ex);
             }
         }
     }
@@ -131,42 +142,209 @@ public sealed class SecurityFuzzingTests
         {
             var orderFrom = orderStates[random.Next(orderStates.Length)];
             var orderTo = orderStates[random.Next(orderStates.Length)];
-            Assert.Equal(orderTransitions.Contains((orderFrom, orderTo)), OrderStateMachine.CanTransition(orderFrom, orderTo));
-            Assert.Equal(
-                orderFrom is OrderStatus.COMPLETED or OrderStatus.CANCELLED or OrderStatus.FAILED or OrderStatus.REFUNDED,
-                OrderStateMachine.IsTerminal(orderFrom));
-
-            var order = new Order { Status = orderFrom };
-            if (orderTransitions.Contains((orderFrom, orderTo)))
-            {
-                OrderStateMachine.Transition(order, orderTo);
-                Assert.Equal(orderTo, order.Status);
-            }
-            else
-            {
-                Assert.Throws<InvalidOperationException>(() => OrderStateMachine.Transition(order, orderTo));
-                Assert.Equal(orderFrom, order.Status);
-            }
-
             var paymentFrom = paymentStates[random.Next(paymentStates.Length)];
             var paymentTo = paymentStates[random.Next(paymentStates.Length)];
-            Assert.Equal(paymentTransitions.Contains((paymentFrom, paymentTo)), PaymentStateMachine.CanTransition(paymentFrom, paymentTo));
-            Assert.Equal(
-                paymentFrom is PaymentStatus.FAILED or PaymentStatus.REFUNDED,
-                PaymentStateMachine.IsTerminal(paymentFrom));
+            try
+            {
+                Assert.Equal(orderTransitions.Contains((orderFrom, orderTo)), OrderStateMachine.CanTransition(orderFrom, orderTo));
+                Assert.Equal(
+                    orderFrom is OrderStatus.COMPLETED or OrderStatus.CANCELLED or OrderStatus.FAILED or OrderStatus.REFUNDED,
+                    OrderStateMachine.IsTerminal(orderFrom));
 
-            var payment = new Payment { Status = paymentFrom };
-            if (paymentTransitions.Contains((paymentFrom, paymentTo)))
-            {
-                PaymentStateMachine.Transition(payment, paymentTo);
-                Assert.Equal(paymentTo, payment.Status);
+                var order = new Order { Status = orderFrom };
+                if (orderTransitions.Contains((orderFrom, orderTo)))
+                {
+                    OrderStateMachine.Transition(order, orderTo);
+                    Assert.Equal(orderTo, order.Status);
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => OrderStateMachine.Transition(order, orderTo));
+                    Assert.Equal(orderFrom, order.Status);
+                }
+
+                Assert.Equal(paymentTransitions.Contains((paymentFrom, paymentTo)), PaymentStateMachine.CanTransition(paymentFrom, paymentTo));
+                Assert.Equal(
+                    paymentFrom is PaymentStatus.FAILED or PaymentStatus.REFUNDED,
+                    PaymentStateMachine.IsTerminal(paymentFrom));
+
+                var payment = new Payment { Status = paymentFrom };
+                if (paymentTransitions.Contains((paymentFrom, paymentTo)))
+                {
+                    PaymentStateMachine.Transition(payment, paymentTo);
+                    Assert.Equal(paymentTo, payment.Status);
+                }
+                else
+                {
+                    Assert.Throws<InvalidOperationException>(() => PaymentStateMachine.Transition(payment, paymentTo));
+                    Assert.Equal(paymentFrom, payment.Status);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Assert.Throws<InvalidOperationException>(() => PaymentStateMachine.Transition(payment, paymentTo));
-                Assert.Equal(paymentFrom, payment.Status);
+                throw FuzzFailure("state-machine-pairs", iteration,
+                    new { orderFrom, orderTo, paymentFrom, paymentTo }, ex);
             }
         }
+    }
+
+    [Fact]
+    public void SeededStatefulOrderPaymentSequencesRespectAggregateInvariants()
+    {
+        var random = new Random(Seed);
+        var observedAggregateStates = new HashSet<string>(StringComparer.Ordinal);
+
+        for (var sequence = 0; sequence < StatefulSequences; sequence++)
+        {
+            var aggregate = new FuzzAggregate();
+            var trace = new List<string>();
+            try
+            {
+                for (var step = 0; step < StatefulStepsPerSequence; step++)
+                {
+                    var operation = (FuzzOperation)random.Next(Enum.GetValues<FuzzOperation>().Length);
+                    Apply(operation, aggregate, trace);
+                    AssertAggregateInvariant(aggregate);
+                    observedAggregateStates.Add(aggregate.Describe());
+                }
+            }
+            catch (Exception ex)
+            {
+                throw FuzzFailure("stateful-order-payment", sequence,
+                    new { steps_per_sequence = StatefulStepsPerSequence, trace, state = aggregate.Describe() }, ex);
+            }
+        }
+
+        // The exact count is not a coverage metric.  It is a regression guard that
+        // ensures the deterministic campaign keeps exploring several aggregate states.
+        Assert.True(observedAggregateStates.Count >= 10,
+            $"Expected at least 10 aggregate states; observed {observedAggregateStates.Count}: {string.Join(", ", observedAggregateStates.Order())}");
+    }
+
+    private static void Apply(FuzzOperation operation, FuzzAggregate aggregate, List<string> trace)
+    {
+        trace.Add(operation.ToString());
+        var order = aggregate.Order;
+        var payment = aggregate.Payment;
+        switch (operation)
+        {
+            case FuzzOperation.Validate when order.Status == OrderStatus.CREATED:
+                OrderStateMachine.Transition(order, OrderStatus.VALIDATED);
+                break;
+            case FuzzOperation.Persist when order.Status == OrderStatus.VALIDATED:
+                OrderStateMachine.Transition(order, OrderStatus.PAYMENT_PENDING);
+                break;
+            case FuzzOperation.StartPayment when order.Status == OrderStatus.PAYMENT_PENDING && payment == null:
+            {
+                payment = new Payment { Status = PaymentStatus.PENDING, Amount = 10m, IdempotencyKey = "fuzz-key" };
+                PaymentStateMachine.Transition(payment, PaymentStatus.PROCESSING);
+                aggregate.Payment = payment;
+                break;
+            }
+            case FuzzOperation.ChargeSucceeded when payment?.Status == PaymentStatus.PROCESSING:
+            {
+                PaymentStateMachine.Transition(payment, PaymentStatus.SUCCESS);
+                OrderStateMachine.Transition(order, OrderStatus.PAID);
+                break;
+            }
+            case FuzzOperation.ChargeUnknown when payment?.Status == PaymentStatus.PROCESSING:
+                PaymentStateMachine.Transition(payment, PaymentStatus.UNKNOWN);
+                break;
+            case FuzzOperation.RetryPayment when payment?.Status == PaymentStatus.UNKNOWN:
+                PaymentStateMachine.Transition(payment, PaymentStatus.PROCESSING);
+                break;
+            case FuzzOperation.ChargeDeclined when payment?.Status is PaymentStatus.PROCESSING or PaymentStatus.UNKNOWN:
+                if (payment.Status == PaymentStatus.UNKNOWN)
+                    PaymentStateMachine.Transition(payment, PaymentStatus.PROCESSING);
+                PaymentStateMachine.Transition(payment, PaymentStatus.FAILED);
+                OrderStateMachine.Transition(order, OrderStatus.FAILED);
+                order.InventoryStatus = InventoryReservationStatus.RELEASED;
+                break;
+            case FuzzOperation.Cancel when payment == null && OrderStateMachine.CanTransition(order.Status, OrderStatus.CANCELLED):
+                OrderStateMachine.Transition(order, OrderStatus.CANCELLED);
+                order.InventoryStatus = InventoryReservationStatus.RELEASED;
+                break;
+            case FuzzOperation.Confirm when order.Status == OrderStatus.PAID && payment?.Status == PaymentStatus.SUCCESS:
+                OrderStateMachine.Transition(order, OrderStatus.CONFIRMED);
+                break;
+            case FuzzOperation.Complete when order.Status == OrderStatus.CONFIRMED && payment?.Status == PaymentStatus.SUCCESS:
+                OrderStateMachine.Transition(order, OrderStatus.COMPLETED);
+                order.InventoryStatus = InventoryReservationStatus.CONSUMED;
+                break;
+            case FuzzOperation.StartRefund when payment?.Status == PaymentStatus.SUCCESS &&
+                                               OrderStateMachine.CanTransition(order.Status, OrderStatus.REFUND_PENDING):
+                PaymentStateMachine.Transition(payment, PaymentStatus.REFUND_PENDING);
+                OrderStateMachine.Transition(order, OrderStatus.REFUND_PENDING);
+                break;
+            case FuzzOperation.RefundSucceeded when payment?.Status == PaymentStatus.REFUND_PENDING &&
+                                                   order.Status == OrderStatus.REFUND_PENDING:
+                PaymentStateMachine.Transition(payment, PaymentStatus.REFUNDED);
+                OrderStateMachine.Transition(order, OrderStatus.REFUNDED);
+                order.InventoryStatus = InventoryReservationStatus.RELEASED;
+                break;
+            case FuzzOperation.IllegalTransition:
+                AssertIllegalTransitionPreservesState(order, payment);
+                break;
+        }
+    }
+
+    private static void AssertIllegalTransitionPreservesState(Order order, Payment? payment)
+    {
+        var originalOrder = order.Status;
+        Assert.Throws<InvalidOperationException>(() => OrderStateMachine.Transition(order, OrderStatus.CREATED));
+        Assert.Equal(originalOrder, order.Status);
+        if (payment == null) return;
+        var originalPayment = payment.Status;
+        Assert.Throws<InvalidOperationException>(() => PaymentStateMachine.Transition(payment, PaymentStatus.PENDING));
+        Assert.Equal(originalPayment, payment.Status);
+    }
+
+    private static void AssertAggregateInvariant(FuzzAggregate aggregate)
+    {
+        var order = aggregate.Order;
+        var payment = aggregate.Payment;
+        if (order.Status is OrderStatus.PAID or OrderStatus.CONFIRMED or OrderStatus.COMPLETED)
+            Assert.Equal(PaymentStatus.SUCCESS, payment?.Status);
+        if (order.Status == OrderStatus.CANCELLED)
+            Assert.False(payment?.Status is PaymentStatus.PROCESSING or PaymentStatus.UNKNOWN or PaymentStatus.SUCCESS or PaymentStatus.REFUND_PENDING);
+        if (order.Status == OrderStatus.FAILED)
+            Assert.False(payment?.Status is PaymentStatus.SUCCESS or PaymentStatus.REFUND_PENDING or PaymentStatus.REFUNDED);
+        if (payment?.Status == PaymentStatus.UNKNOWN)
+        {
+            Assert.Equal(OrderStatus.PAYMENT_PENDING, order.Status);
+            Assert.Equal(InventoryReservationStatus.RESERVED, order.InventoryStatus);
+        }
+        if (payment?.Status == PaymentStatus.REFUND_PENDING)
+            Assert.Equal(OrderStatus.REFUND_PENDING, order.Status);
+        if (payment?.Status == PaymentStatus.REFUNDED)
+        {
+            Assert.Equal(OrderStatus.REFUNDED, order.Status);
+            Assert.Equal(InventoryReservationStatus.RELEASED, order.InventoryStatus);
+        }
+        if (order.Status == OrderStatus.COMPLETED)
+            Assert.Equal(InventoryReservationStatus.CONSUMED, order.InventoryStatus);
+    }
+
+    private static XunitException FuzzFailure(string campaign, int iteration, object input, Exception ex) =>
+        new($"FUZZ FAILURE campaign={campaign}; seed={Seed}; iteration={iteration}; input={JsonSerializer.Serialize(input)}{Environment.NewLine}{ex}");
+
+    private sealed class FuzzAggregate
+    {
+        public Order Order { get; } = new()
+        {
+            Status = OrderStatus.CREATED,
+            InventoryStatus = InventoryReservationStatus.RESERVED
+        };
+
+        public Payment? Payment { get; set; }
+
+        public string Describe() => $"order={Order.Status};payment={Payment?.Status.ToString() ?? "NONE"};inventory={Order.InventoryStatus}";
+    }
+
+    private enum FuzzOperation
+    {
+        Validate, Persist, StartPayment, ChargeSucceeded, ChargeUnknown, RetryPayment,
+        ChargeDeclined, Cancel, Confirm, Complete, StartRefund, RefundSucceeded, IllegalTransition
     }
 
     private static CreateOrderRequest NextOrderRequest(Random random)

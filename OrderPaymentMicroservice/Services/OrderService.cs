@@ -24,8 +24,8 @@ public class OrderService : IOrderService
     }
 
     /// <summary>
-    /// Create a new order
-    /// TODO: Fuzzing target - test with invalid inputs
+    /// Create a new order. Invalid-input cases are covered by
+    /// RequestBoundaryRegressionTests and SecurityFuzzingTests.
     /// </summary>
     public async Task<OrderResponse> CreateOrderAsync(CreateOrderRequest request, string? idempotencyKey = null)
     {
@@ -141,8 +141,7 @@ public class OrderService : IOrderService
     }
 
     /// <summary>
-    /// Get all orders
-    /// TODO: Add pagination, filtering in future
+    /// Get all orders. Known limitation: no pagination or filtering yet.
     /// </summary>
     public async Task<List<OrderResponse>> GetAllOrdersAsync()
     {
@@ -164,8 +163,8 @@ public class OrderService : IOrderService
     }
 
     /// <summary>
-    /// Get order by ID
-    /// TODO: Security test - verify order access
+    /// Get order by ID. Ownership is enforced by the controller via
+    /// User.CanAccessUser; this method only loads the aggregate.
     /// </summary>
     public async Task<OrderResponse?> GetOrderByIdAsync(int orderId)
     {

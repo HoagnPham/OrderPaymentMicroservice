@@ -15,14 +15,14 @@ public class Order
     public int UserId { get; set; }
 
     /// <summary>
-    /// Customer ID (from shop/frontend system)
-    /// TODO: Security test - validate customer exists
+    /// Customer ID; OrdersController overwrites it with the authenticated user id,
+    /// so ownership does not depend on client-supplied input.
     /// </summary>
     public int CustomerId { get; set; }
 
     /// <summary>
-    /// Total order amount (in cents or base currency unit)
-    /// TODO: SMT verification - TotalAmount > 0
+    /// Total order amount; > 0 enforced by InputValidator and modelled by
+    /// PaymentVerification.z3 TEST1/TEST2.
     /// </summary>
     public decimal TotalAmount { get; set; }
 

@@ -1,23 +1,21 @@
 namespace OrderPaymentMicroservice.Models;
 
 /// <summary>
-/// User entity - đại diện cho khách hàng
-/// TODO: Security - add password hashing
-/// TODO: Authentication - integrate with JWT
+/// User entity - đại diện cho khách hàng.
+/// Password hashing dùng ASP.NET Core PasswordHasher trong UserService;
+/// JWT được phát hành trong UserService.GenerateJwtToken.
 /// </summary>
 public class User
 {
     public int Id { get; set; }
 
     /// <summary>
-    /// Email đăng nhập
-    /// TODO: Validate email format
+    /// Email đăng nhập; định dạng do [EmailAddress] trên UserRequest kiểm tra.
     /// </summary>
     public string Email { get; set; } = string.Empty;
 
     /// <summary>
-    /// Mật khẩu (hashed)
-    /// TODO: Use bcrypt/argon2 hashing
+    /// Mật khẩu đã hash bằng ASP.NET Core PasswordHasher (PBKDF2, có version).
     /// </summary>
     public string PasswordHash { get; set; } = string.Empty;
 

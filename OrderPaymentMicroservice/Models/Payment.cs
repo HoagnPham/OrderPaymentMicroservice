@@ -11,8 +11,8 @@ public class Payment
     public int OrderId { get; set; }
 
     /// <summary>
-    /// Payment amount (in cents or base currency unit)
-    /// TODO: SMT verification - Amount > 0
+    /// Payment amount; > 0 and equal to the order total, enforced by
+    /// PaymentValidator/PaymentService and modelled in PaymentVerification.z3.
     /// </summary>
     public decimal Amount { get; set; }
 

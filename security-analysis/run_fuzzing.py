@@ -18,6 +18,7 @@ PROJECT = ROOT / "OrderPaymentMicroservice.Tests" / "OrderPaymentMicroservice.Te
 COVERAGE_PREFIX = RESULTS / "application-fuzzing-coverage"
 COVERAGE_FILE = RESULTS / "application-fuzzing-coverage.cobertura.xml"
 RESULT_FILE = RESULTS / "application_fuzzing.results.json"
+EXPECTED_TESTS = 4
 
 
 def main() -> None:
@@ -71,7 +72,7 @@ def main() -> None:
     passed_campaign = (
         exit_code == 0
         and not timed_out
-        and passed == 3
+        and passed == EXPECTED_TESTS
         and failed == 0
         and coverage is not None
         and coverage["branch_percent"] >= coverage_threshold
@@ -80,6 +81,18 @@ def main() -> None:
         "passed": passed_campaign,
         "seed": 20261009,
         "iterations_per_random_campaign": 25000,
+        "stateful_campaign": {
+            "sequences": 2000,
+            "steps_per_sequence": 20,
+            "operations": [
+                "validate", "persist", "start_payment", "charge_succeeded",
+                "charge_unknown", "retry_payment", "charge_declined", "cancel",
+                "confirm", "complete", "start_refund", "refund_succeeded",
+                "illegal_transition",
+            ],
+            "oracle": "Checks Order + Payment + Inventory aggregate invariants after every operation; a failure reports seed, sequence, operation trace and aggregate state.",
+            "scope": "In-process state-machine aggregate; it does not fuzz HTTP, PostgreSQL concurrency or a real gateway.",
+        },
         "corpus": "OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json",
         "targets": ["InputValidator", "PaymentValidator", "OrderStateMachine", "PaymentStateMachine", "MoneyAmounts"],
         "run_at_utc": datetime.now(timezone.utc).isoformat(),

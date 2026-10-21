@@ -12,8 +12,7 @@ public interface IPaymentService
     Task<PaymentResponse> CreatePaymentAsync(CreatePaymentRequest request);
 
     /// <summary>
-    /// Get payment by ID
-    /// TODO: Security test - check payment exists and access control
+    /// Get payment by ID; callers check existence and ownership against its order.
     /// </summary>
     Task<PaymentResponse?> GetPaymentByIdAsync(int paymentId);
 

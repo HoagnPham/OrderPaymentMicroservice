@@ -13,8 +13,7 @@ public class ShoppingCart
     public int UserId { get; set; }
 
     /// <summary>
-    /// Tổng tiền trong giỏ
-    /// TODO: SMT verification - TotalPrice = sum of items subtotal
+    /// Tổng tiền trong giỏ; CartService giữ nhất quán khi add/update/remove.
     /// </summary>
     public decimal TotalPrice { get; set; }
 
@@ -57,8 +56,7 @@ public class CartItem
     public int ProductId { get; set; }
 
     /// <summary>
-    /// Số lượng sản phẩm trong giỏ
-    /// TODO: Fuzzing - validate quantity > 0
+    /// Số lượng sản phẩm trong giỏ; > 0 do CartService và CK_CartItems_Quantity_Positive.
     /// </summary>
     public int Quantity { get; set; }
 

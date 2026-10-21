@@ -2,7 +2,7 @@ namespace OrderPaymentMicroservice.DTOs.Orders;
 
 /// <summary>
 /// Order item request in CreateOrderRequest
-/// TODO: Fuzzing input - validate quantity and prices
+/// Quantity and price bounds are validated by InputValidator and covered by fuzzing.
 /// </summary>
 public class CreateOrderItemRequest
 {

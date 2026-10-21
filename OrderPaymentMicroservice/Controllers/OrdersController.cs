@@ -29,7 +29,7 @@ public class OrdersController : ControllerBase
     /// POST /api/orders
     /// </summary>
     /// <remarks>
-    /// TODO: Fuzzing target - test with invalid inputs
+    /// Invalid-input cases are covered by RequestBoundaryRegressionTests and SecurityFuzzingTests.
     /// </remarks>
     [HttpPost]
     [ProducesResponseType(StatusCodes.Status201Created)]
@@ -85,7 +85,7 @@ public class OrdersController : ControllerBase
     /// GET /api/orders
     /// </summary>
     /// <remarks>
-    /// TODO: Add pagination in future
+    /// Known limitation: returns the full order list; pagination is future work.
     /// </remarks>
     [HttpGet]
     [Authorize(Roles = "Admin")]
@@ -122,7 +122,7 @@ public class OrdersController : ControllerBase
     /// GET /api/orders/{id}
     /// </summary>
     /// <remarks>
-    /// TODO: Security test - verify order access control
+    /// Access control: User.CanAccessUser is enforced below and covered by security tests.
     /// </remarks>
     [HttpGet("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]

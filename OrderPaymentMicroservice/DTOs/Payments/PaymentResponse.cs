@@ -2,7 +2,7 @@ namespace OrderPaymentMicroservice.DTOs.Payments;
 
 /// <summary>
 /// Payment response DTO
-/// TODO: SMT verification - Payment.Status must influence Order.Status correctly
+/// Coupling payment/order status is modelled in order_payment_recovery_model.json and OrderPayment.tla.
 /// </summary>
 public class PaymentResponse
 {

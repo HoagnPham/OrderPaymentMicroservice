@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "packaged_at_utc": "2026-10-14T17:07:03.160046+00:00",
-  "git_base_commit": "8e46ba1697a9248711aac6d322f2c147c7a4b6b0",
+  "packaged_at_utc": "2026-10-21T17:50:17.896476+00:00",
+  "git_base_commit": "6eb2983912eef1c0131ee0f83072f772ff44f72b",
   "working_tree_dirty": true,
   "dotnet_version": "10.0.112",
   "fresh_checks": [
@@ -59,13 +59,13 @@
     },
     {
       "path": "OrderPaymentMicroservice/Controllers/OrdersController.cs",
-      "sha256": "1ca50a5295304b6784719d8e8b316d85217e9f724a548118c7fcaa74b1da120a",
-      "bytes": 8534
+      "sha256": "ef17b122f0abd8381d27f488d514ce23f23042cc1880bea06fdc64d90dd94e2e",
+      "bytes": 8655
     },
     {
       "path": "OrderPaymentMicroservice/Controllers/PaymentsController.cs",
-      "sha256": "78c1a41900a3ff7fa827a6c2532acde74225d91bc3d6f2cd095549d51217b336",
-      "bytes": 8007
+      "sha256": "a4bc7f2d665074efe5e2c0fe61f91fad65d472c527c707b7d9ce94741ab6cf28",
+      "bytes": 7991
     },
     {
       "path": "OrderPaymentMicroservice/Controllers/ProductsController.cs",
@@ -84,13 +84,13 @@
     },
     {
       "path": "OrderPaymentMicroservice/DTOs/Orders/CreateOrderItemRequest.cs",
-      "sha256": "9320f8accf2096e76daa3c42850d9efc3e158120d49a2c022dc957da07468324",
-      "bytes": 338
+      "sha256": "cc1aff584d33245a1fffbc55eb4567fa14e7618880c12b889774752c7da2fde2",
+      "bytes": 369
     },
     {
       "path": "OrderPaymentMicroservice/DTOs/Orders/CreateOrderRequest.cs",
-      "sha256": "56bfcc7160329c2cda28b81742cdf0a31ba7ea1d1cc104289b8ae866e328a235",
-      "bytes": 447
+      "sha256": "e43cdc62635d0126d6078d3474eabc1235ee74975873194a720985810c829817",
+      "bytes": 444
     },
     {
       "path": "OrderPaymentMicroservice/DTOs/Orders/OrderItemResponse.cs",
@@ -104,13 +104,13 @@
     },
     {
       "path": "OrderPaymentMicroservice/DTOs/Payments/CreatePaymentRequest.cs",
-      "sha256": "ae3b4615ea2e2ff60a8427750ce865f2b1a00994f246ed84c645f6804178a1f2",
-      "bytes": 331
+      "sha256": "ec8c5a4b89136614a57440344733206629faaecdfddaf3732a67daa97b3a2729",
+      "bytes": 389
     },
     {
       "path": "OrderPaymentMicroservice/DTOs/Payments/PaymentResponse.cs",
-      "sha256": "8c279f50d2abf138a5b46f91f9e27a6d97581370902ebce4e81ec246f92edad2",
-      "bytes": 713
+      "sha256": "61c00d28a1d72bac3e073301fbec7d6c587ed19764c86eaf367279ad5c1db514",
+      "bytes": 736
     },
     {
       "path": "OrderPaymentMicroservice/DTOs/Products/ProductRequest.cs",
@@ -259,13 +259,13 @@
     },
     {
       "path": "OrderPaymentMicroservice/Models/Order.cs",
-      "sha256": "29b12b8d765d9124a20f922ba8a9fa2dd3ae4940baecf0e3b6c66ed43d3b8f8b",
-      "bytes": 1977
+      "sha256": "42ac7fd0d6ba782fc1be48f6dc8b0e17728cce3e4c70424fa17bc23bf1a348d9",
+      "bytes": 2031
     },
     {
       "path": "OrderPaymentMicroservice/Models/OrderItem.cs",
-      "sha256": "c919620860d4f61b08d5b57797719fab9526cfb060e090c6f6f4f03991e82e80",
-      "bytes": 1397
+      "sha256": "01a7324f9e694a0393482e643a1650f88f18d9ce53f18dcc6d47e9704e15fddd",
+      "bytes": 1322
     },
     {
       "path": "OrderPaymentMicroservice/Models/OrderStatus.cs",
@@ -274,8 +274,8 @@
     },
     {
       "path": "OrderPaymentMicroservice/Models/Payment.cs",
-      "sha256": "03134aa5486ab4436e6a33289fe0f6a2414da6602b16557e087a4caaaaa2203d",
-      "bytes": 1494
+      "sha256": "cdbc2ef7f983ebbbbaca85fa38f3bd1c39d0221f04e33edd852585bfc046b02e",
+      "bytes": 1544
     },
     {
       "path": "OrderPaymentMicroservice/Models/PaymentStatus.cs",
@@ -284,18 +284,18 @@
     },
     {
       "path": "OrderPaymentMicroservice/Models/Product.cs",
-      "sha256": "2c9b63769c65a3ce6b0eb2c12e33eb0d685919d2f0a2204b72c7b08233fba624",
-      "bytes": 1429
+      "sha256": "3ba406337ede8b0fb8f006b97a0d7d576af61e8e7a35b6338c6aa9d9bd46d24b",
+      "bytes": 1411
     },
     {
       "path": "OrderPaymentMicroservice/Models/ShoppingCart.cs",
-      "sha256": "2564a128b7721eec4b5432615dcfa0ab0fb803c3879582aace2a8a4b6ab8c3c6",
-      "bytes": 2017
+      "sha256": "81b3c0d20fd36ff23abdad039d080de9090ca576e18a7c5aee9568dfeb2e6d88",
+      "bytes": 2014
     },
     {
       "path": "OrderPaymentMicroservice/Models/User.cs",
-      "sha256": "903e8d2da4e012c30369fb29ba9a54aa51180d9f964234dbf6e47afcdc393c55",
-      "bytes": 1824
+      "sha256": "83c84b1c8929f9388fc8c864e7cec6a034fe4768fbb8441ca0f15d40528bfe53",
+      "bytes": 1923
     },
     {
       "path": "OrderPaymentMicroservice/Operations/OperationalTelemetry.cs",
@@ -344,8 +344,8 @@
     },
     {
       "path": "OrderPaymentMicroservice/Security/InputValidator.cs",
-      "sha256": "373a995295dfd0e76d26545b9f6f19c3381d21df7d3df3750edae300f288796c",
-      "bytes": 4844
+      "sha256": "f7f36ac4cc45677b82b81e35ae4353fb5dd5201188d2d476f13097d5cb7e2d08",
+      "bytes": 4805
     },
     {
       "path": "OrderPaymentMicroservice/Security/InventoryVerification.z3",
@@ -379,8 +379,8 @@
     },
     {
       "path": "OrderPaymentMicroservice/Security/PaymentValidator.cs",
-      "sha256": "63bfa1321a2ad0f8ae47bb60913448cac3e498ea4d8b752481c5b976ae758abb",
-      "bytes": 2190
+      "sha256": "5469e801a502c8a7bcfa623150edb4c34575a9f336750dbe405413f9e9baa387",
+      "bytes": 2180
     },
     {
       "path": "OrderPaymentMicroservice/Security/PaymentVerification.z3",
@@ -409,13 +409,13 @@
     },
     {
       "path": "OrderPaymentMicroservice/Services/Interfaces/IOrderService.cs",
-      "sha256": "ac0ff1b9ac2cd906bbdd158ad4720603a4db634c276aaf6f38afaf233008072c",
-      "bytes": 1122
+      "sha256": "281db6d4c3c1c8ee053f091a2a6ec0873b64d81fdea438fac7ab465b111c18ff",
+      "bytes": 1156
     },
     {
       "path": "OrderPaymentMicroservice/Services/Interfaces/IPaymentService.cs",
-      "sha256": "b1cdcda16aa46a41855503ee0457bbe665d60e487d59c38a8a2de8768fc5f80e",
-      "bytes": 1055
+      "sha256": "86e7139baff231bba719a0f420fa7e56e8ebe65918831285864c84b8967d7d21",
+      "bytes": 1043
     },
     {
       "path": "OrderPaymentMicroservice/Services/Interfaces/IProductService.cs",
@@ -439,8 +439,8 @@
     },
     {
       "path": "OrderPaymentMicroservice/Services/OrderService.cs",
-      "sha256": "8bfa5d2b782fd1e35f01db30e0a0d9c86c125844aa00f37380f22d8573bd7b8a",
-      "bytes": 11255
+      "sha256": "6003c3bc1a4dd56610dcd199bee9b9c112072be35e7094999ab2707168d72f38",
+      "bytes": 11362
     },
     {
       "path": "OrderPaymentMicroservice/Services/PaymentService.cs",
@@ -619,8 +619,8 @@
     },
     {
       "path": "OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs",
-      "sha256": "a7a273b6b889a5eb5fda70c0e331d4b0fd0fd32b5a1a2890cce8fb499b9606e6",
-      "bytes": 10028
+      "sha256": "7da15eff5e2816e2750df8514da82f1cfb37d053ae8a78c63709f8bb67cbc773",
+      "bytes": 19314
     },
     {
       "path": "OrderPaymentMicroservice.Tests/UserServiceTests.cs",
@@ -714,28 +714,28 @@
     },
     {
       "path": "security-analysis/GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md",
-      "sha256": "3993352abc2a4bf0c1f9ef946534a766ffef8e3708e5763d9ac190a285aa80f0",
-      "bytes": 7560
+      "sha256": "66c61ac9bc2244556539c3212e2b07d35d2762fce12a784b0d292ef04fc3298c",
+      "bytes": 7989
     },
     {
       "path": "security-analysis/IMPLEMENTATION_CONTRACTS.md",
-      "sha256": "17c44b4f26787c85b2eb8d9bab04f810927495d3a524a06aefff7c87a87252a2",
-      "bytes": 18557
+      "sha256": "bab42b3ae5372af2b6468833a626591179ce54470bdd0786c6dfda8013f817a3",
+      "bytes": 11715
     },
     {
       "path": "security-analysis/KICH_BAN_THUYET_TRINH_VA_DEMO.md",
-      "sha256": "a4aedda6844579b2c6d8b51f5e93775b53a543d7f1f25273b2a5860b260e6eb2",
-      "bytes": 45006
+      "sha256": "1df2f2b1dd6fc15354e4ac91fc3cdadb8d0993cf13806a32834d7ff83ca30b54",
+      "bytes": 55144
     },
     {
       "path": "security-analysis/OPERATIONS.md",
-      "sha256": "263f7c1a53518de86df2181ec20224fdcf1f0f45ffed3952584ce031b2eb4dff",
-      "bytes": 16839
+      "sha256": "49edf156c60d9ff5b2c86d1ed85377a80e1e8b20d5e22e13c4f6700d944b15c2",
+      "bytes": 9485
     },
     {
       "path": "security-analysis/PHAM_VI_KIEM_CHUNG.md",
-      "sha256": "015218e0f3066c430087003b2e1c82172eac5200387e5fbc9ad951d0aa686b45",
-      "bytes": 3475
+      "sha256": "72e1872be0e8d9cbb417875354dbe49fcd64b1bdc7d205ce9ae00313bcaa68c9",
+      "bytes": 7700
     },
     {
       "path": "security-analysis/README.md",
@@ -814,7 +814,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/cart_buggy.log",
-      "sha256": "a210d8a9633348cd9e9da7dfc070cab892a5cab58b745489865c63640318f464",
+      "sha256": "f1ab51936ecc8d4f0e072934e02ca165a5797f7e83e68c6bfec1e8a5e9068d2c",
       "bytes": 3243
     },
     {
@@ -824,7 +824,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/order_buggy.log",
-      "sha256": "c7b6feb1917a4e1244ab280b3acedef90e4ef5042c145fe896b879e3416cdc26",
+      "sha256": "2911bdb57ef3e287935c189bc66b923cdd9ad784f6a18b26b855a99c16b629a7",
       "bytes": 813
     },
     {
@@ -834,7 +834,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/payment_buggy.log",
-      "sha256": "1f17186ffc2a3a65bfa423cc14310602ecbc118b51cfdc09c3c3b47cf645397e",
+      "sha256": "b267ab341ca85b8c6d72cc0990076af0d929b3ddaf396eb552295333240a4833",
       "bytes": 1902
     },
     {
@@ -844,7 +844,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/product_buggy.log",
-      "sha256": "99808868fa0e240b58cab50d37595576bbc8069eedd18376fab43ab2df87a9d2",
+      "sha256": "27fe567748172d10250b01b5f0f24798ea2c3ee048c7c5e183b2910a8a9dd872",
       "bytes": 2887
     },
     {
@@ -889,7 +889,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/user_buggy.log",
-      "sha256": "b3937e535d76f816710915a20782ca9500324c479fb9a9fba1713f2c5fcfcd5c",
+      "sha256": "b0a4467bbb6d0c75e770974e48656c78a0fd641031334ce6e2dd954806558f9d",
       "bytes": 2706
     },
     {
@@ -954,13 +954,13 @@
     },
     {
       "path": "security-analysis/create_order_payment_spec.py",
-      "sha256": "4eb4b6006d31e44759bf4ac71973c13f608679c69e6107eac0985f3222bb3e74",
-      "bytes": 36093
+      "sha256": "91704ec3c23ab7a89f3f8f636882deff3fb303b0ce8c4519707948309e29d671",
+      "bytes": 58524
     },
     {
       "path": "security-analysis/order_payment_pipeline_spec.json",
-      "sha256": "9822d15fb5a2526daaf2f7a7506dd8c57f579630a2c0efd98d42c46ac888fc53",
-      "bytes": 13947
+      "sha256": "63ba6c8aa3d0193b70d15d5c5893f5dd576abf6aa196436f7a9542b861a6a2e6",
+      "bytes": 17766
     },
     {
       "path": "security-analysis/order_payment_recovery_model.json",
@@ -984,13 +984,13 @@
     },
     {
       "path": "security-analysis/report/BAO_CAO.md",
-      "sha256": "231b171c091ef7fc3f2bfbb2cc8c6103fafc791ad955e548f64a328f50a5d0cc",
-      "bytes": 82350
+      "sha256": "bc6ff926f00953e2aa5ee89d4cf2babfe1647ae95bc4038c12781eb4796dad76",
+      "bytes": 82347
     },
     {
       "path": "security-analysis/report/PHU_LUC_A_G.md",
-      "sha256": "aaf1c58847b77b58b65151f6ff5fe45418a0c070c863d737a34487313252ff36",
-      "bytes": 69706
+      "sha256": "ee2c634f7324ae9f952d4e9e9b15ea9fad947afe150dbddb2b13ba5d4f1f2750",
+      "bytes": 73292
     },
     {
       "path": "security-analysis/report/chapters/01_muc_tieu.md",
@@ -1039,28 +1039,28 @@
     },
     {
       "path": "security-analysis/results/application-fuzzing-coverage.cobertura.xml",
-      "sha256": "797262188d304aae2d7a238950a1bef8695e8853c8d50e015e924ee6ba7ec847",
-      "bytes": 34586
+      "sha256": "aeb9ed837d8b0b04b4e887b181da6d73b304ba62bd64314a748fe8cfa71da464",
+      "bytes": 34583
     },
     {
       "path": "security-analysis/results/application_fuzzing.results.json",
-      "sha256": "61ef032eedfee4dcc4a9c20489db01817dc52ddf35287eb98e360bafc311b768",
-      "bytes": 2696
+      "sha256": "f9c955b4caf6ca07b719b01fd24cd6361bac81f0b13c4ea5d804985a36da3e8d",
+      "bytes": 3370
     },
     {
       "path": "security-analysis/results/application_smoke.results.json",
-      "sha256": "d302a754ab79206a26d4c41136955369dc21fdb732e4cfb4534bfed0071b43f7",
+      "sha256": "5f4cfde14f3f521be449a06adeb0761d56259489ef2f2df496b878e4996b62a8",
       "bytes": 1802
     },
     {
       "path": "security-analysis/results/application_tests.results.json",
-      "sha256": "7fd14aeadcb798d923ddeaff82262cccf908ad07fa77d634db800c0d425ee4fa",
-      "bytes": 43972
+      "sha256": "d292f35e58b2a8dadef0718b2407b1b54e9a62557991cdf1ec6b54bb70482147",
+      "bytes": 44200
     },
     {
       "path": "security-analysis/results/backup_restore.results.json",
-      "sha256": "254383129f450d4148617ce8eb6ce2fbf83df48ee9fdaf8b8c18ae5cdde761fc",
-      "bytes": 3171
+      "sha256": "265a9186965eede9057abab667a024798abdb3947654114e093965ebcb8ce542",
+      "bytes": 3170
     },
     {
       "path": "security-analysis/results/chapter4_run.results.json",
@@ -1084,18 +1084,18 @@
     },
     {
       "path": "security-analysis/results/inventory_verification.results.json",
-      "sha256": "cd8ba8c84e4e6c3d53e14d6db66c0a9874437d940f68859f60f0a30e06d1a354",
+      "sha256": "4131cafc2b88da43d7b999837f9721c05baadc0e8e8d0a5f6759234fa7f3b517",
       "bytes": 1028
     },
     {
       "path": "security-analysis/results/liveness_audit.results.json",
-      "sha256": "aac620338746c8452941454aebbde2b58b8d6f7662e4f4f11478420c216e958e",
+      "sha256": "650abf2618748f38a2492ee98716c9d941924e7d1127b9ec7d8a1662aabd8524",
       "bytes": 4691
     },
     {
       "path": "security-analysis/results/load_probe.results.json",
-      "sha256": "147b296d48a4ddc60f42587f9bf95c3f9ed1cdc21f103c579b23059610232e97",
-      "bytes": 24898
+      "sha256": "5a72029d58a322de41b4e3c90f63a2c2416c88fa9c9aa6f23ea67980c7b77009",
+      "bytes": 24988
     },
     {
       "path": "security-analysis/results/model_projection.results.json",
@@ -1114,8 +1114,8 @@
     },
     {
       "path": "security-analysis/results/order_retry_load.results.json",
-      "sha256": "8e7cab103f977a40f2ea35023ae3b0333c5d59f71803f8fb13cc1e71a7c29157",
-      "bytes": 50729
+      "sha256": "e332fe8ed20413b91b266634143369cb006d0871bc996fa2e8f8c1630decc4bb",
+      "bytes": 50787
     },
     {
       "path": "security-analysis/results/order_state_model.results.json",
@@ -1134,22 +1134,22 @@
     },
     {
       "path": "security-analysis/results/postgres_reconnect_charge.results.json",
-      "sha256": "dadfee387cb624c6485cae036ef53f74735cde30566b975155f61300327dae4d",
-      "bytes": 3501
+      "sha256": "b6938b700cd14f8d3ba7853987be6e26f5c7929d6396bb7cadeb25f0d43e96d3",
+      "bytes": 3502
     },
     {
       "path": "security-analysis/results/postgres_reconnect_refund.results.json",
-      "sha256": "4ff51ac6cc425935afcc1f0c69b44387af89827afeb0686f9455d88f5e72d82a",
-      "bytes": 3648
+      "sha256": "60b7d1f8493610ed137b22553b717283630d32adfcc329ce9d23d6c26574ebdb",
+      "bytes": 3652
     },
     {
       "path": "security-analysis/results/process_restart.results.json",
-      "sha256": "fa47abc174b18754c03d3db30d24e81ef9f7a3580379fc8c45fd654b0e2b5f6e",
-      "bytes": 586
+      "sha256": "13037d488d103860aa1b84bd8f44047110a858ca01f91c83010ad4cc4df14f98",
+      "bytes": 585
     },
     {
       "path": "security-analysis/results/refund_restart.results.json",
-      "sha256": "26a5351b5dcbe82aff97f5e41b64fc49bf05d1f684ae19ca09c4d4519763ba3e",
+      "sha256": "c79b5393af9a1ad15da9d482876342d15d566d32fc7e7a92e4a1e46841f49ef9",
       "bytes": 1850
     },
     {
@@ -1159,7 +1159,7 @@
     },
     {
       "path": "security-analysis/results/teacher_spec_verification.json",
-      "sha256": "877c80c7bb5742173e6e52e232b3c136dfca1de66cd47a25dbd3eff458760616",
+      "sha256": "44125fd8d4e6d1e46656753091c747a28961074b132c5cefdd435cdcf4651287",
       "bytes": 698
     },
     {
@@ -1169,13 +1169,13 @@
     },
     {
       "path": "security-analysis/results/tlc/OrderPayment.tlc.log",
-      "sha256": "5b82355d7d85cf1fa60494dfce0fa735b098b96ccf7fa0c9895eef21f8fea959",
-      "bytes": 2659
+      "sha256": "1fc9cac3df20d850e748a28b603af7d03d97b8cb4031fcb216201f959f927aa0",
+      "bytes": 1524
     },
     {
       "path": "security-analysis/results/tlc/OrderPayment.tlc.results.json",
-      "sha256": "e61c0378ecf75d3510614d987dbe45cb0d3c21a7a4b56b4a5a73db9d211e7082",
-      "bytes": 1106
+      "sha256": "d887e491eda56d96b68708773c032d6dd14fce7607f6d379dc50fba443739b08",
+      "bytes": 1156
     },
     {
       "path": "security-analysis/results/traceability_matrix.csv",
@@ -1189,8 +1189,8 @@
     },
     {
       "path": "security-analysis/run_fuzzing.py",
-      "sha256": "561733ca841ef56664356ac529edd90735bc0aa8ddf732dd8823ac7a3e5382db",
-      "bytes": 4739
+      "sha256": "6c1119c74bd96abaa6c1b49457f305dcd3f534980d598c5f37448aa87d6f8026",
+      "bytes": 5494
     },
     {
       "path": "security-analysis/run_recovery_demo.py",
@@ -1244,8 +1244,8 @@
     },
     {
       "path": "OrderPaymentMicroservice_Security_Spec.xlsx",
-      "sha256": "17acd4a2a1c5b23e67da1838490ecdc83a1ad31b25be26ac100116892963e97a",
-      "bytes": 20430
+      "sha256": "c089c5a8346b1472d820209c3366b409123e1232eb494284119ffc7e9c51f58d",
+      "bytes": 30618
     }
   ],
   "limitations": [

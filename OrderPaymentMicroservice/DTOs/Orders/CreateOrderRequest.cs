@@ -2,7 +2,7 @@ namespace OrderPaymentMicroservice.DTOs.Orders;
 
 /// <summary>
 /// Create order request DTO
-/// TODO: Fuzzing target - Input validation for total amount and items
+/// Validated by InputValidator and fuzzed by SecurityFuzzingTests.
 /// </summary>
 public class CreateOrderRequest
 {

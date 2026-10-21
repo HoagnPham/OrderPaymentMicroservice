@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<coverage line-rate="0.9105" branch-rate="0.9666" version="1.9" timestamp="1792057612" lines-covered="112" lines-valid="123" branches-covered="116" branches-valid="120">
+<coverage line-rate="0.9105" branch-rate="0.975" version="1.9" timestamp="1792549705" lines-covered="112" lines-valid="123" branches-covered="117" branches-valid="120">
   <sources>
     <source>/home/phamhoang/OrderPaymentMicroservice/OrderPaymentMicroservice/Security/</source>
   </sources>
   <packages>
-    <package name="OrderPaymentMicroservice" line-rate="0.9105" branch-rate="0.9666" complexity="122">
+    <package name="OrderPaymentMicroservice" line-rate="0.9105" branch-rate="0.975" complexity="122">
       <classes>
         <class name="OrderPaymentMicroservice.Security.InputValidator" filename="InputValidator.cs" line-rate="0.8392000000000001" branch-rate="0.9166" complexity="37">
           <methods>
@@ -319,7 +319,7 @@
             </method>
             <method name="CanTransition" signature="(OrderPaymentMicroservice.Models.OrderStatus,OrderPaymentMicroservice.Models.OrderStatus)" line-rate="1" branch-rate="1" complexity="30">
               <lines>
-                <line number="10" hits="50000" branch="True" condition-coverage="100% (30/30)">
+                <line number="10" hits="59159" branch="True" condition-coverage="100% (30/30)">
                   <conditions>
                     <condition number="5" type="switch" coverage="100%" />
                     <condition number="50" type="jump" coverage="100%" />
@@ -332,35 +332,35 @@
                     <condition number="113" type="jump" coverage="100%" />
                   </conditions>
                 </line>
-                <line number="11" hits="50000" branch="False" />
-                <line number="12" hits="488" branch="False" />
-                <line number="13" hits="506" branch="False" />
-                <line number="14" hits="448" branch="False" />
-                <line number="15" hits="478" branch="False" />
-                <line number="16" hits="532" branch="False" />
-                <line number="17" hits="1480" branch="False" />
-                <line number="18" hits="504" branch="False" />
-                <line number="19" hits="1002" branch="False" />
-                <line number="20" hits="464" branch="False" />
-                <line number="21" hits="44098" branch="False" />
-                <line number="22" hits="50000" branch="False" />
+                <line number="11" hits="59159" branch="False" />
+                <line number="12" hits="1451" branch="False" />
+                <line number="13" hits="911" branch="False" />
+                <line number="14" hits="491" branch="False" />
+                <line number="15" hits="492" branch="False" />
+                <line number="16" hits="535" branch="False" />
+                <line number="17" hits="4582" branch="False" />
+                <line number="18" hits="547" branch="False" />
+                <line number="19" hits="1032" branch="False" />
+                <line number="20" hits="468" branch="False" />
+                <line number="21" hits="48650" branch="False" />
+                <line number="22" hits="59159" branch="False" />
               </lines>
             </method>
             <method name="Transition" signature="(OrderPaymentMicroservice.Models.Order,OrderPaymentMicroservice.Models.OrderStatus)" line-rate="1" branch-rate="1" complexity="2">
               <lines>
-                <line number="25" hits="25000" branch="False" />
-                <line number="26" hits="25000" branch="True" condition-coverage="100% (2/2)">
+                <line number="25" hits="31135" branch="False" />
+                <line number="26" hits="31135" branch="True" condition-coverage="100% (2/2)">
                   <conditions>
                     <condition number="18" type="jump" coverage="100%" />
                   </conditions>
                 </line>
-                <line number="27" hits="22049" branch="False" />
-                <line number="28" hits="22049" branch="False" />
-                <line number="29" hits="22049" branch="False" />
-                <line number="32" hits="2951" branch="False" />
-                <line number="33" hits="2951" branch="False" />
-                <line number="34" hits="2951" branch="False" />
-                <line number="35" hits="2951" branch="False" />
+                <line number="27" hits="25143" branch="False" />
+                <line number="28" hits="25143" branch="False" />
+                <line number="29" hits="25143" branch="False" />
+                <line number="32" hits="5992" branch="False" />
+                <line number="33" hits="5992" branch="False" />
+                <line number="34" hits="5992" branch="False" />
+                <line number="35" hits="5992" branch="False" />
               </lines>
             </method>
           </methods>
@@ -372,7 +372,7 @@
               </conditions>
             </line>
             <line number="8" hits="25000" branch="False" />
-            <line number="10" hits="50000" branch="True" condition-coverage="100% (30/30)">
+            <line number="10" hits="59159" branch="True" condition-coverage="100% (30/30)">
               <conditions>
                 <condition number="5" type="switch" coverage="100%" />
                 <condition number="50" type="jump" coverage="100%" />
@@ -385,34 +385,34 @@
                 <condition number="113" type="jump" coverage="100%" />
               </conditions>
             </line>
-            <line number="11" hits="50000" branch="False" />
-            <line number="12" hits="488" branch="False" />
-            <line number="13" hits="506" branch="False" />
-            <line number="14" hits="448" branch="False" />
-            <line number="15" hits="478" branch="False" />
-            <line number="16" hits="532" branch="False" />
-            <line number="17" hits="1480" branch="False" />
-            <line number="18" hits="504" branch="False" />
-            <line number="19" hits="1002" branch="False" />
-            <line number="20" hits="464" branch="False" />
-            <line number="21" hits="44098" branch="False" />
-            <line number="22" hits="50000" branch="False" />
-            <line number="25" hits="25000" branch="False" />
-            <line number="26" hits="25000" branch="True" condition-coverage="100% (2/2)">
+            <line number="11" hits="59159" branch="False" />
+            <line number="12" hits="1451" branch="False" />
+            <line number="13" hits="911" branch="False" />
+            <line number="14" hits="491" branch="False" />
+            <line number="15" hits="492" branch="False" />
+            <line number="16" hits="535" branch="False" />
+            <line number="17" hits="4582" branch="False" />
+            <line number="18" hits="547" branch="False" />
+            <line number="19" hits="1032" branch="False" />
+            <line number="20" hits="468" branch="False" />
+            <line number="21" hits="48650" branch="False" />
+            <line number="22" hits="59159" branch="False" />
+            <line number="25" hits="31135" branch="False" />
+            <line number="26" hits="31135" branch="True" condition-coverage="100% (2/2)">
               <conditions>
                 <condition number="18" type="jump" coverage="100%" />
               </conditions>
             </line>
-            <line number="27" hits="22049" branch="False" />
-            <line number="28" hits="22049" branch="False" />
-            <line number="29" hits="22049" branch="False" />
-            <line number="32" hits="2951" branch="False" />
-            <line number="33" hits="2951" branch="False" />
-            <line number="34" hits="2951" branch="False" />
-            <line number="35" hits="2951" branch="False" />
+            <line number="27" hits="25143" branch="False" />
+            <line number="28" hits="25143" branch="False" />
+            <line number="29" hits="25143" branch="False" />
+            <line number="32" hits="5992" branch="False" />
+            <line number="33" hits="5992" branch="False" />
+            <line number="34" hits="5992" branch="False" />
+            <line number="35" hits="5992" branch="False" />
           </lines>
         </class>
-        <class name="OrderPaymentMicroservice.Security.PaymentStateMachine" filename="PaymentStateMachine.cs" line-rate="1" branch-rate="0.9687" complexity="32">
+        <class name="OrderPaymentMicroservice.Security.PaymentStateMachine" filename="PaymentStateMachine.cs" line-rate="1" branch-rate="1" complexity="32">
           <methods>
             <method name="IsTerminal" signature="(OrderPaymentMicroservice.Models.PaymentStatus)" line-rate="1" branch-rate="1" complexity="2">
               <lines>
@@ -426,7 +426,7 @@
             </method>
             <method name="CanTransition" signature="(OrderPaymentMicroservice.Models.PaymentStatus,OrderPaymentMicroservice.Models.PaymentStatus)" line-rate="1" branch-rate="1" complexity="22">
               <lines>
-                <line number="10" hits="50000" branch="True" condition-coverage="100% (22/22)">
+                <line number="10" hits="50351" branch="True" condition-coverage="100% (22/22)">
                   <conditions>
                     <condition number="5" type="switch" coverage="100%" />
                     <condition number="50" type="jump" coverage="100%" />
@@ -438,40 +438,40 @@
                     <condition number="80" type="jump" coverage="100%" />
                   </conditions>
                 </line>
-                <line number="11" hits="50000" branch="False" />
-                <line number="12" hits="1088" branch="False" />
-                <line number="13" hits="3130" branch="False" />
-                <line number="14" hits="2044" branch="False" />
-                <line number="15" hits="986" branch="False" />
-                <line number="16" hits="1042" branch="False" />
-                <line number="17" hits="41710" branch="False" />
-                <line number="18" hits="50000" branch="False" />
+                <line number="11" hits="50351" branch="False" />
+                <line number="12" hits="1223" branch="False" />
+                <line number="13" hits="3241" branch="False" />
+                <line number="14" hits="2056" branch="False" />
+                <line number="15" hits="1001" branch="False" />
+                <line number="16" hits="1046" branch="False" />
+                <line number="17" hits="41784" branch="False" />
+                <line number="18" hits="50351" branch="False" />
               </lines>
             </method>
-            <method name="Transition" signature="(OrderPaymentMicroservice.Models.Payment,OrderPaymentMicroservice.Models.PaymentStatus)" line-rate="1" branch-rate="0.875" complexity="8">
+            <method name="Transition" signature="(OrderPaymentMicroservice.Models.Payment,OrderPaymentMicroservice.Models.PaymentStatus)" line-rate="1" branch-rate="1" complexity="8">
               <lines>
-                <line number="21" hits="25000" branch="False" />
-                <line number="22" hits="25000" branch="True" condition-coverage="100% (2/2)">
+                <line number="21" hits="25351" branch="False" />
+                <line number="22" hits="25351" branch="True" condition-coverage="100% (2/2)">
                   <conditions>
                     <condition number="18" type="jump" coverage="100%" />
                   </conditions>
                 </line>
-                <line number="23" hits="20855" branch="False" />
-                <line number="25" hits="4145" branch="True" condition-coverage="100% (2/2)">
+                <line number="23" hits="20929" branch="False" />
+                <line number="25" hits="4422" branch="True" condition-coverage="100% (2/2)">
                   <conditions>
                     <condition number="96" type="jump" coverage="100%" />
                   </conditions>
                 </line>
-                <line number="26" hits="4145" branch="True" condition-coverage="75% (3/4)">
+                <line number="26" hits="4422" branch="True" condition-coverage="100% (4/4)">
                   <conditions>
                     <condition number="110" type="jump" coverage="100%" />
-                    <condition number="139" type="jump" coverage="50%" />
+                    <condition number="139" type="jump" coverage="100%" />
                   </conditions>
                 </line>
-                <line number="27" hits="4145" branch="False" />
-                <line number="28" hits="4145" branch="False" />
-                <line number="29" hits="4145" branch="False" />
-                <line number="30" hits="4145" branch="False" />
+                <line number="27" hits="4422" branch="False" />
+                <line number="28" hits="4422" branch="False" />
+                <line number="29" hits="4422" branch="False" />
+                <line number="30" hits="4422" branch="False" />
               </lines>
             </method>
           </methods>
@@ -482,7 +482,7 @@
               </conditions>
             </line>
             <line number="8" hits="25000" branch="False" />
-            <line number="10" hits="50000" branch="True" condition-coverage="100% (22/22)">
+            <line number="10" hits="50351" branch="True" condition-coverage="100% (22/22)">
               <conditions>
                 <condition number="5" type="switch" coverage="100%" />
                 <condition number="50" type="jump" coverage="100%" />
@@ -494,36 +494,36 @@
                 <condition number="80" type="jump" coverage="100%" />
               </conditions>
             </line>
-            <line number="11" hits="50000" branch="False" />
-            <line number="12" hits="1088" branch="False" />
-            <line number="13" hits="3130" branch="False" />
-            <line number="14" hits="2044" branch="False" />
-            <line number="15" hits="986" branch="False" />
-            <line number="16" hits="1042" branch="False" />
-            <line number="17" hits="41710" branch="False" />
-            <line number="18" hits="50000" branch="False" />
-            <line number="21" hits="25000" branch="False" />
-            <line number="22" hits="25000" branch="True" condition-coverage="100% (2/2)">
+            <line number="11" hits="50351" branch="False" />
+            <line number="12" hits="1223" branch="False" />
+            <line number="13" hits="3241" branch="False" />
+            <line number="14" hits="2056" branch="False" />
+            <line number="15" hits="1001" branch="False" />
+            <line number="16" hits="1046" branch="False" />
+            <line number="17" hits="41784" branch="False" />
+            <line number="18" hits="50351" branch="False" />
+            <line number="21" hits="25351" branch="False" />
+            <line number="22" hits="25351" branch="True" condition-coverage="100% (2/2)">
               <conditions>
                 <condition number="18" type="jump" coverage="100%" />
               </conditions>
             </line>
-            <line number="23" hits="20855" branch="False" />
-            <line number="25" hits="4145" branch="True" condition-coverage="100% (2/2)">
+            <line number="23" hits="20929" branch="False" />
+            <line number="25" hits="4422" branch="True" condition-coverage="100% (2/2)">
               <conditions>
                 <condition number="96" type="jump" coverage="100%" />
               </conditions>
             </line>
-            <line number="26" hits="4145" branch="True" condition-coverage="75% (3/4)">
+            <line number="26" hits="4422" branch="True" condition-coverage="100% (4/4)">
               <conditions>
                 <condition number="110" type="jump" coverage="100%" />
-                <condition number="139" type="jump" coverage="50%" />
+                <condition number="139" type="jump" coverage="100%" />
               </conditions>
             </line>
-            <line number="27" hits="4145" branch="False" />
-            <line number="28" hits="4145" branch="False" />
-            <line number="29" hits="4145" branch="False" />
-            <line number="30" hits="4145" branch="False" />
+            <line number="27" hits="4422" branch="False" />
+            <line number="28" hits="4422" branch="False" />
+            <line number="29" hits="4422" branch="False" />
+            <line number="30" hits="4422" branch="False" />
           </lines>
         </class>
         <class name="OrderPaymentMicroservice.Security.PaymentValidator" filename="PaymentValidator.cs" line-rate="0.8946999999999999" branch-rate="1" complexity="15">

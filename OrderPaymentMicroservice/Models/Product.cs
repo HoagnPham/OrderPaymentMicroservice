@@ -18,14 +18,12 @@ public class Product
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
-    /// Giá sản phẩm
-    /// TODO: SMT verification - Price >= 0
+    /// Giá sản phẩm; CK_Products_Price_Positive bảo đảm > 0.
     /// </summary>
     public decimal Price { get; set; }
 
     /// <summary>
-    /// Số lượng tồn kho
-    /// TODO: Fuzzing target - handle negative/overcurrent quantities
+    /// Số lượng tồn kho; CK_Products_Stock_Nonnegative bảo đảm >= 0.
     /// </summary>
     public int Stock { get; set; }
 
