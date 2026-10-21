@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "packaged_at_utc": "2026-10-21T17:51:25.900455+00:00",
-  "git_base_commit": "3a486fb290ca492254a8b5172c7aa457236d2328",
+  "packaged_at_utc": "2026-10-21T18:17:23.069662+00:00",
+  "git_base_commit": "d4fb4f788beff5925691b6709501c9ed4db2c6f3",
   "working_tree_dirty": false,
   "dotnet_version": "10.0.112",
   "fresh_checks": [
@@ -724,8 +724,8 @@
     },
     {
       "path": "security-analysis/KICH_BAN_THUYET_TRINH_VA_DEMO.md",
-      "sha256": "1df2f2b1dd6fc15354e4ac91fc3cdadb8d0993cf13806a32834d7ff83ca30b54",
-      "bytes": 55144
+      "sha256": "d1162e5d6ce18685460e5ae681153c93dc5b0fe83c1652a3c92e85a0b0ca689f",
+      "bytes": 55251
     },
     {
       "path": "security-analysis/OPERATIONS.md",
@@ -734,8 +734,8 @@
     },
     {
       "path": "security-analysis/PHAM_VI_KIEM_CHUNG.md",
-      "sha256": "72e1872be0e8d9cbb417875354dbe49fcd64b1bdc7d205ce9ae00313bcaa68c9",
-      "bytes": 7700
+      "sha256": "3b6baa2c5848ef11d02a0b0feb4b2de5642ef342f9ada2890e752b63d94beb2f",
+      "bytes": 8373
     },
     {
       "path": "security-analysis/README.md",
@@ -764,8 +764,8 @@
     },
     {
       "path": "security-analysis/build_report.py",
-      "sha256": "4f27b0dafafa809b4eb6eb5ba23dad08ece00c51b75cb6a9d5692dc4764572dd",
-      "bytes": 36920
+      "sha256": "b013add9804f7f283cec3c1218ebbf20f1d35e73acb7c94de668b42fcf2e1ec3",
+      "bytes": 37300
     },
     {
       "path": "security-analysis/c-memory/README.md",
@@ -954,18 +954,23 @@
     },
     {
       "path": "security-analysis/create_order_payment_spec.py",
-      "sha256": "91704ec3c23ab7a89f3f8f636882deff3fb303b0ce8c4519707948309e29d671",
-      "bytes": 58524
+      "sha256": "63616727fe4bd2caf6c0d50682d73c0b184bbd1d5f60ab85c6138db92facaf91",
+      "bytes": 63883
+    },
+    {
+      "path": "security-analysis/ctl.py",
+      "sha256": "b80cab89f9003ba06761b4419d64843dd77b69dfefd487d75323d4ebce0c1b69",
+      "bytes": 7927
     },
     {
       "path": "security-analysis/order_payment_pipeline_spec.json",
-      "sha256": "63ba6c8aa3d0193b70d15d5c5893f5dd576abf6aa196436f7a9542b861a6a2e6",
-      "bytes": 17766
+      "sha256": "a3025c6ec8a3e20c6e78f14c2927fa71fa5865c4f0f7c2c40e76d69919517d60",
+      "bytes": 17434
     },
     {
       "path": "security-analysis/order_payment_recovery_model.json",
-      "sha256": "00d00cfaaaa4d156a282e13556f5bc92b0920de185c034b9b8dec9f4e527a5d2",
-      "bytes": 27231
+      "sha256": "b4d97dfd1607fd0d5354ddf841bf647d33be6ecb1713365fa96be5713ea0c4bb",
+      "bytes": 30827
     },
     {
       "path": "security-analysis/order_state_model.json",
@@ -979,18 +984,18 @@
     },
     {
       "path": "security-analysis/package_evidence.py",
-      "sha256": "7780034750787c7fd2ee0afc3b08793118790b53df61bd2c9652ee5ff93009c2",
-      "bytes": 19180
+      "sha256": "41d774d72d2519faba10a92bdb069c3396c5a1634bf4d8bd6dc31752d2cda7e9",
+      "bytes": 20142
     },
     {
       "path": "security-analysis/report/BAO_CAO.md",
-      "sha256": "bc6ff926f00953e2aa5ee89d4cf2babfe1647ae95bc4038c12781eb4796dad76",
-      "bytes": 82347
+      "sha256": "81d5f62e31d4c72b438727747d7ef0fe4ea8a360206def9292b74c0be3a3f606",
+      "bytes": 82836
     },
     {
       "path": "security-analysis/report/PHU_LUC_A_G.md",
-      "sha256": "ee2c634f7324ae9f952d4e9e9b15ea9fad947afe150dbddb2b13ba5d4f1f2750",
-      "bytes": 73292
+      "sha256": "95493a7fd3e344da2e72975026b054ddff150a696efafe88737e444073a9beae",
+      "bytes": 72916
     },
     {
       "path": "security-analysis/report/chapters/01_muc_tieu.md",
@@ -1004,8 +1009,8 @@
     },
     {
       "path": "security-analysis/report/chapters/03_mo_hinh.md",
-      "sha256": "5ce780df78158915ef9ce7048b7f9bc5107411aa68bb1c685fbe6024aace8bf9",
-      "bytes": 10994
+      "sha256": "148b01f3d428f3b19414cc1222924d06ce2622ce4325c4b24c7d2688c33f452d",
+      "bytes": 11396
     },
     {
       "path": "security-analysis/report/chapters/04_bo_nho.md",
@@ -1029,8 +1034,8 @@
     },
     {
       "path": "security-analysis/report/chapters/08_han_che_bo_sung.md",
-      "sha256": "f9b1ca81f314125b4fae7454847fce85dcff40c85408df72ac997052d2db71c9",
-      "bytes": 6149
+      "sha256": "cf8e7d7b88c57a2fb91f9743eadc7da883fc0f6dd9f58363d5e83fd747f434ce",
+      "bytes": 6191
     },
     {
       "path": "security-analysis/report/chapters/09_ket_luan_bo_sung.md",
@@ -1089,8 +1094,8 @@
     },
     {
       "path": "security-analysis/results/liveness_audit.results.json",
-      "sha256": "650abf2618748f38a2492ee98716c9d941924e7d1127b9ec7d8a1662aabd8524",
-      "bytes": 4691
+      "sha256": "1b9a8c0f341e0b3f93601d4da1a3eabd5fd25aa26fe867b23d585072e306cfab",
+      "bytes": 4310
     },
     {
       "path": "security-analysis/results/load_probe.results.json",
@@ -1099,18 +1104,18 @@
     },
     {
       "path": "security-analysis/results/model_projection.results.json",
-      "sha256": "73021a1b9ba9c9a101bca9878ae66accf17e2cec060b407699b04cb10d69b2e7",
-      "bytes": 398
+      "sha256": "8de1b198abcc65a32d35fa852120bd2ddb01ae1f6789b93c67205360ec101937",
+      "bytes": 673
     },
     {
       "path": "security-analysis/results/order_payment_recovery_model.results.json",
-      "sha256": "a6c7f71fe1a9d2e52aa4f158c25622de171ac110028232470f85b56bdf4d4b7a",
-      "bytes": 38588
+      "sha256": "27ba34ecbe3d5b4c8a1b36c8cb759abd791e18c436d9353e48b6b5fee5d07a06",
+      "bytes": 37590
     },
     {
       "path": "security-analysis/results/order_payment_state_response_matrix.csv",
-      "sha256": "e7fd9cd18c99810649b978c2e064186614e0b41e316fe6439bb7af556faca944",
-      "bytes": 15875
+      "sha256": "df07b41a6ab5acc0025f9daa07e86d6dbf24a524c58b47231b718939bf9d6374",
+      "bytes": 15430
     },
     {
       "path": "security-analysis/results/order_retry_load.results.json",
@@ -1159,8 +1164,8 @@
     },
     {
       "path": "security-analysis/results/teacher_spec_verification.json",
-      "sha256": "44125fd8d4e6d1e46656753091c747a28961074b132c5cefdd435cdcf4651287",
-      "bytes": 698
+      "sha256": "2b09b7c764fd8e886b5f60b0fc164afcac96970fdcfcfe9442153eced8b02427",
+      "bytes": 1701
     },
     {
       "path": "security-analysis/results/threat_model_results.json",
@@ -1224,13 +1229,13 @@
     },
     {
       "path": "security-analysis/verify_recovery_model.py",
-      "sha256": "fd96d3779a05f80fffb040c8b01a011921d2981701e6d0810526e494f756f1c7",
-      "bytes": 17674
+      "sha256": "9a7d34cc95089234ef3d30175f308403d0119cb5a9bb61e0ea9858d846d3100a",
+      "bytes": 17627
     },
     {
       "path": "security-analysis/verify_teacher_spec.py",
-      "sha256": "75981a6645406037c8b8474d5fed5e3254b0b93fc068b55e017f9c78df9e44a5",
-      "bytes": 13326
+      "sha256": "cdaa7d8a4475b95d4985d29d8064ae41fc3cb25d43a45d442f8d0236c6603f5e",
+      "bytes": 17413
     },
     {
       "path": "security-analysis/verify_threat_model.py",
@@ -1244,8 +1249,8 @@
     },
     {
       "path": "OrderPaymentMicroservice_Security_Spec.xlsx",
-      "sha256": "c089c5a8346b1472d820209c3366b409123e1232eb494284119ffc7e9c51f58d",
-      "bytes": 30618
+      "sha256": "7b964d2c8b9bb3f7b89916f619048403cee3deb27094c51c185aef3b6764cd3a",
+      "bytes": 31301
     }
   ],
   "limitations": [
