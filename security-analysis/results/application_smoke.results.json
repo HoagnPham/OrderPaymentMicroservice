@@ -1,6 +1,6 @@
 {
   "passed": true,
-  "run_at_utc": "2026-10-21T17:50:00.895285\u002B00:00",
+  "run_at_utc": "2026-10-22T02:54:51.025321\u002B00:00",
   "application": "Normal OrderPaymentMicroservice executable in Development with temporary PostgreSQL/ledger",
   "limitations": [
     "One Chrome desktop flow over localhost; no real card/provider or production deployment.",
@@ -33,7 +33,7 @@
     "OrderPaymentMicroservice.IntegrationTests/OperationalProbe.cs": "DAA0B44404650623B88849C6EE89AC817A43ED374453DAB396AFF89604280B7B",
     "security-analysis/browser/live_smoke.py": "CEB76A81F99900FF31953306FD9467946F7E7F37DD6F615990EEC68B302D0C9D",
     "security-analysis/browser/live_smoke.js": "42A9ECD25C201D74AB8113C48FC61CA28DA73A0AF0C8E4BF1DC403C2DD839CED",
-    "OrderPaymentMicroservice/wwwroot/js/app.js": "559677DA680BA4AA7CFECE946AF00E390E2F5B640BCB3A0F8DB5EC87983D0F8C",
+    "OrderPaymentMicroservice/wwwroot/js/app.js": "4999DAFAB89E736A2EA1CF3F0DB8CD778CB4FB05D181D8DE39FBAF4E2F47BFC6",
     "OrderPaymentMicroservice/wwwroot/index.html": "1FC6DD25B2B3016027170BD30D1166B401EBE7B070E0E38D7348F87F8167BA17",
     "OrderPaymentMicroservice/Program.cs": "78DB51AC564D34F3620559A6DD141ABE87CBAB1C86C5E9A8D4EE7EC8F4EBD214"
   }

@@ -287,7 +287,7 @@ EF InMemory hỗ trợ unit test nhanh, không tái hiện toàn bộ transactio
 | `run_tlc.py` | Chạy TLC từ `tla2tools.jar`; lưu log, hashes/spec/config, verdict và số state. |
 | `run_fuzzing.py` | Chạy 3 fuzz tests với timeout 120s và Coverlet; lưu seed, target, coverage, source hashes và outcome. |
 | `http_fuzz.py` | Black-box HTTP fuzz: executable + PostgreSQL tạm, auth/corpus/semantic feedback/DB oracle; không phải code-coverage-guided. |
-| `browser/network_fuzz.py` | Chrome CDP network fault fuzz cho `api/products`: malformed/empty/wrong-shape/500/503/network error; không phải proxy/WAN. |
+| `browser/network_fuzz.py` | Chrome CDP network fault fuzz cho `api/products`: malformed/empty/wrong-shape/500/503/network error; oracle kiểm tra error state trong `#productsGrid`; không phải proxy/WAN. |
 | `run_c_coverage_fuzz.py` | Build và chạy coverage-guided GCC `trace-pc` trên C fixture tổng hợp; shared edge map, fork/input, queue; không phải coverage của ASP.NET. |
 | `collect_validator_coverage.py` | Đọc XML Coverlet có sẵn, lấy coverage InputValidator/MoneyAmounts và gate branch≥90%; không tự chạy test. |
 | `run_recovery_demo.py` | Chạy riêng 2 reconnect tests, bắt thiếu/stale evidence và source hash không khớp; không ghi TRX subset vào thư mục full-suite. |
@@ -832,7 +832,7 @@ DFSan là framework dynamic data-flow gắn/lan truyền nhãn và để client 
 - Campaign stateful .NET chỉ kiểm aggregate trong process; **không phải end-to-end** qua HTTP + PostgreSQL + gateway thật.
 - Đã có black-box HTTP fuzz opt-in (`http_fuzz.py`): executable + PostgreSQL local thật, seed `20261022`, 500 mutation/601 request, oracle response + DB invariant; đây là semantic feedback, **không phải** code-coverage-guided.
 - HTTP fuzz vẫn local/bounded, chưa có TLS/proxy/network partition hoặc RESTler/Schemathesis; chưa code path/edge coverage cho app; Coverlet chỉ cho line/branch trên 5 target.
-- Đã có browser network fault fuzz opt-in (`browser/network_fuzz.py`): Chrome CDP chặn response `api/products`, 8 scenario, 0 uncaught JS; đây là interception, **không phải** proxy/WAN, và chỉ fault products fetch.
+- Đã có browser network fault fuzz opt-in (`browser/network_fuzz.py`): Chrome CDP chặn response `api/products`, 8 scenario; control tải 8 card, 7/7 fault scenario hiển thị error state + nút thử lại trong `#productsGrid`, 0 uncaught JS. Đây là interception, **không phải** proxy/WAN, và chỉ fault products fetch.
 - Đã có coverage-guided trace-pc opt-in (`run_c_coverage_fuzz.py`): C fixture tổng hợp, seed `20261022`, 20.000 mutation, 81 → 148 map entry, queue 46, 0 crash; **không phải** coverage của ASP.NET.
 - Frontend vẫn có Chrome smoke một flow thật và checkout helper với mocked fetch; chưa phủ login/cart/payment network faults hay nhiều browser.
 - PASS của .NET campaign/HTTP campaign/C fixture chỉ là không có failure theo oracle trong budget đã chạy; không là chứng minh mọi input, path hay toàn API an toàn.

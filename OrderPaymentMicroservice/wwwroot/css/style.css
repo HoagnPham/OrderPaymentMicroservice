@@ -112,6 +112,11 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .btn-add-cart { padding: 9px; color: #fff; background: var(--foreground); border: 1px solid var(--foreground); border-radius: 8px; cursor: pointer; font-size: 11px; font-weight: 600; transition: .18s; }
 .btn-add-cart:hover { background: #30302e; }
 .skeleton-card { height: 330px; border-radius: var(--radius); background: linear-gradient(100deg, #ecece8 25%, #f6f6f4 40%, #ecece8 60%); background-size: 300% 100%; animation: shimmer 1.4s infinite; }
+.products-state { grid-column: 1 / -1; min-height: 220px; padding: 32px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+.products-state strong { font-family: Manrope, sans-serif; font-size: 16px; }
+.products-state span { max-width: 440px; color: var(--muted); font-size: 12px; line-height: 1.6; }
+.products-state-error { border-left: 3px solid var(--danger); }
+.products-state .btn-retry { margin-top: 10px; }
 @keyframes shimmer { to { background-position-x: -150%; } }
 
 .sidebar { min-height: 440px; height: fit-content; max-height: calc(100vh - 102px); padding: 19px; display: flex; flex-direction: column; position: sticky; top: 86px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-sm); }

@@ -908,10 +908,10 @@ Không gọi browser test là end-to-end HTTP hoặc kết quả chịu tải pr
 
 | Kịch bản | Phạm vi / outcome | Timing trong lần chạy |
 | --- | --- | --- |
-| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 53.1 ms; restore 222.6 ms; API recovery 2327.9 ms |
-| read | 200 requests; concurrency 8; 200: 200 | 249.37 req/s; successful 249.37/s; p95 67.41 ms |
-| write | 96 requests; concurrency 8; 201: 25, 409: 71 | 38.33 req/s; successful 9.98/s; p95 809.96 ms |
-| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 53.30 req/s; successful 13.32/s; p95 344.79 ms |
+| Backup/restore local | 9 bảng có hash khớp; 4 audit triggers; receipt và identity sequence PASS | Backup 123.3 ms; restore 247.1 ms; API recovery 2663.0 ms |
+| read | 200 requests; concurrency 8; 200: 200 | 201.18 req/s; successful 201.18/s; p95 76.97 ms |
+| write | 96 requests; concurrency 8; 201: 21, 409: 75 | 37.44 req/s; successful 8.19/s; p95 787.97 ms |
+| rate_limit | 20 requests; concurrency 4; 200: 5, 429: 15 | 57.01 req/s; successful 14.25/s; p95 337.10 ms |
 | Refund process kill | 2 journal entries giữ hash; charge reference giữ nguyên; stock release một lần | PASS; DB outage live=200, ready/status=503 |
 
 
@@ -990,8 +990,8 @@ Evidence: [charge](../results/postgres_reconnect_charge.results.json),
 
 | Policy | Đơn thành công | HTTP attempts | p95 logical (gồm backoff) | Đơn thành công/s |
 | --- | --- | --- | --- | --- |
-| Gửi một lần | 39/96 (40.6%) | 96 | 588.44 ms | 16.88 |
-| Retry tối đa 4 lần | 94/96 (97.9%) | 143 | 888.79 ms | 25.39 |
+| Gửi một lần | 41/96 (42.7%) | 96 | 759.95 ms | 17.35 |
+| Retry tối đa 4 lần | 92/96 (95.8%) | 147 | 1547.34 ms | 19.67 |
 
 
 Cùng 96 logical requests/scenario, 8 users và 4 products, concurrency=8 qua hai OS
@@ -1021,7 +1021,7 @@ Normal executable OrderPaymentMicroservice chạy Development, port động và 
 tạm. Chrome thực thi signup/login/products/cart/checkout/payment/history qua HTTP
 thật; backend và gateway journal cũng được assert. Kiểm cached user JSON hỏng,
 reload document mới, logout navbar, chặn hai payment submit và payload không có dữ
-liệu thẻ. Browser có 0 uncaught JS exceptions trong flow đạt oracle.
+liệu thẻ. Browser smoke có 0 uncaught JS exceptions trong flow đạt oracle.
 
 Đã sửa API host/port cố định, cache parse không guard, error body double-read,
 card fields không dùng, logout navbar và payment double-submit. Live test dùng
@@ -1029,6 +1029,13 @@ provider mô phỏng, không là provider/browser matrix hoặc production deplo
 External fonts bị block để không phụ thuộc mạng; dữ liệu/process test được cleanup.
 Nguồn: [kịch bản thuyết trình và demo](../KICH_BAN_THUYET_TRINH_VA_DEMO.md),
 [application_smoke.results.json](../results/application_smoke.results.json).
+
+Với browser network fault, pass criterion không chỉ đếm uncaught JS exception:
+control phải tải được card; mỗi fault response phải làm app rời skeleton và render
+`#productsGrid .products-state-error` kèm nút thử lại. App dùng request token để
+bỏ response cũ và không gọi `loadProducts()` trùng khi khởi tạo/chuyển section.
+Harness dùng `Page.reload(ignoreCache)` và chờ error state thay vì chỉ ngủ cố định,
+nên fault không hiện trong UI sẽ làm evidence fail dù không có JS exception.
 
 ### 6.13. Khoảng trống của Chương 4 — không claim quá mức
 
@@ -1043,7 +1050,7 @@ browser hoặc model khác **không tự thay thế** một hạng mục còn th
 | Đập vào DB + HTTP service thật | **Có trong HTTP fuzz opt-in** | `http_fuzz.results.json`: 601 request qua executable thật, PostgreSQL local thật; 0 HTTP 5xx, 0 vi phạm invariant DB; snapshot cuối có order PAYMENT_PENDING/COMPLETED/CANCELLED/REFUNDED và payment SUCCESS/REFUNDED. Integration/load/reconnect tests vẫn là lớp riêng. | Chưa phải production/TLS/proxy/network partition; chưa chứng minh concurrency toàn cục. |
 | Black-box HTTP fuzz | **Có (opt-in)** | `security-analysis/http_fuzz.py`; 10 setup + 40 seed + 9 business flow (51 request) + 500 mutation; auth, corpus, oracle response/DB, replay trace; evidence `http_fuzz.results.json`. | Chưa coverage-guided, chưa RESTler/Schemathesis; mutation set còn bounded. |
 | Path/edge coverage chuyên sâu | **Có edge map cho C fixture; chưa code path/edge cho app** | C fixture có transition map từ `trace-pc` (148 map entry), không phải source-level gcov/LLVM edge. App .NET vẫn chỉ có line 91,05%/branch 97,50% cho 5 target; HTTP harness có 108 semantic feature/500 semantic edge, **không phải** code path/edge. | Instrumentation basic-block/edge cho app, đo path bounded và lưu coverage map. |
-| Frontend fuzz qua mạng | **Có một phần (CDP opt-in)** | `browser/network_fuzz.py`: 8 scenario (control, malformed JSON, wrong shape, empty, truncated, 500, 503, network error) trên Chrome + API/PostgreSQL thật; 0 uncaught JS. Vẫn là interception, không phải proxy/WAN. | Mở rộng sang login/cart/payment network faults, proxy thật, mobile/browser matrix. |
+| Frontend fuzz qua mạng | **Có một phần (CDP opt-in)** | `browser/network_fuzz.py`: 8 scenario (control, malformed JSON, wrong shape, empty, truncated, 500, 503, network error) trên Chrome + API/PostgreSQL thật; control tải 8 card, **7/7 fault scenario** hiển thị `#productsGrid .products-state-error` và nút thử lại, 0 uncaught JS. Pass criterion fail nếu fault không có error state. Vẫn là interception, không phải proxy/WAN. | Mở rộng sang login/cart/payment network faults, proxy thật, mobile/browser matrix. |
 | Taint analysis tự động | **Chưa** | Luồng source→sink được review thủ công; sanitizer/ASan không gắn nhãn taint. | DFSan/Semgrep/CodeQL rule và báo cáo source→sink. |
 
 **Coverage-guided C fixture (opt-in).** `run_c_coverage_fuzz.py` biên dịch target
@@ -1059,7 +1066,7 @@ cáo source-level edge. Xem
 
 Cách nói chính xác khi bảo vệ: **“Fuzz hiện tại gồm bốn lớp: structured fixed-seed
 in-process cho 5 target .NET, black-box HTTP fixed-seed với PostgreSQL thật,
-Chrome CDP network fault fuzzing cho products fetch, và coverage-guided trace-pc
+Chrome CDP network fault fuzzing cho products fetch (có oracle UI error state), và coverage-guided trace-pc
 trên một C fixture tổng hợp. Lớp C fixture chứng minh feedback loop/queue theo
 edge map hoạt động, nhưng không phải code coverage của ASP.NET. HTTP harness dùng
 semantic feedback, chưa phải code-coverage-guided; app chưa có code path/edge

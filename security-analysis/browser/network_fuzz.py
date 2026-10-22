@@ -3,7 +3,9 @@
 This is intentionally a browser/network-layer harness, not the mocked-fetch
 checkout test.  A real API process and a real temporary PostgreSQL cluster serve
 the page; Chrome's Fetch domain pauses product responses and injects malformed
-bodies, error statuses or failed requests.  It is not a proxy/WAN test and it
+bodies, error statuses or failed requests.  The oracle requires the control to
+load product cards and every fault scenario to render an in-grid error state;
+zero uncaught JS alone is not sufficient.  It is not a proxy/WAN test and it
 does not provide code coverage.
 
 Run:
@@ -189,6 +191,8 @@ def start_chrome(directory: str) -> tuple[subprocess.Popen, FuzzCDP]:
     cdp.call("Runtime.enable")
     cdp.call("Page.enable")
     cdp.call("Network.enable")
+    cdp.call("Network.setCacheDisabled", {"cacheDisabled": True})
+    cdp.call("Network.clearBrowserCache")
     cdp.call("Fetch.enable", {"patterns": [{"urlPattern": "*", "requestStage": "Response"}]})
     return process, cdp
 
@@ -205,30 +209,59 @@ def scenario_evidence(cdp: FuzzCDP, base_url: str, user: dict) -> dict:
         cdp.scenario = scenario
         before_errors = len(cdp.errors)
         before_paused = cdp.product_paused
-        cdp.call("Page.reload")
-        deadline = time.monotonic() + 5
-        while time.monotonic() < deadline and cdp.evaluate("document.readyState") != "complete":
+        cdp.call("Page.reload", {"ignoreCache": True})
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            ready = cdp.evaluate("document.readyState")
+            cards = cdp.evaluate("document.querySelectorAll('#productsGrid .product-card').length")
+            state = cdp.evaluate("(() => { const node = document.querySelector('#productsGrid .products-state'); return node ? node.innerText : ''; })()")
+            if ready == "complete" and (cards > 0 or "Lỗi khi tải sản phẩm" in state):
+                break
             time.sleep(0.05)
-        time.sleep(1.0)
+        time.sleep(0.2)
         text = cdp.evaluate("document.body ? document.body.innerText : ''")
-        alert = cdp.evaluate("(document.querySelector('.alert') || {}).textContent || ''")
+        alert = cdp.evaluate("(() => { const items = Array.from(document.querySelectorAll('.alert-container .alert')); return items.length ? items[items.length - 1].textContent : ''; })()")
         product_cards = cdp.evaluate("document.querySelectorAll('#productsGrid .product-card').length")
+        diagnostics = cdp.evaluate("""(() => {
+            const state = document.querySelector('#productsGrid .products-state');
+            return {
+                activeSection: (document.querySelector('.section.active') || {}).id || '',
+                alerts: Array.from(document.querySelectorAll('.alert-container .alert')).map((node) => node.textContent),
+                productStateText: state ? state.innerText : '',
+                productStateClass: state ? state.className : '',
+                productGridHtml: ((document.querySelector('#productsGrid') || {}).innerHTML || '').slice(0, 240),
+                hasUser: Boolean(localStorage.getItem('user')),
+            };
+        })()""")
+        state_text = diagnostics.get('productStateText', '') if isinstance(diagnostics, dict) else ''
+        state_class = diagnostics.get('productStateClass', '') if isinstance(diagnostics, dict) else ''
+        fault_text = 'Lỗi khi tải sản phẩm'
+        fault_visible = fault_text in alert or fault_text in state_text
+        if scenario == 'control':
+            scenario_ok = product_cards > 0 and not state_class
+        else:
+            scenario_ok = product_cards == 0 and fault_visible
         outcomes.append({
             "scenario": scenario,
             "javascript_errors": cdp.errors[before_errors:],
             "product_responses_intercepted": cdp.product_paused - before_paused,
             "ready_state": cdp.evaluate("document.readyState"),
             "product_cards": product_cards,
+            "product_state_text": state_text,
+            "product_state_class": state_class,
             "ui_alert": alert,
-            "ui_handles_fault": scenario == "control" or "Lỗi khi tải sản phẩm" in alert,
+            "diagnostics": diagnostics,
+            "ui_handles_fault": scenario == 'control' or fault_visible,
+            "scenario_ok": scenario_ok,
             "body_has_error_or_empty_state": any(
-                token in text for token in ("Lỗi khi tải sản phẩm", "Không có sản phẩm", "Đăng nhập")
+                token in text for token in ("Lỗi khi tải sản phẩm", "Chưa có sản phẩm", "Đăng nhập")
             ),
         })
     return {
         "outcomes": outcomes,
         "passed": all(not item["javascript_errors"] for item in outcomes)
-                  and all(item["product_responses_intercepted"] > 0 for item in outcomes),
+                  and all(item["product_responses_intercepted"] > 0 for item in outcomes)
+                  and all(item["scenario_ok"] for item in outcomes),
         "all_javascript_errors": cdp.errors,
     }
 
@@ -253,6 +286,7 @@ def main() -> None:
             "One headless Chrome process and one local API process.",
             "Malformed/error responses are injected at the browser network layer; this is not an external proxy or real network partition.",
             "Only the products fetch path is faulted; login/cart/payment network faults remain future work.",
+            "The UI oracle checks the products grid error state and retry control, not every visual/browser matrix.",
         ],
     }
     try:

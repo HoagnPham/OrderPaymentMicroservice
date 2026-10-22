@@ -61,7 +61,7 @@ JSON/TRX làm chuẩn và sửa bản sao.
 | T6 | Taint analysis tự động | Hiện lập luận thủ công theo luồng dữ liệu | Semgrep/CodeQL rule |
 | T7 | So sánh Cppcheck với sanitizer | Đã ghi nhận Cppcheck bỏ sót 4/5 | bảng đối chiếu theo từng bug |
 | T8 | Lặp load/crossover | Một mẫu ngắn chưa đủ suy thống kê | nhiều lượt, warmup, p95/p99 |
-| T9 | Browser network fuzz | **Đã có bản CDP opt-in** (8 scenario, real API/PostgreSQL); chưa phải proxy/WAN/mobile | proxy thật, network partition, login/cart/payment fault matrix |
+| T9 | Browser network fuzz | **Đã có bản CDP opt-in** (8 scenario, real API/PostgreSQL); control 8 card, 7/7 fault scenario hiển thị error state trong `#productsGrid`; chưa phải proxy/WAN/mobile | proxy thật, network partition, login/cart/payment fault matrix |
 
 ## 4. Ngoài phạm vi (không được claim)
 
@@ -80,7 +80,7 @@ JSON/TRX làm chuẩn và sửa bản sao.
 | 1 | Kripke, CTL/LTL, model checking | Model + checker duyệt toàn bộ 14 state; workbook thêm cụm khóa 4 state; TLA+ có fairness | Chưa có fair-CTL đầy đủ; một số state là trừu tượng |
 | 2 | C memory safety, static analysis | 5 module, ASan/UBSan 22/22; CBMC 10/10; Valgrind 10/10; CNF/DRAT 10/10 | Cppcheck false negative 4/5; chưa clang-tidy; CBMC/DRAT có bound 64/48 |
 | 3 | SAT/SMT/BMC | 10 query Z3 đúng verdict; CBMC bounded; CNF DIMACS + 5 DRAT proof + 5 UNSAT core | Chưa BMC cho C#; proof chỉ cho CNF bounded |
-| 4 | Fuzzing, coverage | 4 campaign seed `20261009`; 5 target; line 91,05%/branch 97,50%; HTTP black-box seed `20261022`, 601 request, 0 5xx/0 invariant violation; browser CDP 8 scenario, 0 uncaught JS; C fixture coverage-guided seed `20261022`, 81→148 trace-pc map entry | App chưa code-coverage-guided/path-edge; C fixture không phải ASP.NET; browser mới fault products fetch, chưa proxy/WAN; HTTP fuzz chỉ local và bounded |
+| 4 | Fuzzing, coverage | 4 campaign seed `20261009`; 5 target; line 91,05%/branch 97,50%; HTTP black-box seed `20261022`, 601 request, 0 5xx/0 invariant violation; browser CDP 8 scenario, 7/7 fault scenario hiển thị error state + retry, 0 uncaught JS; C fixture coverage-guided seed `20261022`, 81→148 trace-pc map entry | App chưa code-coverage-guided/path-edge; C fixture không phải ASP.NET; browser mới fault products fetch, chưa proxy/WAN; HTTP fuzz chỉ local và bounded |
 
 ## 6. Cách xác nhận nhanh
 

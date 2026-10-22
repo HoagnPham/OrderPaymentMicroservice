@@ -2,6 +2,7 @@
 const API_BASE_URL = '/api';
 let currentUser = null;
 let cart = { items: [], totalPrice: 0 };
+let productsRequestToken = 0;
 
 const foodStyles = [
     { glyph: '🍜', a: '#f7d9a7', b: '#e9a85e' },
@@ -40,7 +41,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupEventListeners();
     if (currentUser) {
         showSection('home');
-        loadProducts();
         loadCartFromServer();   // <-- khôi phục cart từ server sau khi reload
     } else {
         showSection('auth');
@@ -63,7 +63,6 @@ function setupEventListeners() {
             showSection('auth');
         } else {
             showSection('home');
-            loadProducts();
         }
     });
 
@@ -120,7 +119,6 @@ async function handleLogin(e) {
         await loadCartFromServer();   // load cart ngay sau khi đăng nhập
         setTimeout(() => {
             showSection('home');
-            loadProducts();
         }, 1000);
     } catch (error) {
         showAuthMessage(error.message, 'error');
@@ -223,20 +221,48 @@ async function loadCartFromServer() {
     }
 }
 
+function renderProductsState(kind, title, detail) {
+    const grid = document.getElementById('productsGrid');
+    if (!grid) return;
+    const retry = kind === 'error'
+        ? '<button type="button" class="btn btn-dark btn-retry" onclick="loadProducts()">Thử lại</button>'
+        : '';
+    grid.innerHTML = `
+        <div class="products-state products-state-${kind}" role="status" aria-live="polite">
+            <strong>${escapeHtml(title)}</strong>
+            <span>${escapeHtml(detail)}</span>
+            ${retry}
+        </div>
+    `;
+}
+
 async function loadProducts() {
+    const requestToken = ++productsRequestToken;
     try {
         const response = await fetch(`${API_BASE_URL}/products`);
         if (!response.ok) throw new Error('Không thể tải sản phẩm');
 
         const products = await response.json();
+        if (requestToken !== productsRequestToken) return;
+        if (!Array.isArray(products)) throw new Error('Dữ liệu sản phẩm không hợp lệ');
         displayProducts(products);
     } catch (error) {
+        if (requestToken !== productsRequestToken) return;
         console.error(error);
+        renderProductsState('error', 'Lỗi khi tải sản phẩm', 'Không thể tải thực đơn. Vui lòng thử lại.');
         showMessage('Lỗi khi tải sản phẩm', 'error');
     }
 }
 
 function displayProducts(products) {
+    if (!Array.isArray(products)) {
+        throw new Error('Dữ liệu sản phẩm không hợp lệ');
+    }
+    if (products.length === 0) {
+        renderProductsState('empty', 'Chưa có sản phẩm', 'Thực đơn đang được cập nhật.');
+        return;
+    }
+
     const grid = document.getElementById('productsGrid');
     grid.innerHTML = '';
 

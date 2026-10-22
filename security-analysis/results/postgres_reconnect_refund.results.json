@@ -1,8 +1,8 @@
 {
   "passed": true,
-  "run_at_utc": "2026-10-21T17:49:12.4174742Z",
+  "run_at_utc": "2026-10-22T02:53:54.8930055Z",
   "operation": "refund",
-  "api_pid": 20780,
+  "api_pid": 453875,
   "api_restarted": false,
   "postgres_data_preserved": true,
   "connection_pooling": true,
@@ -18,7 +18,7 @@
     "recovery_scan_failures": 1,
     "recovery_attempts": 1,
     "recovery_resolved": 1,
-    "last_completed_scan_unix_ms": 1792604952266,
+    "last_completed_scan_unix_ms": 1792637634763,
     "scope": "this_process_since_start"
   },
   "gateway_calls": {
@@ -31,8 +31,8 @@
   "attempt_count": 1,
   "idempotency_keys_preserved": true,
   "journal_hashes": {
-    "534A15222806AD092FA5AA6F0DD9333B0F98D3ECC8FF0684F95ABA75302A6BC9.json": "6DBAC59C88E0F68B7137E8FC48A2D15CBE3C12EB83C7C54A108961474E681828",
-    "3F58D5E2BCA3CF35A88F9D0E3B49CAFC3278DA01DCE1B77F0000310332B2E6F8.json": "EEC2D826CE83BAF3E293C2E50B7C238E08729C85BD462951D0E9D95AB054DE89"
+    "061CD18EA27A6A1E07EAB75C45E671CE1819CFF267D2077E4587265468DD0031.json": "0B8C51F2A77CD48A03C08B89FF56CDC66DA43440378E33B180070C87485E72F0",
+    "59785BC9233CA9B0D52D9594810587E25AD5117B2E15E0F13F75E131DEB8DBBC.json": "B9599543CE2B1B6F07422124AF7140C0F175097BA490A9026C56923386215F98"
   },
   "inventory_reservation_count": 1,
   "inventory_release_count": 1,
@@ -45,43 +45,43 @@
   "timeline": [
     {
       "step": "READY_200_BEFORE",
-      "elapsed_ms": 2564.2312
+      "elapsed_ms": 2495.0245
     },
     {
       "step": "GATEWAY_JOURNAL_PUBLISHED_LOCAL_FINALIZE_BLOCKED",
-      "elapsed_ms": 3179.0725
+      "elapsed_ms": 3154.0953
     },
     {
       "step": "POSTGRES_STOPPED_DATA_DIRECTORY_RETAINED",
-      "elapsed_ms": 3499.4951
+      "elapsed_ms": 3503.4889
     },
     {
       "step": "READY_503_LIVE_200",
-      "elapsed_ms": 3533.5741
+      "elapsed_ms": 3544.2178
     },
     {
       "step": "ORIGINAL_FINALIZE_FAILED_WHILE_DB_OFF",
-      "elapsed_ms": 3593.6727
+      "elapsed_ms": 3615.22
     },
     {
       "step": "RECOVERY_SCAN_DURING_OUTAGE",
-      "elapsed_ms": 10102.8773
+      "elapsed_ms": 10125.4165
     },
     {
       "step": "SAME_POSTGRES_CLUSTER_RESTARTED",
-      "elapsed_ms": 10220.3311
+      "elapsed_ms": 10239.1318
     },
     {
       "step": "READY_200_AFTER",
-      "elapsed_ms": 10233.7932
+      "elapsed_ms": 10252.2109
     },
     {
       "step": "WORKER_RECONCILED_WITHOUT_API_RESTART",
-      "elapsed_ms": 11772.2347
+      "elapsed_ms": 11570.9623
     },
     {
       "step": "SAME_KEY_REPLAY_NO_ADDITIONAL_GATEWAY_MUTATION",
-      "elapsed_ms": 11892.9529
+      "elapsed_ms": 11695.5141
     }
   ],
   "source_sha256": {

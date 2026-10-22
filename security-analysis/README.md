@@ -28,7 +28,7 @@ kỹ thuật chính; không giữ thêm một báo cáo tiến độ với số 
 | Unit/integration | Các project Tests/IntegrationTests | [Toàn suite](results/application_tests.results.json) |
 | Coverage/fuzz | Coverlet, SecurityFuzzingTests, HTTP fuzzer | [Coverage](results/coverage_summary.json), [.NET fuzz](results/application_fuzzing.results.json), [HTTP black-box](results/http_fuzz.results.json) |
 | Coverage-guided C fixture | run_c_coverage_fuzz.py (GCC trace-pc) | [Edge map 81→148](results/c_coverage_fuzz.results.json) |
-| Browser network fault | browser/network_fuzz.py (Chrome CDP) | [8 scenarios](results/browser_network_fuzz.results.json) |
+| Browser network fault | browser/network_fuzz.py (Chrome CDP) | [8 scenarios; 7/7 fault UI error state](results/browser_network_fuzz.results.json) |
 | Crash/reconnect | CrashProbe, OperationalProbe, PostgresReconnectTests | [Charge](results/postgres_reconnect_charge.results.json), [refund](results/postgres_reconnect_refund.results.json) |
 | Giao diện thật | ApplicationSmokeTests và browser/live_smoke.py | [Live smoke](results/application_smoke.results.json) |
 | Provenance | package_evidence.py | [Traceability](results/traceability_matrix.csv), [manifest](results/evidence_manifest.json) |
