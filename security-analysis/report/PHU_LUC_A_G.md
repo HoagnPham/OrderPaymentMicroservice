@@ -567,6 +567,25 @@ Tool: cbmc (5.95.1 (cbmc-5.95.1)); bound unwind=64, input tượng trưng tối 
 | payment | buggy | True | 10 | [module_main.precondition_instance.7] line 13 free argument must be NULL or valid pointer: FAILURE; [module_main.precondition_instance.10] line 13 double free: FAILURE |
 | payment | fixed | True | 0 | VERIFICATION SUCCESSFUL |
 
+### C.3.1. SAT/CNF/DIMACS + UNSAT core/DRAT
+
+CBMC xuất CNF DIMACS; CaDiCaL 1.7.3 giải. BUGGY phải SAT và model phải thỏa CNF; FIXED phải UNSAT, sinh DRAT proof, `drat-trim` phải in `s VERIFIED`, rồi core do `drat-trim -c` xuất phải được CaDiCaL kiểm lại là UNSAT. Đây vẫn là CNF bounded tại unwind=64.
+
+| Module | Variant | Verdict | CNF clauses | Proof bytes | Core clauses | DRAT verified | Core UNSAT | PASS |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| order | buggy | sat | 1619 | — | — | — | — | True |
+| order | fixed | unsat | 2533 | 16073 | 255 | True | True | True |
+| payment | buggy | sat | 811 | — | — | — | — | True |
+| payment | fixed | unsat | 714 | 4112 | 7 | True | True | True |
+| cart | buggy | sat | 219 | — | — | — | — | True |
+| cart | fixed | unsat | 216 | 1501 | 7 | True | True | True |
+| product | buggy | sat | 26451 | — | — | — | — | True |
+| product | fixed | unsat | 32240 | 64365 | 3451 | True | True | True |
+| user | buggy | sat | 7402 | — | — | — | — | True |
+| user | fixed | unsat | 11971 | 26506 | 3214 | True | True | True |
+
+Mẫu tự kiểm tra: `drat-trim security-analysis/c-memory/evidence/sat/cart_fixed.cnf security-analysis/c-memory/evidence/sat/cart_fixed.drat -c /tmp/cart_fixed.core.cnf` và `cadical /tmp/cart_fixed.core.cnf` (exit 20). Toàn bộ artifact/hash nằm trong ../c-memory/evidence/sat-pipeline.json.
+
 ### C.4. Valgrind Memcheck
 
 Tool: valgrind (valgrind-3.22.0); build `gcc -std=c11 -g -O0 -Wall -Wextra -fno-stack-protector (no sanitizers)`. BUGGY phải có lỗi bộ nhớ đúng loại, FIXED phải sạch.
@@ -575,13 +594,13 @@ Tool: valgrind (valgrind-3.22.0); build `gcc -std=c11 -g -O0 -Wall -Wextra -fno-
 | --- | --- | --- | --- | --- |
 | user | buggy | True | -11 | memory error |
 | user | fixed | True | 0 | clean Memcheck run |
-| product | buggy | True | 1 | ==48279== Invalid write of size 1 |
+| product | buggy | True | 1 | ==60540== Invalid write of size 1 |
 | product | fixed | True | 0 | clean Memcheck run |
-| cart | buggy | True | 99 | ==48303== Invalid read of size 4 |
+| cart | buggy | True | 99 | ==60552== Invalid read of size 4 |
 | cart | fixed | True | 0 | clean Memcheck run |
-| order | buggy | True | 99 | ==48315== 240 bytes in 5 blocks are definitely lost in loss record 1 of 1 |
+| order | buggy | True | 99 | ==60564== 240 bytes in 5 blocks are definitely lost in loss record 1 of 1 |
 | order | fixed | True | 0 | clean Memcheck run |
-| payment | buggy | True | 99 | ==48342== Invalid free() / delete / delete[] / realloc() |
+| payment | buggy | True | 99 | ==60576== Invalid free() / delete / delete[] / realloc() |
 | payment | fixed | True | 0 | clean Memcheck run |
 
 ### C.5. Compiler, configuration và ground truth
@@ -726,9 +745,9 @@ int main(int argc, char **argv) {
 #### order_buggy
 
 ```text
-==47908==ERROR: LeakSanitizer: detected memory leaks
+==60187==ERROR: LeakSanitizer: detected memory leaks
 Direct leak of 240 byte(s) in 5 object(s) allocated from:
-    #0 0x7b2fcfefd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x7ac8806fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x40136d in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: 240 byte(s) leaked in 5 allocation(s).
 ```
@@ -736,12 +755,12 @@ SUMMARY: AddressSanitizer: 240 byte(s) leaked in 5 allocation(s).
 #### payment_buggy
 
 ```text
-==47912==ERROR: AddressSanitizer: attempting double-free on 0x503000000040 in thread T0:
-    #0 0x78e2930fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+==60191==ERROR: AddressSanitizer: attempting double-free on 0x503000000040 in thread T0:
+    #0 0x77a2606fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
     #1 0x40142e in main modules/payment.c:13
-    #0 0x78e2930fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #0 0x77a2606fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
     #1 0x401421 in main modules/payment.c:9
-    #0 0x78e2930fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x77a2606fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x4012ed in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: double-free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52 in free
 ```
@@ -749,12 +768,12 @@ SUMMARY: AddressSanitizer: double-free ../../../../src/libsanitizer/asan/asan_ma
 #### cart_buggy
 
 ```text
-==47915==ERROR: AddressSanitizer: heap-use-after-free on address 0x502000000010 at pc 0x00000040160c bp 0x7ffd3e983330 sp 0x7ffd3e983320
+==60194==ERROR: AddressSanitizer: heap-use-after-free on address 0x502000000010 at pc 0x00000040160c bp 0x7fff76304890 sp 0x7fff76304880
     #0 0x40160b in main modules/cart.c:17
-    #1 0x7e845782a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
-    #0 0x7e84584fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x7fa34582a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #0 0x7fa3464fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
     #1 0x4015b9 in main modules/cart.c:16
-    #0 0x7e84584fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x7fa3464fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x40134d in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: heap-use-after-free modules/cart.c:17 in main
 ```
@@ -762,10 +781,10 @@ SUMMARY: AddressSanitizer: heap-use-after-free modules/cart.c:17 in main
 #### product_buggy
 
 ```text
-==47918==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x503000000060 at pc 0x7bb1fbca7923 bp 0x7fff88f6d0f0 sp 0x7fff88f6c898
-    #0 0x7bb1fbca7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
+==60197==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x503000000060 at pc 0x721a5a2a7923 bp 0x7ffdfdefef50 sp 0x7ffdfdefe6f8
+    #0 0x721a5a2a7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
     #1 0x4014ee in main modules/product.c:17
-    #0 0x7bb1fbcfd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x721a5a2fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x40132d in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563 in strcpy
 ```
@@ -773,8 +792,8 @@ SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/asa
 #### user_buggy
 
 ```text
-==47921==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x70f993600040 at pc 0x70f9966a7923 bp 0x7ffe1517e3b0 sp 0x7ffe1517db58
-    #0 0x70f9966a7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
+==60200==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7b0d80000040 at pc 0x7b0d830a7923 bp 0x7ffdc71bac60 sp 0x7ffdc71ba408
+    #0 0x7b0d830a7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
     #1 0x401375 in register_user modules/user.c:13
     #0 0x4012c5 in register_user modules/user.c:5
 SUMMARY: AddressSanitizer: stack-buffer-overflow ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563 in strcpy
@@ -801,6 +820,7 @@ make -C security-analysis/c-memory static-check
 make -C security-analysis/c-memory test
 make -C security-analysis/c-memory bmc-check
 make -C security-analysis/c-memory valgrind-check
+make -C security-analysis/c-memory sat-check  # cần cadical và drat-trim trên PATH
 ```
 
 Không chạy make clean nếu muốn giữ raw log để đọc. Khi sandbox làm LSan thất bại, giữ failure riêng và chạy trong môi trường được phép; không tắt detect_leaks để đạt PASS.
@@ -832,9 +852,9 @@ Không chạy make clean nếu muốn giữ raw log để đọc. Khi sandbox l�
 
 Stock=10/q1=q2=6 minh họa baseline sai. Guard tổng quantity loại stock âm. Biên 5+5 vẫn được chấp nhận, và regression kiểm cancel trả lại đúng 10.
 
-### D.3. BMC
+### D.3. BMC, CNF và DRAT
 
-CBMC bounded model checking cho 5 module C nằm ở C.3: unwind=64, input tượng trưng 48 byte, 5/5 BUGGY bị bác và 5/5 FIXED được chứng minh trong bound. Đây là BMC trên harness C, không phải BMC cho toàn bộ source C#; không thay bằng kết quả TLC hay duyệt graph hữu hạn.
+CBMC bounded model checking cho 5 module C nằm ở C.3: unwind=64, input tượng trưng 48 byte, 5/5 BUGGY bị bác và 5/5 FIXED được chứng minh trong bound. C.3.1 mở rộng cùng mã hóa sang CNF DIMACS, CaDiCaL, DRAT proof và UNSAT core. Đây là BMC/proof trên harness C, không phải BMC cho toàn bộ source C#; không thay bằng kết quả TLC hay duyệt graph hữu hạn.
 
 ## Phụ lục E — Fuzzing và test
 
@@ -1096,7 +1116,7 @@ của chính project và xuất pipeline JSON vào security-analysis/.
 | Gateway bền vững/sandbox | LOCAL_PROCESS_KILL_PASS / REAL_PROVIDER_OPEN | Local charge/refund recovery sau journal PASS; crash windows khác/provider thật còn mở |
 | PostgreSQL reconnect | LOCAL_SAME_PROCESS_PASS | Ready 200/503/200; worker resolve; charge/refund một lần; kho đúng; không failover/partition |
 | DB RBAC/retention/webhook/shared limiter/Kubernetes | FUTURE_WORK_OUTSIDE_ACCEPTANCE | Không bắt buộc trong đề tài safety Order–Payment; không tuyên bố đã hiện thực |
-| BMC có bound | OPEN | Ghi tool, k, assumption, verdict và witness |
+| BMC/DRAT có bound | BOUNDED_CERTIFICATE_PASS | CNF DIMACS unwind=64; 5 DRAT VERIFIED, 5 core UNSAT; không chứng minh vô hạn/C# |
 | Công cụ Windows giảng viên | NOT_RUN_THIS_SESSION | Lưu manifest/log/export thực tế; checker độc lập không thay thế |
 | Rate limiting/audit | PARTIALLY_MITIGATED | Admission/audit test PASS; distributed quota, external sink outbox, retention và DBA protection còn mở |
 | API fuzz/network fault injection | OPEN | Target HTTP, corpus, oracle và campaign log |

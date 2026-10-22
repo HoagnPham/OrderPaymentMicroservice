@@ -303,7 +303,7 @@ Các tài liệu `IMPLEMENTATION_CONTRACTS.md`, `OPERATIONS.md`, `PHAM_VI_KIEM_C
 | --- | --- |
 | `README.md` | Ownership/lifetime, BUGGY/FIXED, sanitizer oracle và false negatives của static tools. |
 | `.gitignore` | Quy tắc bỏ qua output riêng của bộ C. |
-| `Makefile` | Build 10 executable bằng GCC+ASan+UBSan; targets `all`, `test`, `static-check`, `bmc-check`, `valgrind-check`, `deep-check`. |
+| `Makefile` | Build 10 executable bằng GCC+ASan+UBSan; targets `all`, `test`, `static-check`, `bmc-check`, `valgrind-check`, `sat-check`, `deep-check`. |
 | `modules/demo.h` | Include/common helper `allocate`: lỗi malloc phải exit riêng, không được tính là tái hiện lỗi thành công. |
 | `modules/user.c` | Email stack buffer overflow; bản FIXED kiểm strlen. |
 | `modules/product.c` | Product name heap buffer overflow; FIXED kiểm độ dài và free cả nhánh reject. |
@@ -315,11 +315,14 @@ Các tài liệu `IMPLEMENTATION_CONTRACTS.md`, `OPERATIONS.md`, `PHAM_VI_KIEM_C
 | `tests/layout_probe.c` | Đo sizeof/_Alignof/offsetof từ type thật trong 5 module C. |
 | `tests/check_memory.py` | Chạy 22 ca, khớp đúng sanitizer diagnostic và stdout biên; sinh log/summary/dynamic evidence. |
 | `tests/check_bmc.py` | Chạy CBMC 10 case trên harness include module thật; bound unwind=64, input 48 byte; sinh log và `bmc-analysis.json`. |
+| `tests/check_sat_pipeline.py` | Xuất CNF DIMACS từ CBMC, giải bằng CaDiCaL, kiểm model SAT, sinh DRAT proof cho UNSAT, kiểm bằng `drat-trim`, xuất và kiểm UNSAT core; sinh `sat-pipeline.json`. |
 | `tests/check_valgrind.py` | Build lại không sanitizer, chạy Memcheck 10 case; sinh log và `valgrind-analysis.json`. |
 | `tests/bmc_harnesses/*.c` | Harness gọi entry point/module thật với input tượng trưng; không sao chép logic sang bản khác. |
 | `evidence/static-analysis.json` | Version GCC/Cppcheck, command, findings theo mode, struct layout và assertions. |
 | `evidence/dynamic-analysis.json` | 22 testcase, expected diagnostic, exit code, sanitizer/platform và scope limit. |
 | `evidence/bmc-analysis.json` | Tool/version/bound, 10 case BUGGY/FIXED, failure text và scope limit. |
+| `evidence/sat-pipeline.json` | Tool/version/bound, 10 case SAT/UNSAT, model check, DRAT proof/hash, UNSAT core/hash và scope limit. |
+| `evidence/sat/cart_fixed.*` | Mẫu CNF + DRAT + core + log drat-trim để kiểm độc lập. |
 | `evidence/valgrind-analysis.json` | Tool/version/build flags, 10 case Memcheck, diagnostic và scope limit. |
 | `build/*_buggy`, `build/*_fixed` | Binary do Makefile sinh, mỗi source có hai mode. |
 | `results/*.log`, `results/summary.json` | Raw sanitizer log từng ca và bảng kết quả; có thể tái tạo bằng `make test`. |
@@ -588,10 +591,10 @@ Compile thành công hoặc static tool không có warning không chứng minh a
 
 | Kỹ thuật | Câu hỏi giải | Trạng thái trong dự án |
 | --- | --- | --- |
-| SAT | Có gán true/false cho biến Boolean để formula đúng không? | Có dùng **khái niệm satisfiability** khi đọc kết quả solver; chưa có pipeline SAT/CNF/DIMACS độc lập hoặc evidence MiniSat. |
+| SAT | Có gán true/false cho biến Boolean để formula đúng không? | Đã có pipeline CNF/DIMACS cho 5 module C: CBMC xuất CNF, CaDiCaL giải; 5 BUGGY SAT có model thỏa CNF, 5 FIXED UNSAT có DRAT proof và UNSAT core. |
 | SMT | Formula có nghiệm theo theory như integer arithmetic không? | Đã dùng Z3 CLI và SMT-LIB cho payment/inventory. |
 | Explicit-state model checking | Các state reachable/cạnh/paths của graph hữu hạn có thỏa property không? | Python recovery checker và TLC. |
-| BMC | Có counterexample dài tối đa k sau khi unroll transition/program không? | Chưa có thí nghiệm BMC với bound k, harness và solver trace riêng. |
+| BMC | Có counterexample dài tối đa k sau khi unroll transition/program không? | Đã có CBMC cho 5 module C, unwind=64, input tượng trưng 48 byte; xem D.5. |
 
 `sat` không tự là “an toàn”; nó nghĩa **tồn tại nghiệm của câu hỏi đang hỏi**. Hỏi `constraints ∧ bad_state`: SAT là counterexample. Hỏi một giao dịch hợp lệ: SAT là có trường hợp hợp lệ. UNSAT chỉ loại khả năng trong tập constraint đang xét. Nếu solver trả UNKNOWN thì không được gán thành UNSAT/PASS. Z3 là solver SMT và xử lý nhiều theory, xem [Z3 Guide](https://microsoft.github.io/z3guide/docs/logic/intro/).
 
@@ -650,9 +653,11 @@ SAT cho một counterexample trong bound; UNSAT chỉ loại bad traces trong bo
 
 Project **đã có CBMC harness/k-unrolling experiment cho 5 module C** (không phải C#): `make -C security-analysis/c-memory bmc-check`, bound unwind=64 và input tượng trưng 48 byte. Kết quả 10/10 case PASS: BUGGY bị bác đúng lỗi, FIXED được chứng minh trong bound. Không lấy `MaxAttempts=2` làm k và không lấy graph depth 9 của TLC làm bound BMC. Python checker duyệt graph hữu hạn; TLC khám phá model TLA+ hữu hạn theo config. Chúng là model checking, không phải BMC; BMC C nằm ở `c-memory/evidence/bmc-analysis.json`.
 
+Pipeline SAT/CNF/DIMACS nối tiếp cùng mã hóa: `make -C security-analysis/c-memory sat-check` (cần CaDiCaL và `drat-trim`). CBMC xuất CNF bằng `--dimacs --outfile`; CaDiCaL trả SAT cho BUGGY và UNSAT cho FIXED; mỗi UNSAT có DRAT proof được `drat-trim` xác nhận `s VERIFIED` và UNSAT core được kiểm lại bằng CaDiCaL. Evidence: `c-memory/evidence/sat-pipeline.json`, mẫu `c-memory/evidence/sat/cart_fixed.*`. Đây vẫn là chứng minh cho CNF bounded, không phải proof vô hạn hay cho source C#.
+
 ### D.6. Kết quả chương 3 có thể trình bày
 
-Đã nối một lỗi stock cụ thể với witness SMT, sửa guard source và regression PostgreSQL; đã biểu diễn constraint payment bằng Z3 và kiểm đủ 10 verdict đúng kỳ vọng. Đã dùng static review/scanner/Cppcheck, sanitizer/Valgrind và model check để kiểm contract/lifecycle; đã chạy CBMC có bound cho 5 module C. SAT độc lập, symbolic/concolic execution và automatic refinement từ C# sang model chưa được triển khai; tài liệu giải thích chúng để xác định đúng giới hạn.
+Đã nối một lỗi stock cụ thể với witness SMT, sửa guard source và regression PostgreSQL; đã biểu diễn constraint payment bằng Z3 và kiểm đủ 10 verdict đúng kỳ vọng. Đã dùng static review/scanner/Cppcheck, sanitizer/Valgrind và model check để kiểm contract/lifecycle; đã chạy CBMC có bound cho 5 module C và pipeline CNF/DRAT cho chính CNF đó. Symbolic/concolic execution, automatic refinement từ C# sang model và proof cho C# chưa được triển khai; tài liệu giải thích chúng để xác định đúng giới hạn.
 
 <a id="chuong-4"></a>
 
@@ -822,7 +827,7 @@ DFSan là framework dynamic data-flow gắn/lan truyền nhãn và để client 
 
 Các lệnh dưới dùng **Bash, từ gốc repository**, không cần đọc/chạy file trong `ATPM/`. Phần này là hướng dẫn tái lập; lúc tạo Markdown chỉ đọc/đối chiếu evidence, không chạy lại toàn pipeline.
 
-Cần .NET 10 SDK, Python 3, GCC/Make, Cppcheck, CBMC, Valgrind, Z3 CLI. Integration thông thường dùng Docker hoặc local PostgreSQL; **process/reconnect/restore drills cần PostgreSQL binaries local**, gồm postgres/initdb/pg_ctl/createdb/pg_dump/pg_restore; browser cần Google Chrome hoặc Chromium. TLC cần Java và `tla2tools.jar` riêng. Không có bước `pip install` bắt buộc cho các script Python được liệt kê.
+Cần .NET 10 SDK, Python 3, GCC/Make, Cppcheck, CBMC, Valgrind, Z3 CLI. Pipeline SAT/CNF/DRAT cần thêm CaDiCaL và `drat-trim`; đây là check opt-in. Integration thông thường dùng Docker hoặc local PostgreSQL; **process/reconnect/restore drills cần PostgreSQL binaries local**, gồm postgres/initdb/pg_ctl/createdb/pg_dump/pg_restore; browser cần Google Chrome hoặc Chromium. TLC cần Java và `tla2tools.jar` riêng. Không có bước `pip install` bắt buộc cho các script Python được liệt kê.
 
 ```bash
 cd /home/phamhoang/OrderPaymentMicroservice
@@ -907,7 +912,7 @@ make -C security-analysis/c-memory bmc-check
 make -C security-analysis/c-memory valgrind-check
 ```
 
-`static-check` cập nhật `evidence/static-analysis.json`; `test` cập nhật `results/*.log`, `summary.json` và `evidence/dynamic-analysis.json` (kỳ vọng 22 PASS). `bmc-check` và `valgrind-check` cập nhật `evidence/bmc-analysis.json` và `evidence/valgrind-analysis.json` (mỗi file 10 case). `make deep-check` chạy cả hai lớp chuyên sâu. Flags sanitizer trong Makefile:
+`static-check` cập nhật `evidence/static-analysis.json`; `test` cập nhật `results/*.log`, `summary.json` và `evidence/dynamic-analysis.json` (kỳ vọng 22 PASS). `bmc-check`, `valgrind-check` và `sat-check` cập nhật `evidence/bmc-analysis.json`, `evidence/valgrind-analysis.json` và `evidence/sat-pipeline.json` (mỗi file 10 case). `make deep-check` chạy cả ba lớp chuyên sâu; `sat-check` cần `cadical` và `drat-trim`. Flags sanitizer trong Makefile:
 
 ```text
 -std=c11 -g -O0 -Wall -Wextra -fno-omit-frame-pointer
@@ -1083,18 +1088,19 @@ dotnet test OrderPaymentMicroservice.IntegrationTests/OrderPaymentMicroservice.I
 
 Oracle reconnect: charge `SUCCESS/PAID/RESERVED`, charge=1, release=0; refund `REFUNDED/RELEASED`, charge=1, refund=1, release=1. Ready phải trở lại 200 sau DB restart. Backup/load chỉ có kết luận trong workload/cluster tạm đã chạy, không thành SLA.
 
-### F.8. CBMC/Valgrind đã chạy và clang-tidy chưa chạy
+### F.8. CBMC/Valgrind/SAT đã chạy và clang-tidy chưa chạy
 
-CBMC và Valgrind **đã có evidence trong pipeline**, không còn là lệnh tham khảo. Chạy lại từ gốc repository:
+CBMC, Valgrind và pipeline SAT/CNF/DRAT **đã có evidence trong pipeline**, không còn là lệnh tham khảo. Chạy lại từ gốc repository:
 
 ```bash
 make -C security-analysis/c-memory bmc-check
 make -C security-analysis/c-memory valgrind-check
-# hoặc chạy cả hai:
+make -C security-analysis/c-memory sat-check   # cần cadical + drat-trim
+# hoặc chạy cả ba:
 make -C security-analysis/c-memory deep-check
 ```
 
-`bmc-check` dùng harness trong `c-memory/tests/bmc_harnesses/`, include trực tiếp module thật, với `--bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions`; kỳ vọng 10/10 PASS (5 BUGGY `VERIFICATION FAILED` đúng lỗi, 5 FIXED `VERIFICATION SUCCESSFUL`). `valgrind-check` tự build binary **không sanitizer** (`-fno-stack-protector`) rồi chạy Memcheck; kỳ vọng 10/10 PASS. Evidence: `c-memory/evidence/bmc-analysis.json` và `c-memory/evidence/valgrind-analysis.json`.
+`bmc-check` dùng harness trong `c-memory/tests/bmc_harnesses/`, include trực tiếp module thật, với `--bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions`; kỳ vọng 10/10 PASS (5 BUGGY `VERIFICATION FAILED` đúng lỗi, 5 FIXED `VERIFICATION SUCCESSFUL`). `valgrind-check` tự build binary **không sanitizer** (`-fno-stack-protector`) rồi chạy Memcheck; kỳ vọng 10/10 PASS. `sat-check` xuất CNF DIMACS, giải bằng CaDiCaL, kiểm DRAT bằng `drat-trim` và kiểm UNSAT core; kỳ vọng 10/10 PASS. Evidence: `c-memory/evidence/bmc-analysis.json`, `valgrind-analysis.json` và `sat-pipeline.json`.
 
 Đọc trực tiếp một case:
 
@@ -1147,7 +1153,7 @@ Chuỗi nhanh, không cần .NET/PostgreSQL, tự kiểm artifact và sinh lại
 python3 security-analysis/run_all_checks.py
 ```
 
-Mặc định chạy workbook/ATPM checker, recovery model, liveness, payment/inventory SMT, threat model, C static, sanitizer, CBMC, Valgrind, rồi `package_evidence.py` + `build_report.py`. Kết quả tổng hợp ở `security-analysis/results/end_to_end.results.json`. Các nhóm nặng là opt-in: `--with-dotnet-tests`, `--with-integration`, `--with-fuzz`, `--with-tlc`; `--no-package` để chỉ chạy check. Runner **không** rerun 184 test .NET mặc định; nó kiểm `application_tests.results.json` ở trạng thái evidence đã lưu. Runner cũng **không** chạy GUI Windows của thầy; mục `atpm_gui` trong JSON ghi BLOCKED và trỏ về checklist thủ công.
+Mặc định chạy workbook/ATPM checker, recovery model, liveness, payment/inventory SMT, threat model, C static, sanitizer, CBMC, Valgrind, rồi `package_evidence.py` + `build_report.py`. Kết quả tổng hợp ở `security-analysis/results/end_to_end.results.json`. Các nhóm nặng là opt-in: `--with-dotnet-tests`, `--with-integration`, `--with-fuzz`, `--with-tlc`, `--with-sat`; `--no-package` để chỉ chạy check. `--with-sat` cần CaDiCaL và `drat-trim` trên `PATH`; default vẫn kiểm evidence SAT đã lưu nhưng không tái sinh proof. Runner **không** rerun 184 test .NET mặc định; nó kiểm `application_tests.results.json` ở trạng thái evidence đã lưu. Runner cũng **không** chạy GUI Windows của thầy; mục `atpm_gui` trong JSON ghi BLOCKED và trỏ về checklist thủ công.
 
 Lệnh in số liệu toàn suite và fuzz để đưa vào thuyết trình:
 
@@ -1192,7 +1198,7 @@ pwsh -File ./test-api.ps1 -BaseUrl http://localhost:5246/api
 | --- | --- | --- |
 | 1 | Đã đặc tả threat/contracts, dựng Kripke/recovery model, kiểm property/mutation và validation bằng kịch bản thật. | Recovery JSON, state-response CSV, liveness audit và browser/reconnect evidence. |
 | 2 | Đã mô phỏng 5 lỗi memory C và so BUGGY/FIXED; dùng GCC/Cppcheck/scanner/ASan/UBSan/LSan, 22 ca đúng oracle; thêm CBMC 10/10 và Valgrind 10/10. | Static findings riêng từng tool, sanitizer log, CBMC/Valgrind evidence và layout. |
-| 3 | Đã dùng Z3 cho số học payment/inventory, SAT/UNSAT/witness; kiểm graph/TLA+; CBMC có bound cho 5 module C; chưa SAT độc lập/BMC cho C#. | Hai file .z3, 7+3 verdict, stock witness 10−6−6 và `bmc-analysis.json`. |
+| 3 | Đã dùng Z3 cho số học payment/inventory, SAT/UNSAT/witness; kiểm graph/TLA+; CBMC có bound và CNF/DIMACS + DRAT proof/UNSAT core cho 5 module C; chưa BMC/proof cho C#. | Hai file .z3, 7+3 verdict, stock witness 10−6−6, `bmc-analysis.json`, `sat-pipeline.json`. |
 | 4 | Đã fuzz structured input/state pairs bằng fixed seed, oracle và Coverlet; chưa coverage-guided/path/taint analysis tự động. | Corpus, SecurityFuzzingTests.cs, fuzz JSON và class coverage XML. |
 
 Các link tài liệu công cụ trong bài chỉ giải thích cơ chế công cụ. Chứng cứ dự án vẫn là source/model/test/log hiện có; tài liệu của tool không thay kết quả đã chạy của project.

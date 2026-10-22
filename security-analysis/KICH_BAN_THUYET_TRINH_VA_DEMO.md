@@ -1,6 +1,6 @@
 # Đánh giá project, cách dùng ATPM và kịch bản thuyết trình
 
-Ngày đánh giá: **22/10/2026 — Asia/Bangkok** (cập nhật P2: CBMC/Valgrind/end-to-end). Chạy các lệnh Bash từ **thư mục gốc repository**, trừ phần ghi rõ PowerShell/Windows. Tài liệu này là kịch bản bảo vệ; phần giải thích source chi tiết nằm trong [hướng dẫn bốn chương](../HUONG_DAN_DU_AN_VA_KIEM_CHUNG_4_CHUONG.md).
+Ngày đánh giá: **22/10/2026 — Asia/Bangkok** (cập nhật P3: CNF/DIMACS, DRAT proof, UNSAT core). Chạy các lệnh Bash từ **thư mục gốc repository**, trừ phần ghi rõ PowerShell/Windows. Tài liệu này là kịch bản bảo vệ; phần giải thích source chi tiết nằm trong [hướng dẫn bốn chương](../HUONG_DAN_DU_AN_VA_KIEM_CHUNG_4_CHUONG.md).
 
 ## 1. Project đã hoàn thiện đến đâu?
 
@@ -21,7 +21,8 @@ Tên project là OrderPaymentMicroservice nhưng hiện thực hiện tại là 
 | C static / dynamic          | **Static PASS; dynamic 22/22 PASS**                   | Bản lỗi phải có đúng diagnostic; bản sửa và ca biên đạt                              |
 | C BMC (CBMC)                | **10/10 case PASS**                                   | 5 BUGGY `VERIFICATION FAILED` đúng lỗi; 5 FIXED `SUCCESSFUL`; bound unwind=64, input 48 byte |
 | C Valgrind                  | **10/10 case PASS**                                   | Memcheck trên build không sanitizer; BUGGY có lỗi đúng loại, FIXED sạch          |
-| End-to-end runner            | **PASS**                                              | `run_all_checks.py` chạy chuỗi nhanh + kiểm artifact; GUI Windows vẫn BLOCKED   |
+| C SAT/CNF/DRAT              | **10/10 case PASS; 5 proof `VERIFIED`; 5 core UNSAT** | CBMC xuất DIMACS; BUGGY SAT có model, FIXED UNSAT có DRAT proof và core; vẫn bound 64 |
+| End-to-end runner            | **PASS**                                              | `run_all_checks.py` chạy chuỗi nhanh + kiểm artifact; `--with-sat` cho proof; GUI Windows vẫn BLOCKED   |
 | Fuzz ứng dụng             | Xem evidence lượt chạy mới                             | Seed 20261009; hai campaign random 25.000 vòng và một campaign stateful 2.000 chuỗi × tối đa 20 bước; coverage chỉ trên 5 target     |
 | Threat model consistency    | **PASS**                                              | 6 tài sản, 4 trust boundary, 9 threat, đủ 6 nhóm STRIDE; vẫn có threat mở                |
 
@@ -50,7 +51,7 @@ Chuỗi kiểm chứng nhanh (không cần .NET/PostgreSQL) dùng khi demo phầ
 python3 security-analysis/run_all_checks.py
 ```
 
-Runner chạy workbook/ATPM checker, recovery, liveness, SMT, threat, C static/sanitizer/CBMC/Valgrind, rồi package + report; kết quả ở `security-analysis/results/end_to_end.results.json`. Các nhóm .NET/PostgreSQL/TLC/fuzz là opt-in; mặc định runner không rerun 184 test .NET mà kiểm evidence đã lưu. Runner không chạy GUI Windows.
+Runner chạy workbook/ATPM checker, recovery, liveness, SMT, threat, C static/sanitizer/CBMC/Valgrind, rồi package + report; kết quả ở `security-analysis/results/end_to_end.results.json`. Các nhóm .NET/PostgreSQL/TLC/fuzz/SAT là opt-in; mặc định runner không rerun 184 test .NET mà kiểm evidence đã lưu. `--with-sat` cần `cadical` và `drat-trim` trên `PATH`, và tái sinh proof/core thay vì chỉ đọc evidence. Runner không chạy GUI Windows.
 
 ### 1.2. Những phần đã xây dựng
 
@@ -404,12 +405,14 @@ Hai lớp kiểm chứng chuyên sâu đã chạy lại, không chỉ là lệnh
 ```bash
 make -C security-analysis/c-memory bmc-check
 make -C security-analysis/c-memory valgrind-check
+make -C security-analysis/c-memory sat-check   # cần cadical + drat-trim
 ```
 
 - **CBMC** include trực tiếp 5 module C, đổi tên `main` để làm harness; kiểm `--bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions`. User/Product nhận input tượng trưng tối đa 48 byte. Kết quả: 5/5 BUGGY bị bác đúng lỗi (ghi ngoài buffer, use-after-free, leak, double-free), 5/5 FIXED được chứng minh trong bound. Evidence: `c-memory/evidence/bmc-analysis.json`.
 - **Valgrind Memcheck** chạy trên build riêng không sanitizer (`-fno-stack-protector`) để thấy truy cập thô: 5/5 BUGGY có lỗi đúng loại, 5/5 FIXED sạch. Với User, chuỗi dài làm hỏng return address nên Memcheck báo invalid jump; CBMC chỉ ra chính xác ghi ngoài `email[32]`. Evidence: `c-memory/evidence/valgrind-analysis.json`.
+- **CNF/DIMACS + DRAT** xuất CNF từ CBMC, giải bằng CaDiCaL: 5 BUGGY SAT có model thỏa CNF, 5 FIXED UNSAT; mỗi UNSAT có DRAT proof được `drat-trim` xác nhận `VERIFIED`, và UNSAT core được CaDiCaL kiểm lại. Evidence: `c-memory/evidence/sat-pipeline.json`, mẫu `c-memory/evidence/sat/cart_fixed.*`.
 
-Nói rõ giới hạn: đây là BMC **có bound** và Memcheck trên input/harness đã chọn, không phải chứng minh cho toàn bộ source C# hay mọi input. Không lấy TLC hay duyệt graph hữu hạn để gọi là BMC.
+Nói rõ giới hạn: đây là BMC **có bound**, Memcheck trên input/harness đã chọn và DRAT proof cho **CNF bounded**, không phải chứng minh cho toàn bộ source C# hay mọi input. Không lấy TLC hay duyệt graph hữu hạn để gọi là BMC.
 
 ### 6.3. Chương 3 — SMT/Z3 và phân tích tĩnh
 
@@ -524,7 +527,9 @@ Lời kết khoảng 45 giây:
 | Bộ nhớ C                | `make -C security-analysis/c-memory test`                       | 22 ca sanitizer với diagnostic đúng                            |
 | BMC C                     | `make -C security-analysis/c-memory bmc-check`                  | 10/10; 5 BUGGY FAILED, 5 FIXED SUCCESSFUL; bound 64/48 byte    |
 | Valgrind C                | `make -C security-analysis/c-memory valgrind-check`             | 10/10; BUGGY có lỗi, FIXED sạch                               |
+| SAT/CNF/DRAT C            | `make -C security-analysis/c-memory sat-check`                  | 10/10; 5 DRAT `VERIFIED`; 5 core UNSAT; cần cadical/drat-trim |
 | End-to-end                | `python3 security-analysis/run_all_checks.py`                   | Chuỗi nhanh + artifact PASS; GUI Windows vẫn BLOCKED          |
+| End-to-end + proof        | `python3 security-analysis/run_all_checks.py --with-sat`        | Thêm CNF/DIMACS/DRAT step; cần cadical/drat-trim trên PATH    |
 | Static C                  | `make -C security-analysis/c-memory static-check`               | Finding BUGGY/FIXED và layout                                    |
 | SMT tiền/kho             | Hai script `verify_payment_smt.py`, `verify_inventory_smt.py` | 7/7, 3/3 theo kỳ vọng                                           |
 | Fuzz C#                   | `python3 security-analysis/run_fuzzing.py`                      | 3 test, seed, coverage đúng target                              |
@@ -536,7 +541,7 @@ Khi gặp sự cố demo:
 - **Không thấy file trong danh sách mẫu:** dùng nút nạp file khác, chọn đúng đường dẫn đã giải nén, không nhập ZIP.
 - **JSON báo thiếu `state_machine` hoặc `states`:** đang nhầm Spec JSON với Kripke JSON; chọn đúng tab/schema theo §2.
 - **Không có fuzz Python từ workbook:** do `HamSinhMa` hiện chỉ có C; dùng fuzz C# để trình phần đã làm, ghi nhận phần Excel cần bổ sung.
-- **Máy demo thiếu CBMC/Valgrind:** mở evidence `bmc-analysis.json`/`valgrind-analysis.json` đã đóng gói và nói rõ công cụ/phiên bản/bound; không đọc log cũ như lượt chạy mới. Trên Ubuntu có thể cài `cbmc valgrind` trước buổi demo.
+- **Máy demo thiếu CBMC/Valgrind/CaDiCaL/drat-trim:** mở evidence `bmc-analysis.json`/`valgrind-analysis.json`/`sat-pipeline.json` đã đóng gói và nói rõ công cụ/phiên bản/bound; không đọc log cũ như lượt chạy mới. Trên Ubuntu có thể cài `cbmc valgrind cadical` và build `drat-trim` trước buổi demo.
 - **Test SKIP:** thiếu môi trường; không tính là PASS. Kiểm PostgreSQL local và Chrome, hoặc trình evidence đã lưu và nói rõ ngày chạy.
 - **Shop không lên:** đọc lỗi startup; kiểm DB demo, connection string và JWT key ít nhất 32 ký tự; không đổi sang DB thật để cứu demo.
 - **Không đủ thời gian:** mở JSON/report đã chuẩn bị, nói rõ đây là evidence của lượt nào; không gọi việc mở file là chạy lại kiểm thử.

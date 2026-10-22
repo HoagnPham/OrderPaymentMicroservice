@@ -4,8 +4,10 @@ Default mode runs the fast, dependency-light checks that are available in this
 Linux environment: workbook/ATPM schema, recovery model, liveness, SMT, threat
 model, C static/sanitizer/CBMC/Valgrind evidence, packaging and report. Checkout
 retry needs Chrome/Chromium; C checks need gcc, cppcheck, cbmc and valgrind. The
-.NET suites and TLC are opt-in because they need extra services or a jar. The
-default chain does not read the read-only ATPM reference tree.
+CNF/DIMACS/DRAT certificate pipeline is opt-in with --with-sat because it also
+needs CaDiCaL and drat-trim. The .NET suites and TLC are opt-in because they need
+extra services or a jar. The default chain does not read the read-only ATPM
+reference tree.
 
 This script does not replace the Windows-only ATPM GUI. It records exactly what
 was executed and which artifacts were checked.
@@ -63,6 +65,7 @@ ARTIFACTS = [
     ("c-memory/evidence/dynamic-analysis.json", "passed"),
     ("c-memory/evidence/bmc-analysis.json", "passed"),
     ("c-memory/evidence/valgrind-analysis.json", "passed"),
+    ("c-memory/evidence/sat-pipeline.json", "passed"),
     ("results/application_tests.results.json", "passed"),
 ]
 
@@ -141,6 +144,7 @@ def main() -> None:
     parser.add_argument("--with-integration", action="store_true", help="run the PostgreSQL integration project")
     parser.add_argument("--with-fuzz", action="store_true", help="run the deterministic .NET fuzz campaign")
     parser.add_argument("--with-tlc", action="store_true", help="run TLC (requires TLA2TOOLS_JAR)")
+    parser.add_argument("--with-sat", action="store_true", help="run CNF/DIMACS + DRAT proof checks (requires cadical and drat-trim)")
     parser.add_argument("--no-package", action="store_true", help="skip package_evidence and build_report")
     args = parser.parse_args()
 
@@ -171,6 +175,10 @@ def main() -> None:
         steps.append(("tlc", command("security-analysis/run_tlc.py")))
     else:
         skipped.append("TLC (use --with-tlc with TLA2TOOLS_JAR)")
+    if args.with_sat:
+        steps.append(("c_sat", command("security-analysis/c-memory/tests/check_sat_pipeline.py")))
+    else:
+        skipped.append("CNF/DIMACS + DRAT proof (use --with-sat with cadical and drat-trim)")
     if not args.no_package:
         steps.append(("package_evidence", command("security-analysis/package_evidence.py")))
         steps.append(("build_report", command("security-analysis/build_report.py")))
@@ -204,6 +212,7 @@ def main() -> None:
             "This runner proves only that the listed commands exited successfully in this environment.",
             "Default mode validates stored .NET evidence; it does not rerun the 184 unit/integration tests unless --with-dotnet-tests/--with-integration is used.",
             "CBMC results are bounded by the harness and unwind limit.",
+            "DRAT certificates prove UNSAT of the bounded CBMC CNF, not the ASP.NET service or unbounded executions.",
             "Artifact predicates check stored JSON flags, not a second independent implementation.",
         ],
     }

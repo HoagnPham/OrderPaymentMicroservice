@@ -34,6 +34,7 @@ Các mục dưới đây phải chạy lại được trên máy demo và phải
 | B17 | C BMC | CBMC 10/10 case: 5 BUGGY FAILED đúng lỗi, 5 FIXED SUCCESSFUL; bound unwind=64, input 48 byte | `c-memory/evidence/bmc-analysis.json` |
 | B18 | C Valgrind | Memcheck 10/10 case: 5 BUGGY có lỗi đúng loại, 5 FIXED sạch | `c-memory/evidence/valgrind-analysis.json` |
 | B19 | End-to-end | Chuỗi kiểm chứng nhanh PASS, artifact check PASS; GUI Windows vẫn BLOCKED | `end_to_end.results.json` |
+| B20 | C SAT/CNF/DRAT | CBMC xuất CNF DIMACS cho 10 case: 5 BUGGY SAT có model thỏa CNF, 5 FIXED UNSAT; 5 DRAT proof `VERIFIED`, 5 UNSAT core kiểm lại UNSAT; bound unwind=64 | `c-memory/evidence/sat-pipeline.json`; mẫu `c-memory/evidence/sat/` |
 
 ## 2. Tiêu chí chất lượng của evidence
 
@@ -53,7 +54,7 @@ JSON/TRX làm chuẩn và sửa bản sao.
 | # | Hạng mục | Vì sao chưa bắt buộc | Nếu làm thì cần |
 | --- | --- | --- | --- |
 | T1 | BMC/CBMC trên C | Đã thực hiện cho 5 module C (B17); mở rộng sang C# vẫn ngoài scope | CBMC + bound + unwinding assertion |
-| T2 | SAT/CNF/DIMACS độc lập | Không cần để chứng minh các bất biến đang có | CNF generator + so sánh 2 solver |
+| T2 | SAT/CNF/DIMACS độc lập | Đã thực hiện cho 5 module C (B20); vẫn là bounded CNF, không phải proof vô hạn/C# | CBMC DIMACS + CaDiCaL + drat-trim + core |
 | T3 | Coverage-guided fuzz | Fixed-seed đã đủ cho demo oracle | libFuzzer/AFL++/SharpFuzz + corpus |
 | T4 | HTTP black-box fuzz | Test hiện ở mức hàm/aggregate | RESTler/Schemathesis |
 | T5 | Valgrind/clang-tidy/clang analyzer | Valgrind đã thực hiện (B18); clang-tidy/analyzer chưa có trên PATH | log từng công cụ, gồm cả false negative |
@@ -76,8 +77,8 @@ JSON/TRX làm chuẩn và sửa bản sao.
 | Chương | Nội dung | Mức evidence hiện có | Giới hạn phải nói |
 | --- | --- | --- | --- |
 | 1 | Kripke, CTL/LTL, model checking | Model + checker duyệt toàn bộ 14 state; workbook thêm cụm khóa 4 state; TLA+ có fairness | Chưa có fair-CTL đầy đủ; một số state là trừu tượng |
-| 2 | C memory safety, static analysis | 5 module, ASan/UBSan 22/22; CBMC 10/10; Valgrind 10/10 | Cppcheck false negative 4/5; chưa clang-tidy; CBMC có bound 64/48 |
-| 3 | SAT/SMT/BMC | 10 query Z3 đúng verdict; CBMC bounded cho 5 module C | Chưa BMC cho C#; chưa pipeline CNF |
+| 2 | C memory safety, static analysis | 5 module, ASan/UBSan 22/22; CBMC 10/10; Valgrind 10/10; CNF/DRAT 10/10 | Cppcheck false negative 4/5; chưa clang-tidy; CBMC/DRAT có bound 64/48 |
+| 3 | SAT/SMT/BMC | 10 query Z3 đúng verdict; CBMC bounded; CNF DIMACS + 5 DRAT proof + 5 UNSAT core | Chưa BMC cho C#; proof chỉ cho CNF bounded |
 | 4 | Fuzzing, coverage | 4 campaign seed cố định; coverage theo target | Chưa coverage-guided; chưa HTTP fuzz |
 
 ## 6. Cách xác nhận nhanh
@@ -92,6 +93,9 @@ dotnet test OrderPaymentMicroservice.slnx --no-restore --nologo \
 # Mô hình, SMT, liveness, C depth
 python3 security-analysis/run_all_checks.py
 
+# Thêm CNF/DIMACS/DRAT (cần cadical + drat-trim trên PATH)
+python3 security-analysis/run_all_checks.py --with-sat
+
 # Hoặc chạy riêng
 python3 security-analysis/verify_recovery_model.py
 python3 security-analysis/audit_liveness.py
@@ -99,6 +103,7 @@ python3 security-analysis/verify_payment_smt.py
 python3 security-analysis/verify_inventory_smt.py
 make -C security-analysis/c-memory bmc-check
 make -C security-analysis/c-memory valgrind-check
+make -C security-analysis/c-memory sat-check
 
 # Fuzz + coverage target
 python3 security-analysis/run_fuzzing.py
@@ -120,13 +125,16 @@ dùng chung assembly.
 | Z3 | SMT | phải có trên `PATH` |
 | GCC + ASan/UBSan | C memory | GCC 13.3.0 |
 | CBMC | BMC cho 5 module C | đã chạy; bound unwind=64 |
+| CaDiCaL | Giải CNF DIMACS + sinh DRAT | đã dùng 1.7.3; `sudo apt install cadical` |
+| drat-trim | Kiểm DRAT + xuất UNSAT core | build từ source; không có `--version` |
 | Valgrind | Memcheck cho 5 module C | đã chạy; build không sanitizer |
 | Cppcheck 2.13.0 | static analysis C | chỉ dùng để đối chiếu, không phải oracle |
 | Chrome/Chromium | live smoke | một desktop browser |
 
 Thiếu PostgreSQL thì B3/B11/B12 không chạy được; thiếu Z3 thì B6/B7 không chạy được;
-thiếu CBMC/Valgrind thì B17/B18 không chạy lại được. Trong trường hợp đó phải nói rõ
-là "không chạy lại", không được đọc evidence cũ như kết quả mới.
+thiếu CBMC/Valgrind thì B17/B18 không chạy lại được; thiếu CaDiCaL/drat-trim thì B20
+không tái sinh được (default runner vẫn kiểm evidence đã lưu). Trong trường hợp đó phải
+nói rõ là "không chạy lại", không được đọc evidence cũ như kết quả mới.
 
 ## 8. Liên hệ với tài liệu khác
 

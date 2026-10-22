@@ -4,7 +4,7 @@ SANFLAGS = -fsanitize=address,undefined -fno-sanitize-recover=all -fno-pie -no-p
 MODULES = order payment cart product user
 BUGGY = $(addprefix build/,$(addsuffix _buggy,$(MODULES)))
 FIXED = $(addprefix build/,$(addsuffix _fixed,$(MODULES)))
-.PHONY: all test static-check bmc-check valgrind-check deep-check clean
+.PHONY: all test static-check bmc-check valgrind-check sat-check deep-check clean
 all: $(BUGGY) $(FIXED)
 build:
 	mkdir -p build
@@ -20,6 +20,8 @@ bmc-check:
 	python3 tests/check_bmc.py
 valgrind-check:
 	python3 tests/check_valgrind.py
-deep-check: bmc-check valgrind-check
+sat-check:
+	python3 tests/check_sat_pipeline.py
+deep-check: bmc-check valgrind-check sat-check
 clean:
 	rm -rf build results

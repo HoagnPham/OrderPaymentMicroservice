@@ -140,7 +140,10 @@ Kết quả gồm property, mutation, witness và hash model trong audit. Duyệ
 hạn và TLC không được gọi là thí nghiệm bounded model checking có bound k. BMC
 cho 5 module C dùng CBMC, bound unwind=64/input 48 byte, nằm ở chương 4 và Phụ lục
 C.3; UNSAT/SUCCESS trong bound không tự chứng minh safety vô hạn và không áp cho C#.
-BMC cho C#/pipeline CNF vẫn cần encode transition/initial/bad, công bố k, solver và verdict.
+Pipeline CNF/DIMACS dùng chính CNF của CBMC, CaDiCaL giải, DRAT proof được
+`drat-trim` xác nhận và UNSAT core được kiểm lại; proof chỉ cho CNF bounded, không
+phải proof cho C# hay mọi độ dài thực thi. BMC/proof cho C# vẫn cần encode
+transition/initial/bad, công bố k, solver và verdict.
 
 Nguồn: [recovery model](../order_payment_recovery_model.json),
 [checker](../verify_recovery_model.py), [audit](../results/liveness_audit.results.json),

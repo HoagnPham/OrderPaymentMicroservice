@@ -29,8 +29,9 @@ Precision/scale và timeout/cancellation worker đã có regression; phần ti�
 là network/commit fault injection đa dạng, worker scheduler trên tải thực tế và
 backpressure khi provider không tuân cancellation. Historical evidence cần liên
 kết run-time hashes khi chạy lại. BMC cho 5 module C đã có (CBMC, bound unwind=64);
-mở rộng BMC sang C#/pipeline CNF chỉ bổ sung nếu tiêu chí học phần yêu cầu, với
-bound và semantics công bố. Không thêm
+pipeline CNF/DIMACS + DRAT proof/UNSAT core cũng đã có cho chính CNF đó. Mở rộng
+BMC/proof sang C# chỉ bổ sung nếu tiêu chí học phần yêu cầu, với bound và semantics
+công bố. Không thêm
 Kafka/Kubernetes chỉ để tăng số công nghệ khi chưa có nghĩa vụ nghiệp vụ cần nó.
 
 ### 8.3. Rủi ro khi áp dụng migration

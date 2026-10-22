@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_at_utc": "2026-10-22T00:39:43.049835+00:00",
-  "finished_at_utc": "2026-10-22T00:39:55.448278+00:00",
+  "run_at_utc": "2026-10-22T01:11:43.770555+00:00",
+  "finished_at_utc": "2026-10-22T01:11:58.274081+00:00",
   "root": "/home/phamhoang/OrderPaymentMicroservice",
   "passed": true,
   "steps": [
@@ -10,7 +10,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_teacher_spec.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.056,
+      "duration_s": 0.067,
       "passed": true,
       "tail": [
         "Teacher spec compatibility: PASS (10 sheets, 18 states, 10 CTL properties, 50 test cases)",
@@ -23,7 +23,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_recovery_model.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.045,
+      "duration_s": 0.041,
       "passed": true,
       "tail": [
         "[P12] PASS - A terminal state can only reject/no-op and remain in the same terminal state.",
@@ -45,7 +45,7 @@
       "command": "/usr/bin/python3 security-analysis/audit_liveness.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.029,
+      "duration_s": 0.041,
       "passed": true,
       "tail": [
         "Liveness audit: PASS",
@@ -58,7 +58,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_payment_smt.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.053,
+      "duration_s": 0.058,
       "passed": true,
       "tail": [
         "SMT verification: 7/7 PASS",
@@ -77,7 +77,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_inventory_smt.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.061,
+      "duration_s": 0.06,
       "passed": true,
       "tail": [
         "Inventory SMT: 3/3 PASS"
@@ -88,7 +88,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_checkout.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.838,
+      "duration_s": 1.091,
       "passed": true,
       "tail": [
         "PASS: checkout key persistence; transient retry; stable payload/key; bounded jitter and attempts; no business/503 retry; cancellation; JSON/text API errors"
@@ -99,7 +99,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_threat_model.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.044,
+      "duration_s": 0.036,
       "passed": true,
       "tail": [
         "Threat model: PASS (6 assets, 4 boundaries, 9 threats, 6/6 STRIDE)"
@@ -110,7 +110,7 @@
       "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_static.py --output security-analysis/c-memory/evidence/static-analysis.json",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.289,
+      "duration_s": 0.423,
       "passed": true,
       "tail": [
         "PASS static analysis: security-analysis/c-memory/evidence/static-analysis.json"
@@ -121,7 +121,7 @@
       "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_memory.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.862,
+      "duration_s": 1.072,
       "passed": true,
       "tail": [
         "PASS product_fixed_length_0",
@@ -143,7 +143,7 @@
       "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_bmc.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 2.429,
+      "duration_s": 2.611,
       "passed": true,
       "tail": [
         "PASS user_buggy",
@@ -164,7 +164,7 @@
       "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_valgrind.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 6.809,
+      "duration_s": 5.135,
       "passed": true,
       "tail": [
         "PASS user_buggy",
@@ -181,11 +181,32 @@
       ]
     },
     {
+      "name": "c_sat",
+      "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_sat_pipeline.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 2.933,
+      "passed": true,
+      "tail": [
+        "PASS order_buggy sat",
+        "PASS order_fixed unsat",
+        "PASS payment_buggy sat",
+        "PASS payment_fixed unsat",
+        "PASS cart_buggy sat",
+        "PASS cart_fixed unsat",
+        "PASS product_buggy sat",
+        "PASS product_fixed unsat",
+        "PASS user_buggy sat",
+        "PASS user_fixed unsat",
+        "SAT/CNF/DIMACS: PASS (10 cases)"
+      ]
+    },
+    {
       "name": "package_evidence",
       "command": "/usr/bin/python3 security-analysis/package_evidence.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.398,
+      "duration_s": 0.46,
       "passed": true,
       "tail": [
         "unit: 149/149 passed, 0 skipped",
@@ -198,7 +219,7 @@
       "command": "/usr/bin/python3 security-analysis/build_report.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.056,
+      "duration_s": 0.061,
       "passed": true,
       "tail": [
         "/home/phamhoang/OrderPaymentMicroservice/security-analysis/report/BAO_CAO.md",
@@ -210,7 +231,7 @@
       "command": "/usr/bin/python3 security-analysis/package_evidence.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.426,
+      "duration_s": 0.412,
       "passed": true,
       "tail": [
         "unit: 149/149 passed, 0 skipped",
@@ -276,6 +297,11 @@
       "reason": "passed=True"
     },
     {
+      "path": "c-memory/evidence/sat-pipeline.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
       "path": "results/application_tests.results.json",
       "passed": true,
       "reason": "passed=True"
@@ -312,6 +338,7 @@
     "This runner proves only that the listed commands exited successfully in this environment.",
     "Default mode validates stored .NET evidence; it does not rerun the 184 unit/integration tests unless --with-dotnet-tests/--with-integration is used.",
     "CBMC results are bounded by the harness and unwind limit.",
+    "DRAT certificates prove UNSAT of the bounded CBMC CNF, not the ASP.NET service or unbounded executions.",
     "Artifact predicates check stored JSON flags, not a second independent implementation."
   ]
 }

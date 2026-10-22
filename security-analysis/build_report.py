@@ -24,6 +24,7 @@ def chapter_tokens():
     memory = read('results/chapter4_run.results.json')
     static = read('c-memory/evidence/static-analysis.json')
     bmc = read('c-memory/evidence/bmc-analysis.json')
+    sat = read('c-memory/evidence/sat-pipeline.json')
     valgrind = read('c-memory/evidence/valgrind-analysis.json')
     recovery = read('results/order_payment_recovery_model.results.json')
     assets = table(['Asset', 'Tên', 'Phân loại', 'C / I / A'], [
@@ -44,6 +45,7 @@ def chapter_tokens():
         ['GCC + cppcheck + scanner + layout', static['assertions']['passed'], static['environment']['gcc']+'; '+static['environment']['cppcheck']],
         ['Sanitizer case oracle', '22/22 PASS', 'Ngoài sandbox, ASan/UBSan/LSan; detect_leaks=1'],
         ['CBMC bounded model checking', f"{sum(1 for c in bmc['cases'] if c['passed'])}/{len(bmc['cases'])} PASS", f"unwind={bmc['bound']['unwind']}; input tượng trưng {bmc['bound']['symbolic_input_bytes']} byte"],
+        ['SAT/CNF/DIMACS + DRAT', f"{sum(1 for c in sat['cases'] if c['passed'])}/{len(sat['cases'])} PASS", f"CaDiCaL {sat['tool']['cadical']['version']}; 5 DRAT proof VERIFIED; UNSAT core kiểm lại"],
         ['Valgrind Memcheck', f"{sum(1 for c in valgrind['cases'] if c['passed'])}/{len(valgrind['cases'])} PASS", 'Build không sanitizer; BUGGY có lỗi, FIXED sạch'],
         ['Đóng gói evidence', memory['passed'], 'Hash source/binary/evidence; timestamp ghi sau lệnh'],
     ])
@@ -115,6 +117,7 @@ def enrich_report(report):
 def enrich_annex(annex):
     audit = read('results/liveness_audit.results.json')
     static = read('c-memory/evidence/static-analysis.json')
+    sat = read('c-memory/evidence/sat-pipeline.json')
     model = read('order_payment_recovery_model.json')
     recovery = read('results/order_payment_recovery_model.results.json')
     threat = read('threat_model.json')
@@ -186,7 +189,7 @@ riêng. Hash/authenticity của gateway response chưa được mock chứng min
           'Offsets đo được: '+json.dumps(static['layout']['offsets'])+'.\n',
           'Metadata source/binary/environment: [chapter4 run](../results/chapter4_run.results.json). Không có timestamp start/finish chính xác; make dùng binary hiện có nếu còn mới hơn source.\n',
           '### C.9. Tái lập chỉ bằng project\n',
-          '```bash\nmake -C security-analysis/c-memory static-check\nmake -C security-analysis/c-memory test\nmake -C security-analysis/c-memory bmc-check\nmake -C security-analysis/c-memory valgrind-check\n```\n',
+          '```bash\nmake -C security-analysis/c-memory static-check\nmake -C security-analysis/c-memory test\nmake -C security-analysis/c-memory bmc-check\nmake -C security-analysis/c-memory valgrind-check\nmake -C security-analysis/c-memory sat-check  # cần cadical và drat-trim trên PATH\n```\n',
           'Không chạy make clean nếu muốn giữ raw log để đọc. Khi sandbox làm LSan thất bại, giữ failure riêng và chạy trong môi trường được phép; không tắt detect_leaks để đạt PASS.\n']
     additions['C'] = '\n'.join(c)
     import re
@@ -212,6 +215,7 @@ def main():
     coverage = read('results/coverage_summary.json')
     dynamic = read('c-memory/evidence/dynamic-analysis.json')
     bmc = read('c-memory/evidence/bmc-analysis.json')
+    sat = read('c-memory/evidence/sat-pipeline.json')
     valgrind = read('c-memory/evidence/valgrind-analysis.json')
     unit = tests['suites']['unit']; integration = tests['suites']['integration']
     day = datetime.now(ZoneInfo('Asia/Bangkok')).strftime('%d/%m/%Y')
@@ -291,6 +295,13 @@ Memcheck chạy trên build không sanitizer: 5/5 BUGGY có lỗi bộ nhớ đ�
 sạch. Đây là bằng chứng bổ sung, không phải chứng minh cho toàn bộ source C# hay mọi
 input ngoài bound.
 
+Pipeline SAT xuất CNF DIMACS từ chính mã hóa CBMC, giải bằng CaDiCaL: 5 case BUGGY
+SAT kèm model thỏa CNF, 5 case FIXED UNSAT. Với mỗi case UNSAT, CaDiCaL sinh DRAT
+proof, `drat-trim` xác nhận `s VERIFIED`, sau đó `drat-trim -c` xuất UNSAT core và
+CaDiCaL kiểm lại core vẫn UNSAT. Proof chỉ chứng minh CNF bounded tại unwind=64,
+không phải proof cho C# hay cho mọi độ dài thực thi. Mẫu certificate nhỏ nằm trong
+`c-memory/evidence/sat/`; toàn bộ 10 case nằm trong `sat-pipeline.json`.
+
 Các module C không phải bản dịch của source C#. Kết quả chỉ chứng minh hành vi đã
 quan sát trong executable/harness và input đã chọn. Danh mục CWE, bảng CBMC và Valgrind:
 [Phụ lục C](PHU_LUC_A_G.md#phụ-lục-c--static-và-bộ-nhớ).
@@ -336,6 +347,7 @@ mọi cửa sổ crash; process-kill sau charge đã có evidence riêng. Cấu 
     ['Payment SMT', '7/7 đúng kỳ vọng', 'Số học integer cents'],
     ['Inventory SMT', '3/3 đúng kỳ vọng', 'Hai dòng của một sản phẩm'],
     ['CBMC', f"{sum(1 for c in bmc['cases'] if c['passed'])}/{len(bmc['cases'])} case PASS", 'Bound unwind=64, input tượng trưng 48 byte; 5 module C'],
+    ['SAT/CNF/DRAT', f"{sum(1 for c in sat['cases'] if c['passed'])}/{len(sat['cases'])} case PASS", 'CNF DIMACS từ CBMC; 5 DRAT proof VERIFIED, 5 UNSAT core kiểm lại; vẫn bounded'],
     ['Valgrind', f"{sum(1 for c in valgrind['cases'] if c['passed'])}/{len(valgrind['cases'])} case PASS", 'Memcheck trên build không sanitizer; 5 module C'],
     ['Workbook checker', f"{workbook['sheet_count']} sheet; 9/10 CTL đúng, 1 vi phạm cố ý", 'Checker độc lập; CWE-667/693 tại conflict là chủ đích'],
     ['Model projection', f"35 event → {mapping['pipeline_state_pairs']} cặp vòng đời", 'Tập cạnh sau phép chiếu progress bằng nhau'],
@@ -370,7 +382,9 @@ Gateway mặc định DurableFake lưu journal bền vững; process-kill recove
 PostgreSQL stop/start với cùng API process đã có evidence charge/refund riêng.
 External audit outbox, retention, DB RBAC, distributed quota, callback thật và Kubernetes
 là future work ngoài nghiệm thu Order–Payment; không cần mở rộng các phần này để chốt đề tài.
-Refund crash windows khác và BMC cho C#/pipeline CNF chỉ bổ sung khi có tiêu chí kiểm chứng tương ứng; BMC cho 5 module C đã có ở chương 4.
+Refund crash windows khác và BMC cho C# vẫn là future work. BMC cho 5 module C đã có ở
+chương 4; pipeline CNF/DIMACS/DRAT bổ sung proof certificate cho chính CNF bounded đó,
+không mở rộng sang C# hay thực thi vô hạn.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -432,6 +446,11 @@ thay thế trực tiếp state Order.
               f"Tool: {bmc['tool']}; bound unwind={bmc['bound']['unwind']}, input tượng trưng tối đa {bmc['bound']['symbolic_input_bytes']} byte. BUGGY phải FAILED đúng lỗi, FIXED phải SUCCESSFUL trong bound.\n",
               table(['Module','Variant','PASS','Exit code','Failure/Expectation'],
                     [[c['module'],c['variant'],c['passed'],c['exit_code'],'; '.join(c['failures']) or c['expected_failure']] for c in bmc['cases']]),
+              '### C.3.1. SAT/CNF/DIMACS + UNSAT core/DRAT\n',
+              f"CBMC xuất CNF DIMACS; CaDiCaL {sat['tool']['cadical']['version']} giải. BUGGY phải SAT và model phải thỏa CNF; FIXED phải UNSAT, sinh DRAT proof, `drat-trim` phải in `s VERIFIED`, rồi core do `drat-trim -c` xuất phải được CaDiCaL kiểm lại là UNSAT. Đây vẫn là CNF bounded tại unwind={sat['bound']['unwind']}.\n",
+              table(['Module','Variant','Verdict','CNF clauses','Proof bytes','Core clauses','DRAT verified','Core UNSAT','PASS'],
+                    [[c['module'],c['variant'],c.get('solver_verdict',''),c.get('cnf_clauses',''),c.get('proof_bytes') or '—',c.get('core_clauses') or '—',c.get('drat_verified') or '—',c.get('core_unsat_verified') or '—',c['passed']] for c in sat['cases']]),
+              'Mẫu tự kiểm tra: `drat-trim security-analysis/c-memory/evidence/sat/cart_fixed.cnf security-analysis/c-memory/evidence/sat/cart_fixed.drat -c /tmp/cart_fixed.core.cnf` và `cadical /tmp/cart_fixed.core.cnf` (exit 20). Toàn bộ artifact/hash nằm trong ../c-memory/evidence/sat-pipeline.json.\n',
               '### C.4. Valgrind Memcheck\n',
               f"Tool: {valgrind['tool']}; build `{valgrind['build']}`. BUGGY phải có lỗi bộ nhớ đúng loại, FIXED phải sạch.\n",
               table(['Module','Variant','PASS','Exit code','Diagnostic'],
@@ -441,7 +460,7 @@ thay thế trực tiếp state Order.
               'Đặc tả: ../../OrderPaymentMicroservice/Security/PaymentVerification.z3. Model integer cents; witness/model solver nằm trong ../results/payment_verification.results.json.\n',
               '### D.2. Inventory SMT\n', table(['Query','Expected','Actual','PASS'], [[c['id'],c['expected'],c['actual'],c['passed']] for c in inventory['cases']]),
               'Stock=10/q1=q2=6 minh họa baseline sai. Guard tổng quantity loại stock âm. Biên 5+5 vẫn được chấp nhận, và regression kiểm cancel trả lại đúng 10.\n',
-              '### D.3. BMC\n', 'CBMC bounded model checking cho 5 module C nằm ở C.3: unwind=64, input tượng trưng 48 byte, 5/5 BUGGY bị bác và 5/5 FIXED được chứng minh trong bound. Đây là BMC trên harness C, không phải BMC cho toàn bộ source C#; không thay bằng kết quả TLC hay duyệt graph hữu hạn.\n',
+              '### D.3. BMC, CNF và DRAT\n', 'CBMC bounded model checking cho 5 module C nằm ở C.3: unwind=64, input tượng trưng 48 byte, 5/5 BUGGY bị bác và 5/5 FIXED được chứng minh trong bound. C.3.1 mở rộng cùng mã hóa sang CNF DIMACS, CaDiCaL, DRAT proof và UNSAT core. Đây là BMC/proof trên harness C, không phải BMC cho toàn bộ source C#; không thay bằng kết quả TLC hay duyệt graph hữu hạn.\n',
               '## Phụ lục E — Fuzzing và test\n',
               table(['Cấu hình campaign mới nhất','Giá trị'], [['Seed',fuzz['seed']],['Iterations mỗi campaign random',fuzz['iterations_per_random_campaign']],['Timeout giây',fuzz['timeout_seconds']],['Targets',', '.join(fuzz['targets'])],['Crash policy',fuzz['crash_policy']],['Branch coverage target',fuzz['coverage']['branch_percent']]]),
               'Corpus: ../../OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json. Oracle thực thi: ../../OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs. Coverage XML: ../results/application-fuzzing-coverage.cobertura.xml. Campaign có random xác định, không chứng minh mọi input hoặc coverage-guided native fuzzing.\n',
@@ -488,7 +507,7 @@ của chính project và xuất pipeline JSON vào security-analysis/.
                   ['Gateway bền vững/sandbox','LOCAL_PROCESS_KILL_PASS / REAL_PROVIDER_OPEN','Local charge/refund recovery sau journal PASS; crash windows khác/provider thật còn mở'],
                   ['PostgreSQL reconnect','LOCAL_SAME_PROCESS_PASS','Ready 200/503/200; worker resolve; charge/refund một lần; kho đúng; không failover/partition'],
                   ['DB RBAC/retention/webhook/shared limiter/Kubernetes','FUTURE_WORK_OUTSIDE_ACCEPTANCE','Không bắt buộc trong đề tài safety Order–Payment; không tuyên bố đã hiện thực'],
-                  ['BMC có bound','OPEN','Ghi tool, k, assumption, verdict và witness'],
+                  ['BMC/DRAT có bound','BOUNDED_CERTIFICATE_PASS','CNF DIMACS unwind=64; 5 DRAT VERIFIED, 5 core UNSAT; không chứng minh vô hạn/C#'],
                   ['Công cụ Windows giảng viên','NOT_RUN_THIS_SESSION','Lưu manifest/log/export thực tế; checker độc lập không thay thế'],
                   ['Rate limiting/audit','PARTIALLY_MITIGATED','Admission/audit test PASS; distributed quota, external sink outbox, retention và DBA protection còn mở'],
                   ['API fuzz/network fault injection','OPEN','Target HTTP, corpus, oracle và campaign log'],

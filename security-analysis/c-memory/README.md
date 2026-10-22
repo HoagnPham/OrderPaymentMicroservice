@@ -32,7 +32,7 @@ Mỗi vùng cấp phát có đúng một chủ sở hữu chịu trách nhiệm 
 
 ## Chạy trên Ubuntu
 
-Cần GCC, Make, Python 3, Cppcheck 2.13+, CBMC và Valgrind (nếu chưa có: `sudo apt install build-essential python3 cppcheck cbmc valgrind`). Từ thư mục gốc repository:
+Cần GCC, Make, Python 3, Cppcheck 2.13+, CBMC và Valgrind (nếu chưa có: `sudo apt install build-essential python3 cppcheck cbmc valgrind`). Pipeline SAT/CNF/DIMACS cần thêm CaDiCaL và `drat-trim`; đây là check opt-in, không bắt buộc cho default runner. Từ thư mục gốc repository:
 
 ```bash
 cd security-analysis/c-memory
@@ -41,6 +41,7 @@ make test
 make static-check
 make bmc-check
 make valgrind-check
+make sat-check   # cần cadical và drat-trim trên PATH
 ```
 
 Build dùng AddressSanitizer, UndefinedBehaviorSanitizer, debug symbols và `-O0`. LeakSanitizer bật qua `ASAN_OPTIONS=detect_leaks=1`. `-fno-pie -no-pie` dùng cho môi trường GCC/Linux của bài lab.
@@ -145,6 +146,32 @@ Kỳ vọng: bản BUGGY phải `VERIFICATION FAILED` đúng lỗi, bản FIXED 
 | Payment | FAILED | SUCCESSFUL | double free |
 
 Đây là BMC **có bound** trên harness C, không phải chứng minh cho toàn bộ source C# hay mọi input ngoài 48 byte/unwind 64. Evidence: [evidence/bmc-analysis.json](evidence/bmc-analysis.json). Chạy lại bằng `make bmc-check`.
+
+## SAT/CNF/DIMACS + UNSAT core/DRAT
+
+`make sat-check` chạy pipeline opt-in trên cả 10 case BUGGY/FIXED:
+
+1. CBMC xuất CNF DIMACS bằng `--dimacs --outfile` (cùng harness, unwind 64).
+2. CaDiCaL giải CNF: BUGGY phải `SAT` (exit 10) và model phải thỏa từng clause; FIXED phải `UNSAT` (exit 20).
+3. Với FIXED, CaDiCaL ghi DRAT proof; `drat-trim` kiểm proof và in `s VERIFIED`.
+4. `drat-trim -c core.cnf` xuất UNSAT core; CaDiCaL chạy lại core phải `UNSAT`.
+5. Kết quả ghi vào [evidence/sat-pipeline.json](evidence/sat-pipeline.json); mẫu nhỏ `cart_fixed` nằm trong [evidence/sat/](evidence/sat/).
+
+Cài công cụ trên Ubuntu:
+
+```bash
+sudo apt install cadical
+git clone https://github.com/marijnheule/drat-trim.git /tmp/drat-trim
+make -C /tmp/drat-trim
+export PATH="/tmp/drat-trim:$PATH"
+```
+
+`drat-trim` không có `--version`; evidence ghi nguồn build và SHA-256 của binary. Proof **chỉ** chứng minh CNF do CBMC sinh tại bound đã chọn là UNSAT, không chứng minh source C# hay thực thi vô hạn. Có thể kiểm mẫu bằng:
+
+```bash
+drat-trim evidence/sat/cart_fixed.cnf evidence/sat/cart_fixed.drat -c /tmp/cart_fixed.core.cnf
+cadical /tmp/cart_fixed.core.cnf   # kỳ vọng exit 20
+```
 
 ## Valgrind Memcheck
 

@@ -35,6 +35,13 @@ FIXED `VERIFICATION SUCCESSFUL` trong bound; Memcheck kỳ vọng 5 BUGGY có l�
 loại và 5 FIXED sạch. Với User, chuỗi dài làm hỏng return address nên Memcheck báo
 invalid jump; CBMC chỉ ra chính xác ghi ngoài `email[32]`.
 
+Pipeline SAT/CNF/DIMACS làm rõ tầng solver: CBMC xuất CNF bằng `--dimacs --outfile`,
+CaDiCaL trả SAT cho 5 BUGGY (model phải thỏa từng clause) và UNSAT cho 5 FIXED.
+Mỗi UNSAT sinh DRAT proof; `drat-trim` phải in `s VERIFIED`, sau đó xuất UNSAT core
+và CaDiCaL kiểm lại core vẫn UNSAT. Đây là certificate cho CNF bounded tại unwind=64,
+không phải proof vô hạn hoặc proof cho source C#. Mẫu nhỏ nằm trong
+`c-memory/evidence/sat/`, tổng hợp trong `sat-pipeline.json`.
+
 @@MEMORY_RUN_TABLE@@
 
 Lần sandbox đầu không đạt oracle ở nhiều case; lần chạy ngoài sandbox đạt 22/22.
@@ -124,22 +131,24 @@ chỉ đưa kết luận đã có test tương ứng; không suy từ sanitizer 
 
 ### 4.8. Tái lập và giới hạn kết luận
 
-Các lệnh `make -C security-analysis/c-memory static-check`, `test`, `bmc-check` và
-`valgrind-check` chỉ dùng source/tool của project, không truy cập ATPM. Report giữ
-tool version, compiler command, case oracle, environment và hash; raw log/binary là
-artifact cục bộ. Clang-Tidy và Clang Static Analyzer chưa chạy, không được ghi như
-kết quả có sẵn. CBMC có bound unwind=64/input 48 byte; Valgrind chỉ kết luận trên
-input/harness đã chọn.
+Các lệnh `make -C security-analysis/c-memory static-check`, `test`, `bmc-check`,
+`valgrind-check` và `sat-check` chỉ dùng source/tool của project, không truy cập ATPM.
+Report giữ tool version, compiler command, case oracle, environment và hash; raw
+log/binary là artifact cục bộ. Clang-Tidy và Clang Static Analyzer chưa chạy, không
+được ghi như kết quả có sẵn. CBMC có bound unwind=64/input 48 byte; Valgrind chỉ kết
+luận trên input/harness đã chọn; DRAT chỉ chứng minh CNF bounded tương ứng.
 
-Static, dynamic, BMC và Memcheck bổ sung cho nhau: finding static giúp định vị
-trước execution; sanitizer/Memcheck xác nhận đường đã chạy; CBMC tìm hoặc loại bỏ
-counterexample trong bound; code review giải thích ownership; regression kiểm bản
-sửa không làm hỏng input hợp lệ. Chưa có proof memory safety tổng quát, coverage
-mọi nhánh, đa luồng hoặc kiểm mọi allocation failure.
+Static, dynamic, BMC, Memcheck và SAT/DRAT bổ sung cho nhau: finding static giúp định
+vị trước execution; sanitizer/Memcheck xác nhận đường đã chạy; CBMC tìm hoặc loại bỏ
+counterexample trong bound; SAT solver/model và DRAT proof làm rõ verdict của CNF;
+code review giải thích ownership; regression kiểm bản sửa không làm hỏng input hợp lệ.
+Chưa có proof memory safety tổng quát, coverage mọi nhánh, đa luồng hoặc kiểm mọi
+allocation failure.
 
 Nguồn: [module C](../c-memory/README.md),
 [static evidence](../c-memory/evidence/static-analysis.json),
 [dynamic evidence](../c-memory/evidence/dynamic-analysis.json),
 [CBMC evidence](../c-memory/evidence/bmc-analysis.json),
+[SAT/CNF/DRAT evidence](../c-memory/evidence/sat-pipeline.json),
 [Valgrind evidence](../c-memory/evidence/valgrind-analysis.json),
 [Phụ lục C](PHU_LUC_A_G.md#phụ-lục-c--static-và-bộ-nhớ).

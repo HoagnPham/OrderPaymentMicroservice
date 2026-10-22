@@ -526,7 +526,10 @@ Kết quả gồm property, mutation, witness và hash model trong audit. Duyệ
 hạn và TLC không được gọi là thí nghiệm bounded model checking có bound k. BMC
 cho 5 module C dùng CBMC, bound unwind=64/input 48 byte, nằm ở chương 4 và Phụ lục
 C.3; UNSAT/SUCCESS trong bound không tự chứng minh safety vô hạn và không áp cho C#.
-BMC cho C#/pipeline CNF vẫn cần encode transition/initial/bad, công bố k, solver và verdict.
+Pipeline CNF/DIMACS dùng chính CNF của CBMC, CaDiCaL giải, DRAT proof được
+`drat-trim` xác nhận và UNSAT core được kiểm lại; proof chỉ cho CNF bounded, không
+phải proof cho C# hay mọi độ dài thực thi. BMC/proof cho C# vẫn cần encode
+transition/initial/bad, công bố k, solver và verdict.
 
 Nguồn: [recovery model](../order_payment_recovery_model.json),
 [checker](../verify_recovery_model.py), [audit](../results/liveness_audit.results.json),
@@ -587,11 +590,19 @@ FIXED `VERIFICATION SUCCESSFUL` trong bound; Memcheck kỳ vọng 5 BUGGY có l�
 loại và 5 FIXED sạch. Với User, chuỗi dài làm hỏng return address nên Memcheck báo
 invalid jump; CBMC chỉ ra chính xác ghi ngoài `email[32]`.
 
+Pipeline SAT/CNF/DIMACS làm rõ tầng solver: CBMC xuất CNF bằng `--dimacs --outfile`,
+CaDiCaL trả SAT cho 5 BUGGY (model phải thỏa từng clause) và UNSAT cho 5 FIXED.
+Mỗi UNSAT sinh DRAT proof; `drat-trim` phải in `s VERIFIED`, sau đó xuất UNSAT core
+và CaDiCaL kiểm lại core vẫn UNSAT. Đây là certificate cho CNF bounded tại unwind=64,
+không phải proof vô hạn hoặc proof cho source C#. Mẫu nhỏ nằm trong
+`c-memory/evidence/sat/`, tổng hợp trong `sat-pipeline.json`.
+
 | Phép kiểm | Outcome | Điều kiện |
 | --- | --- | --- |
 | GCC + cppcheck + scanner + layout | True | gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; Cppcheck 2.13.0 |
 | Sanitizer case oracle | 22/22 PASS | Ngoài sandbox, ASan/UBSan/LSan; detect_leaks=1 |
 | CBMC bounded model checking | 10/10 PASS | unwind=64; input tượng trưng 48 byte |
+| SAT/CNF/DIMACS + DRAT | 10/10 PASS | CaDiCaL 1.7.3; 5 DRAT proof VERIFIED; UNSAT core kiểm lại |
 | Valgrind Memcheck | 10/10 PASS | Build không sanitizer; BUGGY có lỗi, FIXED sạch |
 | Đóng gói evidence | True | Hash source/binary/evidence; timestamp ghi sau lệnh |
 
@@ -697,23 +708,25 @@ chỉ đưa kết luận đã có test tương ứng; không suy từ sanitizer 
 
 ### 4.8. Tái lập và giới hạn kết luận
 
-Các lệnh `make -C security-analysis/c-memory static-check`, `test`, `bmc-check` và
-`valgrind-check` chỉ dùng source/tool của project, không truy cập ATPM. Report giữ
-tool version, compiler command, case oracle, environment và hash; raw log/binary là
-artifact cục bộ. Clang-Tidy và Clang Static Analyzer chưa chạy, không được ghi như
-kết quả có sẵn. CBMC có bound unwind=64/input 48 byte; Valgrind chỉ kết luận trên
-input/harness đã chọn.
+Các lệnh `make -C security-analysis/c-memory static-check`, `test`, `bmc-check`,
+`valgrind-check` và `sat-check` chỉ dùng source/tool của project, không truy cập ATPM.
+Report giữ tool version, compiler command, case oracle, environment và hash; raw
+log/binary là artifact cục bộ. Clang-Tidy và Clang Static Analyzer chưa chạy, không
+được ghi như kết quả có sẵn. CBMC có bound unwind=64/input 48 byte; Valgrind chỉ kết
+luận trên input/harness đã chọn; DRAT chỉ chứng minh CNF bounded tương ứng.
 
-Static, dynamic, BMC và Memcheck bổ sung cho nhau: finding static giúp định vị
-trước execution; sanitizer/Memcheck xác nhận đường đã chạy; CBMC tìm hoặc loại bỏ
-counterexample trong bound; code review giải thích ownership; regression kiểm bản
-sửa không làm hỏng input hợp lệ. Chưa có proof memory safety tổng quát, coverage
-mọi nhánh, đa luồng hoặc kiểm mọi allocation failure.
+Static, dynamic, BMC, Memcheck và SAT/DRAT bổ sung cho nhau: finding static giúp định
+vị trước execution; sanitizer/Memcheck xác nhận đường đã chạy; CBMC tìm hoặc loại bỏ
+counterexample trong bound; SAT solver/model và DRAT proof làm rõ verdict của CNF;
+code review giải thích ownership; regression kiểm bản sửa không làm hỏng input hợp lệ.
+Chưa có proof memory safety tổng quát, coverage mọi nhánh, đa luồng hoặc kiểm mọi
+allocation failure.
 
 Nguồn: [module C](../c-memory/README.md),
 [static evidence](../c-memory/evidence/static-analysis.json),
 [dynamic evidence](../c-memory/evidence/dynamic-analysis.json),
 [CBMC evidence](../c-memory/evidence/bmc-analysis.json),
+[SAT/CNF/DRAT evidence](../c-memory/evidence/sat-pipeline.json),
 [Valgrind evidence](../c-memory/evidence/valgrind-analysis.json),
 [Phụ lục C](PHU_LUC_A_G.md#phụ-lục-c--static-và-bộ-nhớ).
 
@@ -1028,6 +1041,7 @@ Nguồn: [kịch bản thuyết trình và demo](../KICH_BAN_THUYET_TRINH_VA_DEM
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |
 | Inventory SMT | 3/3 đúng kỳ vọng | Hai dòng của một sản phẩm |
 | CBMC | 10/10 case PASS | Bound unwind=64, input tượng trưng 48 byte; 5 module C |
+| SAT/CNF/DRAT | 10/10 case PASS | CNF DIMACS từ CBMC; 5 DRAT proof VERIFIED, 5 UNSAT core kiểm lại; vẫn bounded |
 | Valgrind | 10/10 case PASS | Memcheck trên build không sanitizer; 5 module C |
 | Workbook checker | 10 sheet; 9/10 CTL đúng, 1 vi phạm cố ý | Checker độc lập; CWE-667/693 tại conflict là chủ đích |
 | Model projection | 35 event → 22 cặp vòng đời | Tập cạnh sau phép chiếu progress bằng nhau |
@@ -1101,7 +1115,9 @@ Gateway mặc định DurableFake lưu journal bền vững; process-kill recove
 PostgreSQL stop/start với cùng API process đã có evidence charge/refund riêng.
 External audit outbox, retention, DB RBAC, distributed quota, callback thật và Kubernetes
 là future work ngoài nghiệm thu Order–Payment; không cần mở rộng các phần này để chốt đề tài.
-Refund crash windows khác và BMC cho C#/pipeline CNF chỉ bổ sung khi có tiêu chí kiểm chứng tương ứng; BMC cho 5 module C đã có ở chương 4.
+Refund crash windows khác và BMC cho C# vẫn là future work. BMC cho 5 module C đã có ở
+chương 4; pipeline CNF/DIMACS/DRAT bổ sung proof certificate cho chính CNF bounded đó,
+không mở rộng sang C# hay thực thi vô hạn.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -1136,8 +1152,9 @@ Precision/scale và timeout/cancellation worker đã có regression; phần ti�
 là network/commit fault injection đa dạng, worker scheduler trên tải thực tế và
 backpressure khi provider không tuân cancellation. Historical evidence cần liên
 kết run-time hashes khi chạy lại. BMC cho 5 module C đã có (CBMC, bound unwind=64);
-mở rộng BMC sang C#/pipeline CNF chỉ bổ sung nếu tiêu chí học phần yêu cầu, với
-bound và semantics công bố. Không thêm
+pipeline CNF/DIMACS + DRAT proof/UNSAT core cũng đã có cho chính CNF đó. Mở rộng
+BMC/proof sang C# chỉ bổ sung nếu tiêu chí học phần yêu cầu, với bound và semantics
+công bố. Không thêm
 Kafka/Kubernetes chỉ để tăng số công nghệ khi chưa có nghĩa vụ nghiệp vụ cần nó.
 
 ### 8.3. Rủi ro khi áp dụng migration
