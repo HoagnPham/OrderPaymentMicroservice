@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "packaged_at_utc": "2026-10-22T01:12:19.186881+00:00",
-  "git_base_commit": "6d017f507d0e8dac5f55ccf52ee0a4309076e896",
+  "packaged_at_utc": "2026-10-22T01:21:14.988931+00:00",
+  "git_base_commit": "42d5dc53bef8aef9167302d6a6f9a880d1039a38",
   "working_tree_dirty": false,
   "dotnet_version": "10.0.112",
   "fresh_checks": [
@@ -727,8 +727,8 @@
     },
     {
       "path": "security-analysis/KICH_BAN_THUYET_TRINH_VA_DEMO.md",
-      "sha256": "5a65669ed0ae6e727ac154b014a9812a3d6198be54c83e5a819f7ed1133868d3",
-      "bytes": 59576
+      "sha256": "e55893fe7e4d256e8678e2a0c4dc8b37f6193fe8bd3cb0096b4664f3f21f2cd3",
+      "bytes": 60172
     },
     {
       "path": "security-analysis/OPERATIONS.md",
@@ -737,8 +737,8 @@
     },
     {
       "path": "security-analysis/PHAM_VI_KIEM_CHUNG.md",
-      "sha256": "a48dcfff90696029c73ecba4a1ca6b5b1d3928b5bd78c48ffd2da3869b91d625",
-      "bytes": 10089
+      "sha256": "4d3843f5bd85136442e8b589fede2dc3c80d5fad47a401e909b7363d037be11a",
+      "bytes": 10416
     },
     {
       "path": "security-analysis/README.md",
@@ -1292,8 +1292,8 @@
     },
     {
       "path": "security-analysis/report/BAO_CAO.md",
-      "sha256": "5c011dfc03d62b8736e39f7b10e681a1a9155b3a7298d5742e7df85c77d3be4d",
-      "bytes": 86249
+      "sha256": "1757b8eb7b4e517637202a7c5fedfcb20bf71c6e6a0bbf4bbf81bcb32c684727",
+      "bytes": 89575
     },
     {
       "path": "security-analysis/report/PHU_LUC_A_G.md",
@@ -1327,8 +1327,8 @@
     },
     {
       "path": "security-analysis/report/chapters/06_kiem_thu_bo_sung.md",
-      "sha256": "20f396a40a00d39d515935ffd6d2ab3c338a2f215aba6b5ff0dd57dfb1379d19",
-      "bytes": 14069
+      "sha256": "9172344aeea370bf1427dab539378a7c9c29b6ff86668d45462947ddb00c3a91",
+      "bytes": 17164
     },
     {
       "path": "security-analysis/report/chapters/07_evidence_bo_sung.md",
@@ -1337,8 +1337,8 @@
     },
     {
       "path": "security-analysis/report/chapters/08_han_che_bo_sung.md",
-      "sha256": "922ff0c91d6080b1ee10d00e97c97575c1ceff20cc1bf895adfd71354408a798",
-      "bytes": 6343
+      "sha256": "63dc5362b5533367d7ac1f551af15b8c48f403020ed998c3161981a059503870",
+      "bytes": 6574
     },
     {
       "path": "security-analysis/report/chapters/09_ket_luan_bo_sung.md",
