@@ -32,13 +32,15 @@ Mỗi vùng cấp phát có đúng một chủ sở hữu chịu trách nhiệm 
 
 ## Chạy trên Ubuntu
 
-Cần GCC, Make, Python 3 và Cppcheck 2.13+ (nếu chưa có: `sudo apt install build-essential python3 cppcheck`). Từ thư mục gốc repository:
+Cần GCC, Make, Python 3, Cppcheck 2.13+, CBMC và Valgrind (nếu chưa có: `sudo apt install build-essential python3 cppcheck cbmc valgrind`). Từ thư mục gốc repository:
 
 ```bash
 cd security-analysis/c-memory
 make
 make test
 make static-check
+make bmc-check
+make valgrind-check
 ```
 
 Build dùng AddressSanitizer, UndefinedBehaviorSanitizer, debug symbols và `-O0`. LeakSanitizer bật qua `ASAN_OPTIONS=detect_leaks=1`. `-fno-pie -no-pie` dùng cho môi trường GCC/Linux của bài lab.
@@ -123,6 +125,37 @@ Báo cáo máy đọc được được lưu tại [evidence/static-analysis.jso
 | `Product` | 16 | 8 | 4 byte padding cần thiết trước pointer ở offset 8 |
 
 Các struct đều có `sizeof` là bội số của alignment lớn nhất, nên phần tử trong mảng tiếp theo vẫn aligned. Không dùng `packed`: tiết kiệm vài byte có thể tạo truy cập pointer/`long` lệch alignment trên kiến trúc nghiêm ngặt. Đổi thứ tự field của `Order`, `Payment` hoặc `Product` trên ABI này cũng không giảm `sizeof`, nên giữ thứ tự theo nghĩa nghiệp vụ rõ ràng hơn. Các số đo phụ thuộc ABI; JSON là bằng chứng của đúng môi trường đã chạy, không phải hằng số của mọi nền tảng.
+
+## BMC với CBMC
+
+`make bmc-check` chạy CBMC trên harness include trực tiếp năm module thật (đổi tên `main` để tránh xung đột). Harness cấp input tượng trưng có độ dài tối đa 48 byte cho User/Product; các module còn lại chạy entry point của chính module. Tùy chọn:
+
+```text
+--bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions
+```
+
+Kỳ vọng: bản BUGGY phải `VERIFICATION FAILED` đúng lỗi, bản FIXED phải `VERIFICATION SUCCESSFUL`. Kết quả lần chạy:
+
+| Module | BUGGY | FIXED | Lỗi CBMC bắt được |
+|---|---|---|---|
+| User | FAILED | SUCCESSFUL | `strcpy` ghi ngoài `email[32]` |
+| Product | FAILED | SUCCESSFUL | `strcpy` ghi ngoài heap 32 byte |
+| Cart | FAILED | SUCCESSFUL | dereference object đã free (`removed->product_id`) |
+| Order | FAILED | SUCCESSFUL | bộ nhớ cấp phát không bao giờ được free |
+| Payment | FAILED | SUCCESSFUL | double free |
+
+Đây là BMC **có bound** trên harness C, không phải chứng minh cho toàn bộ source C# hay mọi input ngoài 48 byte/unwind 64. Evidence: [evidence/bmc-analysis.json](evidence/bmc-analysis.json). Chạy lại bằng `make bmc-check`.
+
+## Valgrind Memcheck
+
+`make valgrind-check` biên dịch lại năm module **không sanitizer** (`-fno-stack-protector`) rồi chạy:
+
+```text
+valgrind --error-exitcode=99 --leak-check=full \
+  --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet
+```
+
+Mục đích là kiểm tra độc lập với ASan/UBSan: BUGGY phải có lỗi bộ nhớ đúng loại (`Invalid write`, `Invalid read`, `definitely lost`, `Invalid free`, hoặc invalid jump do stack corruption), FIXED phải sạch. Kết quả lần chạy: **10/10 case PASS**. Với User, chuỗi dài làm hỏng return address nên Valgrind báo invalid jump thay vì `Invalid write`; CBMC ở trên chỉ ra chính xác ghi ngoài buffer. Evidence: [evidence/valgrind-analysis.json](evidence/valgrind-analysis.json). Chạy lại bằng `make valgrind-check`.
 
 ## Gợi ý trình bày báo cáo
 

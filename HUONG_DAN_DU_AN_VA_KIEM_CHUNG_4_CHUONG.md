@@ -289,12 +289,13 @@ EF InMemory hỗ trợ unit test nhanh, không tái hiện toàn bộ transactio
 | `collect_validator_coverage.py` | Đọc XML Coverlet có sẵn, lấy coverage InputValidator/MoneyAmounts và gate branch≥90%; không tự chạy test. |
 | `run_recovery_demo.py` | Chạy riêng 2 reconnect tests, bắt thiếu/stale evidence và source hash không khớp; không ghi TRX subset vào thư mục full-suite. |
 | `verify_checkout.py` | Dùng Chrome/Chromium chạy checkout functions thật với mocked fetch/sessionStorage, kiểm retry/key/abort. |
+| `run_all_checks.py` | Chuỗi end-to-end mặc định: workbook/recovery/liveness/SMT/threat/C static/sanitizer/CBMC/Valgrind + package/report; ghi `end_to_end.results.json`. Không đọc ATPM, không chạy GUI Windows. |
 | `package_evidence.py` | Đọc TRX mới nhất mỗi suite, tạo summary/matrix/manifest hashes và kiểm projection hai graph. Không tự chạy lại các tool được đóng gói. |
 | `build_report.py` | Sinh báo cáo/phụ lục từ evidence và chapter templates, yêu cầu full-suite summary PASS. |
 | `run_analysis.py` | Orchestrator **legacy**, import module trong `ATPM/`; không nằm trong chuỗi lệnh độc lập của tài liệu này. |
 | `create_datasets.py` | Generator **legacy** cho model cơ sở và vulnerability dataset; import helper từ run_analysis. Có thể ghi đè dữ liệu đã bổ sung, không chạy chỉ để đọc/demo project. |
 
-Các tài liệu rời từng có như `IMPLEMENTATION_CONTRACTS.md`, `OPERATIONS.md`, `PHAM_VI_KIEM_CHUNG.md`, `GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md`, `KICH_BAN_THUYET_TRINH_VA_DEMO.md` hiện không có trong working tree tại lúc viết. Hướng dẫn này dùng source và evidence hiện còn; không phụ thuộc các link đó.
+Các tài liệu `IMPLEMENTATION_CONTRACTS.md`, `OPERATIONS.md`, `PHAM_VI_KIEM_CHUNG.md`, `GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md`, `KICH_BAN_THUYET_TRINH_VA_DEMO.md` đã có trong working tree và là link chính thức của bộ hồ sơ. Nếu một bản clone chỉ có source, dùng source/evidence hiện còn và bổ sung tài liệu từ bản đóng gói đầy đủ.
 
 ### A.10. Mô phỏng bộ nhớ — `security-analysis/c-memory/`
 
@@ -302,7 +303,7 @@ Các tài liệu rời từng có như `IMPLEMENTATION_CONTRACTS.md`, `OPERATION
 | --- | --- |
 | `README.md` | Ownership/lifetime, BUGGY/FIXED, sanitizer oracle và false negatives của static tools. |
 | `.gitignore` | Quy tắc bỏ qua output riêng của bộ C. |
-| `Makefile` | Build 10 executable bằng GCC+ASan+UBSan; targets `all`, `test`, `static-check`. |
+| `Makefile` | Build 10 executable bằng GCC+ASan+UBSan; targets `all`, `test`, `static-check`, `bmc-check`, `valgrind-check`, `deep-check`. |
 | `modules/demo.h` | Include/common helper `allocate`: lỗi malloc phải exit riêng, không được tính là tái hiện lỗi thành công. |
 | `modules/user.c` | Email stack buffer overflow; bản FIXED kiểm strlen. |
 | `modules/product.c` | Product name heap buffer overflow; FIXED kiểm độ dài và free cả nhánh reject. |
@@ -313,8 +314,13 @@ Các tài liệu rời từng có như `IMPLEMENTATION_CONTRACTS.md`, `OPERATION
 | `tests/check_static.py` | Scanner quy tắc nhỏ, GCC diagnostics, Cppcheck và layout probe; tách BUGGY/FIXED. |
 | `tests/layout_probe.c` | Đo sizeof/_Alignof/offsetof từ type thật trong 5 module C. |
 | `tests/check_memory.py` | Chạy 22 ca, khớp đúng sanitizer diagnostic và stdout biên; sinh log/summary/dynamic evidence. |
+| `tests/check_bmc.py` | Chạy CBMC 10 case trên harness include module thật; bound unwind=64, input 48 byte; sinh log và `bmc-analysis.json`. |
+| `tests/check_valgrind.py` | Build lại không sanitizer, chạy Memcheck 10 case; sinh log và `valgrind-analysis.json`. |
+| `tests/bmc_harnesses/*.c` | Harness gọi entry point/module thật với input tượng trưng; không sao chép logic sang bản khác. |
 | `evidence/static-analysis.json` | Version GCC/Cppcheck, command, findings theo mode, struct layout và assertions. |
 | `evidence/dynamic-analysis.json` | 22 testcase, expected diagnostic, exit code, sanitizer/platform và scope limit. |
+| `evidence/bmc-analysis.json` | Tool/version/bound, 10 case BUGGY/FIXED, failure text và scope limit. |
+| `evidence/valgrind-analysis.json` | Tool/version/build flags, 10 case Memcheck, diagnostic và scope limit. |
 | `build/*_buggy`, `build/*_fixed` | Binary do Makefile sinh, mỗi source có hai mode. |
 | `results/*.log`, `results/summary.json` | Raw sanitizer log từng ca và bảng kết quả; có thể tái tạo bằng `make test`. |
 
@@ -342,6 +348,7 @@ Các tài liệu rời từng có như `IMPLEMENTATION_CONTRACTS.md`, `OPERATION
 | `liveness_audit.results.json` | Raw false/progress-only true, lasso, filtering semantics và limitations. |
 | `model_projection.results.json` | 35 event chiếu xuống 22 cặp vòng đời (+6 cặp khóa = 28); workbook khớp recovery sau progress projection. |
 | `teacher_spec_verification.json` | Schema workbook/JSON; 10 CTL (9 đúng, `AG(!violation)` false cố ý tại conflict); không thay 15 recovery properties. |
+| `end_to_end.results.json` | Chuỗi `run_all_checks.py`: từng bước, exit code, artifact check, phần opt-in bị skip và GUI Windows BLOCKED. |
 | `payment_verification.results.json` | 7 ca SMT payment, sat/unsat/models và giới hạn. |
 | `inventory_verification.results.json` | 3 ca SMT duplicate lines/stock, command/version/hash/time. |
 | `threat_model_results.json` | Kiểm consistency threat model và các tham chiếu. |
@@ -530,7 +537,8 @@ Layout probe đo ABI thực tế trong evidence x86-64: CartItem=16, OrderItem=1
 | ASan | GCC `-fsanitize=address`, redzone/lifetime checks trên code đã instrument. | Phát hiện stack/heap overflow, UAF và double-free đúng diagnostic trong các ca chạy. |
 | UBSan | `-fsanitize=undefined -fno-sanitize-recover=all`. | Được bật; không có nghĩa 5 lỗi đều là báo cáo UBSan hoặc đã bao phủ mọi UB. |
 | LSan | `ASAN_OPTIONS=detect_leaks=1:halt_on_error=1`. | Phát hiện child allocation leak của Order. |
-| Valgrind/Memcheck | **Chưa có evidence sử dụng trong pipeline hiện tại.** Máy hiện có executable không chứng minh đã chạy. | Có lệnh mở rộng riêng ở F.8, không gắn verdict giả vào số 22 ca. |
+| Valgrind/Memcheck | `make -C security-analysis/c-memory valgrind-check`; build riêng **không sanitizer** (`-fno-stack-protector`), `--leak-check=full --errors-for-leak-kinds=definite`. | **Đã chạy 10/10 case PASS**: 5 BUGGY có lỗi đúng loại (`Invalid write/read`, `definitely lost`, `Invalid free`, invalid jump do stack corruption ở User), 5 FIXED sạch. Evidence: [valgrind-analysis.json](c-memory/evidence/valgrind-analysis.json). |
+| CBMC | `make -C security-analysis/c-memory bmc-check`; harness include 5 module thật, `--bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions`, input tượng trưng 48 byte cho User/Product. | **Đã chạy 10/10 case PASS**: 5 BUGGY `VERIFICATION FAILED` đúng lỗi, 5 FIXED `VERIFICATION SUCCESSFUL` trong bound. Evidence: [bmc-analysis.json](c-memory/evidence/bmc-analysis.json). Đây là BMC có bound trên harness C, không phải proof cho C#. |
 | clang-tidy / Clang Static Analyzer | **Chưa có evidence đã chạy**; clang-tidy không có trên PATH lúc đối chiếu. | F.8 có lệnh tham khảo sau khi cài; không đồng nhất với Cppcheck/scanner riêng. |
 
 ASan là kiểm tra truy cập bộ nhớ khi target chạy; không phải taint tracking hoặc memory-initialization checker đầy đủ. Memcheck là công cụ dynamic có thể báo invalid accesses, frees, leaks và một số sử dụng dữ liệu chưa khởi tạo; tài liệu chính thức mô tả các loại báo cáo trong [Valgrind Memcheck manual](https://valgrind.org/docs/manual/mc-manual.html).
@@ -545,6 +553,8 @@ ASan là kiểm tra truy cập bộ nhớ khi target chạy; không phải taint
 4. User/Product BUGGY nhận input ngắn `demo` sạch: 2 ca để tránh kết luận cứ chạy BUGGY là luôn crash.
 
 Tổng `5+5+10+2=22`. Rejection có kiểm soát ở FIXED trả 0 vẫn đúng oracle. Chỉ nhìn exit khác 0 là chưa đủ: allocation failure, timeout hoặc lỗi môi trường không được nhận là “đã bắt memory bug”. Metadata lịch sử từng ghi lượt sandbox không khớp oracle rồi lượt ngoài sandbox PASS; evidence đó không được diễn giải mọi lần chạy môi trường nào cũng giống nhau.
+
+CBMC và Valgrind có oracle riêng, **không cộng vào 22 ca sanitizer**: CBMC kiểm 10 case (5 BUGGY/5 FIXED) trong bound, Valgrind kiểm 10 case trên build không sanitizer. Khi trình bày, nói rõ ba lớp kiểm chứng độc lập này thay vì gộp thành “32 ca sanitizer”.
 
 ### C.5. Vulnerabilities nghiệp vụ thật khác lỗi C mô phỏng
 
@@ -638,11 +648,11 @@ I(s0) ∧ T(s0,s1) ∧ ... ∧ T(s[k−1],sk)
 
 SAT cho một counterexample trong bound; UNSAT chỉ loại bad traces trong bound đó, trừ khi có thêm lập luận về completeness. CBMC là công cụ BMC cho C/C++ và có kiểm pointer/array theo cơ chế riêng, xem [CBMC](https://www.cprover.org/cbmc/).
 
-Project hiện **không có CBMC harness/k-unrolling experiment** ngoài phần học phần bị loại khỏi phạm vi. Không ghi “đã chạy CBMC”, không lấy MaxAttempts=2 làm k và không lấy graph depth 9 của TLC làm bound BMC. Python checker duyệt graph hữu hạn; TLC khám phá model TLA+ hữu hạn theo config. Chúng là model checking, không phải evidence đã triển khai SAT-based BMC.
+Project **đã có CBMC harness/k-unrolling experiment cho 5 module C** (không phải C#): `make -C security-analysis/c-memory bmc-check`, bound unwind=64 và input tượng trưng 48 byte. Kết quả 10/10 case PASS: BUGGY bị bác đúng lỗi, FIXED được chứng minh trong bound. Không lấy `MaxAttempts=2` làm k và không lấy graph depth 9 của TLC làm bound BMC. Python checker duyệt graph hữu hạn; TLC khám phá model TLA+ hữu hạn theo config. Chúng là model checking, không phải BMC; BMC C nằm ở `c-memory/evidence/bmc-analysis.json`.
 
 ### D.6. Kết quả chương 3 có thể trình bày
 
-Đã nối một lỗi stock cụ thể với witness SMT, sửa guard source và regression PostgreSQL; đã biểu diễn constraint payment bằng Z3 và kiểm đủ 10 verdict đúng kỳ vọng. Đã dùng static review/scanner/Cppcheck để tìm mẫu lỗi và model check để kiểm contract/lifecycle. SAT độc lập, BMC, symbolic/concolic execution và automatic refinement từ C# sang model chưa được triển khai; tài liệu giải thích chúng để xác định đúng giới hạn.
+Đã nối một lỗi stock cụ thể với witness SMT, sửa guard source và regression PostgreSQL; đã biểu diễn constraint payment bằng Z3 và kiểm đủ 10 verdict đúng kỳ vọng. Đã dùng static review/scanner/Cppcheck, sanitizer/Valgrind và model check để kiểm contract/lifecycle; đã chạy CBMC có bound cho 5 module C. SAT độc lập, symbolic/concolic execution và automatic refinement từ C# sang model chưa được triển khai; tài liệu giải thích chúng để xác định đúng giới hạn.
 
 <a id="chuong-4"></a>
 
@@ -812,7 +822,7 @@ DFSan là framework dynamic data-flow gắn/lan truyền nhãn và để client 
 
 Các lệnh dưới dùng **Bash, từ gốc repository**, không cần đọc/chạy file trong `ATPM/`. Phần này là hướng dẫn tái lập; lúc tạo Markdown chỉ đọc/đối chiếu evidence, không chạy lại toàn pipeline.
 
-Cần .NET 10 SDK, Python 3, GCC/Make, Cppcheck, Z3 CLI. Integration thông thường dùng Docker hoặc local PostgreSQL; **process/reconnect/restore drills cần PostgreSQL binaries local**, gồm postgres/initdb/pg_ctl/createdb/pg_dump/pg_restore; browser cần Google Chrome hoặc Chromium. TLC cần Java và `tla2tools.jar` riêng. Không có bước `pip install` bắt buộc cho các script Python được liệt kê.
+Cần .NET 10 SDK, Python 3, GCC/Make, Cppcheck, CBMC, Valgrind, Z3 CLI. Integration thông thường dùng Docker hoặc local PostgreSQL; **process/reconnect/restore drills cần PostgreSQL binaries local**, gồm postgres/initdb/pg_ctl/createdb/pg_dump/pg_restore; browser cần Google Chrome hoặc Chromium. TLC cần Java và `tla2tools.jar` riêng. Không có bước `pip install` bắt buộc cho các script Python được liệt kê.
 
 ```bash
 cd /home/phamhoang/OrderPaymentMicroservice
@@ -821,6 +831,8 @@ python3 --version
 gcc --version
 make --version
 cppcheck --version
+cbmc --version
+valgrind --version
 z3 -version
 java -version
 pg_dump --version
@@ -832,7 +844,7 @@ Trên Ubuntu, nếu thiếu tool hệ thống, có thể cài phần cần dùng
 
 ```bash
 sudo apt-get update
-sudo apt-get install -y build-essential python3 cppcheck z3 postgresql postgresql-client default-jre curl
+sudo apt-get install -y build-essential python3 cppcheck cbmc valgrind z3 postgresql postgresql-client default-jre curl
 ```
 
 .NET SDK và browser cần được cài sẵn phù hợp môi trường. `LocalPostgresServer` tìm trong `/usr/lib/postgresql/` hoặc biến `POSTGRES_BIN`. Khi cần chỉ rõ version đã cài, thay đường dẫn bằng thư mục thật:
@@ -891,9 +903,11 @@ Không dùng `run_analysis.py` hoặc `create_datasets.py` cho quy trình này v
 make -C security-analysis/c-memory all
 make -C security-analysis/c-memory static-check
 make -C security-analysis/c-memory test
+make -C security-analysis/c-memory bmc-check
+make -C security-analysis/c-memory valgrind-check
 ```
 
-`static-check` cập nhật `evidence/static-analysis.json`. `test` cập nhật `results/*.log`, `summary.json` và `evidence/dynamic-analysis.json`; kỳ vọng tổng 22 PASS. Nó dùng flags trong Makefile:
+`static-check` cập nhật `evidence/static-analysis.json`; `test` cập nhật `results/*.log`, `summary.json` và `evidence/dynamic-analysis.json` (kỳ vọng 22 PASS). `bmc-check` và `valgrind-check` cập nhật `evidence/bmc-analysis.json` và `evidence/valgrind-analysis.json` (mỗi file 10 case). `make deep-check` chạy cả hai lớp chuyên sâu. Flags sanitizer trong Makefile:
 
 ```text
 -std=c11 -g -O0 -Wall -Wextra -fno-omit-frame-pointer
@@ -966,7 +980,7 @@ curl --fail --location --retry 2 \
 
 Cần Java (`java -version`) và tải thành công trước khi chạy Python. Các đường dẫn `/duong/dan/...` trong hướng dẫn cũ là placeholder; `/tmp/tla2tools.jar` của lượt lịch sử không còn trên máy. Nếu Java RMI báo `Operation not permitted`, chạy từ terminal thường được phép mở cổng local. Evidence mới ở `security-analysis/results/tlc/`; report/manifest lịch sử không tự cập nhật theo lượt này.
 
-Đây không là lệnh CBMC; project chưa có CBMC harness nên không có “lệnh BMC project” để báo PASS.
+Đây không phải lệnh CBMC. BMC cho 5 module C nằm ở F.4 (`make ... bmc-check`), có bound unwind=64 và input tượng trưng 48 byte; không lấy TLC làm BMC.
 
 ### F.6. Chương 4 — Unit coverage rồi fuzz coverage
 
@@ -1069,29 +1083,27 @@ dotnet test OrderPaymentMicroservice.IntegrationTests/OrderPaymentMicroservice.I
 
 Oracle reconnect: charge `SUCCESS/PAID/RESERVED`, charge=1, release=0; refund `REFUNDED/RELEASED`, charge=1, refund=1, release=1. Ready phải trở lại 200 sau DB restart. Backup/load chỉ có kết luận trong workload/cluster tạm đã chạy, không thành SLA.
 
-### F.8. Lệnh mở rộng Valgrind/clang-tidy — chưa thuộc evidence hiện tại
+### F.8. CBMC/Valgrind đã chạy và clang-tidy chưa chạy
 
-Đây là **lệnh tham khảo để tự chạy bổ sung**. Không ghi đã dùng các tool này trong kết quả hiện có. Valgrind nên chạy trên binary debug riêng **không build ASan** để kết quả dễ diễn giải:
+CBMC và Valgrind **đã có evidence trong pipeline**, không còn là lệnh tham khảo. Chạy lại từ gốc repository:
 
 ```bash
-mkdir -p /tmp/orderpayment-valgrind
-for module in user product cart order payment; do
-  gcc -std=c11 -g -O0 -Wall -Wextra \
-    "security-analysis/c-memory/modules/$module.c" \
-    -o "/tmp/orderpayment-valgrind/${module}_buggy"
-  gcc -std=c11 -g -O0 -Wall -Wextra -DFIXED=1 \
-    "security-analysis/c-memory/modules/$module.c" \
-    -o "/tmp/orderpayment-valgrind/${module}_fixed"
-done
-valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all \
-  --track-origins=yes --errors-for-leak-kinds=definite --error-exitcode=99 \
-  /tmp/orderpayment-valgrind/order_buggy
-valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all \
-  --track-origins=yes --errors-for-leak-kinds=definite --error-exitcode=99 \
-  /tmp/orderpayment-valgrind/order_fixed
+make -C security-analysis/c-memory bmc-check
+make -C security-analysis/c-memory valgrind-check
+# hoặc chạy cả hai:
+make -C security-analysis/c-memory deep-check
 ```
 
-Chạy riêng để đọc diagnostic, không nối BUGGY bằng `&&` vào FIXED vì BUGGY có thể exit 99. Đổi `order_buggy/order_fixed` thành `cart`, `payment`, `product`, `user` để thử module khác; muốn tính thành evidence phải lưu version/command/log/verdict mới.
+`bmc-check` dùng harness trong `c-memory/tests/bmc_harnesses/`, include trực tiếp module thật, với `--bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions`; kỳ vọng 10/10 PASS (5 BUGGY `VERIFICATION FAILED` đúng lỗi, 5 FIXED `VERIFICATION SUCCESSFUL`). `valgrind-check` tự build binary **không sanitizer** (`-fno-stack-protector`) rồi chạy Memcheck; kỳ vọng 10/10 PASS. Evidence: `c-memory/evidence/bmc-analysis.json` và `c-memory/evidence/valgrind-analysis.json`.
+
+Đọc trực tiếp một case:
+
+```bash
+cat security-analysis/c-memory/results/bmc_order_buggy.log
+cat security-analysis/c-memory/results/valgrind_cart_buggy.log
+```
+
+Không nối BUGGY với FIXED bằng `&&` vì BUGGY exit khác 0. Với User, Valgrind có thể báo invalid jump do stack corruption; CBMC chỉ ra chính xác ghi ngoài `email[32]`. Đây là BMC **có bound** và Memcheck trên input/harness đã chọn, không phải proof cho toàn bộ C#.
 
 Nếu cài clang-tidy, có thể phân tích từng mode như sau; lựa chọn checker không bảo đảm bắt hết các lỗi của demo:
 
@@ -1105,7 +1117,7 @@ for module in user product cart order payment; do
 done
 ```
 
-Flag sau `--` là compilation arguments, xem [clang-tidy documentation](https://clang.llvm.org/extra/clang-tidy/). Tương tự BMC/taint/coverage-guided cần harness/instrumentation riêng trước khi có lệnh end-to-end cho project; hiện chưa có để nhận là đã hoàn thành.
+Flag sau `--` là compilation arguments, xem [clang-tidy documentation](https://clang.llvm.org/extra/clang-tidy/). Taint analysis và coverage-guided fuzzing vẫn cần instrumentation/harness riêng trước khi có lệnh end-to-end cho project; hiện chưa có để nhận là đã hoàn thành. BMC thì đã có cho 5 module C, không mở rộng thành “BMC cho C#”.
 
 ### F.9. Chạy toàn suite và đóng gói báo cáo
 
@@ -1127,7 +1139,15 @@ python3 security-analysis/build_report.py &&
 python3 security-analysis/package_evidence.py
 ```
 
-Lượt package cuối ghi hash report vừa sinh. Nó không tự rerun TLC, C sanitizer, fuzz hoặc browser; phải chạy nhóm cần cập nhật trước đó. Trường freshness/nhãn trong manifest không thay việc so execution timestamp/source hash của từng evidence. Source đã thay mà evidence cũ thì cần nói rõ hoặc chạy lại phép kiểm tương ứng.
+Lượt package cuối ghi hash report vừa sinh. Bản thân `package_evidence.py` không tự rerun TLC, C sanitizer, CBMC/Valgrind, fuzz hoặc browser; phải chạy nhóm cần cập nhật trước đó. Trường freshness/nhãn trong manifest không thay việc so execution timestamp/source hash của từng evidence. Source đã thay mà evidence cũ thì cần nói rõ hoặc chạy lại phép kiểm tương ứng.
+
+Chuỗi nhanh, không cần .NET/PostgreSQL, tự kiểm artifact và sinh lại report/manifest:
+
+```bash
+python3 security-analysis/run_all_checks.py
+```
+
+Mặc định chạy workbook/ATPM checker, recovery model, liveness, payment/inventory SMT, threat model, C static, sanitizer, CBMC, Valgrind, rồi `package_evidence.py` + `build_report.py`. Kết quả tổng hợp ở `security-analysis/results/end_to_end.results.json`. Các nhóm nặng là opt-in: `--with-dotnet-tests`, `--with-integration`, `--with-fuzz`, `--with-tlc`; `--no-package` để chỉ chạy check. Runner **không** rerun 184 test .NET mặc định; nó kiểm `application_tests.results.json` ở trạng thái evidence đã lưu. Runner cũng **không** chạy GUI Windows của thầy; mục `atpm_gui` trong JSON ghi BLOCKED và trỏ về checklist thủ công.
 
 Lệnh in số liệu toàn suite và fuzz để đưa vào thuyết trình:
 
@@ -1171,8 +1191,8 @@ pwsh -File ./test-api.ps1 -BaseUrl http://localhost:5246/api
 | Chương | Điều có thể khẳng định theo evidence | Kết quả nên mở minh họa |
 | --- | --- | --- |
 | 1 | Đã đặc tả threat/contracts, dựng Kripke/recovery model, kiểm property/mutation và validation bằng kịch bản thật. | Recovery JSON, state-response CSV, liveness audit và browser/reconnect evidence. |
-| 2 | Đã mô phỏng 5 lỗi memory C và so BUGGY/FIXED; dùng GCC/Cppcheck/scanner/ASan/UBSan/LSan, 22 ca đúng oracle. | Static findings riêng từng tool, sanitizer log và layout. |
-| 3 | Đã dùng Z3 cho số học payment/inventory, SAT/UNSAT/witness; kiểm graph/TLA+; chưa có SAT độc lập/BMC harness. | Hai file .z3, 7+3 verdict và stock witness 10−6−6. |
+| 2 | Đã mô phỏng 5 lỗi memory C và so BUGGY/FIXED; dùng GCC/Cppcheck/scanner/ASan/UBSan/LSan, 22 ca đúng oracle; thêm CBMC 10/10 và Valgrind 10/10. | Static findings riêng từng tool, sanitizer log, CBMC/Valgrind evidence và layout. |
+| 3 | Đã dùng Z3 cho số học payment/inventory, SAT/UNSAT/witness; kiểm graph/TLA+; CBMC có bound cho 5 module C; chưa SAT độc lập/BMC cho C#. | Hai file .z3, 7+3 verdict, stock witness 10−6−6 và `bmc-analysis.json`. |
 | 4 | Đã fuzz structured input/state pairs bằng fixed seed, oracle và Coverlet; chưa coverage-guided/path/taint analysis tự động. | Corpus, SecurityFuzzingTests.cs, fuzz JSON và class coverage XML. |
 
 Các link tài liệu công cụ trong bài chỉ giải thích cơ chế công cụ. Chứng cứ dự án vẫn là source/model/test/log hiện có; tài liệu của tool không thay kết quả đã chạy của project.

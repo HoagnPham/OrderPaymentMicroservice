@@ -40,7 +40,9 @@ không sửa implementation chỉ để làm số coverage đẹp hơn. Coverage
 kèm Include filter và tool command. Với sanitizer, lần sandbox thất bại và lần
 ngoài sandbox PASS được phân biệt bằng môi trường thực thi, giữ detect_leaks.
 Nếu timeout, tool error hoặc build error xuất hiện, lưu outcome đó riêng; không
-chuyển sang controlled rejection bằng catch quá rộng trong harness.
+chuyển sang controlled rejection bằng catch quá rộng trong harness. CBMC/Valgrind
+được chạy trong chuỗi `run_all_checks.py` và có evidence riêng; chúng không làm
+thay đổi oracle 22 ca sanitizer.
 
 ### 6.5. Process-kill recovery đã thực hiện
 

@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "tool": "cbmc (5.95.1 (cbmc-5.95.1))",
+  "command": "python3 security-analysis/c-memory/tests/check_bmc.py",
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "bound": {
+    "unwind": 64,
+    "symbolic_input_bytes": 48,
+    "note": "The bound is stated explicitly; a proof outside this bound is not claimed."
+  },
+  "checks": [
+    "bounds-check",
+    "pointer-check",
+    "memory-leak-check",
+    "unwinding-assertions"
+  ],
+  "cases": [
+    {
+      "module": "user",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": 10,
+      "failures": [
+        "[strcpy.pointer_dereference.11] line 30 dereference failure: pointer outside object bounds in dst[(signed long int)i]: FAILURE"
+      ],
+      "expected_failure": "pointer outside object bounds in dst",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/user_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions"
+    },
+    {
+      "module": "user",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "failures": [],
+      "expected_failure": "VERIFICATION SUCCESSFUL",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/user_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions -DFIXED"
+    },
+    {
+      "module": "product",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": 10,
+      "failures": [
+        "[strcpy.pointer_dereference.11] line 30 dereference failure: pointer outside object bounds in dst[(signed long int)i]: FAILURE"
+      ],
+      "expected_failure": "pointer outside object bounds in dst",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/product_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions"
+    },
+    {
+      "module": "product",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "failures": [],
+      "expected_failure": "VERIFICATION SUCCESSFUL",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/product_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions -DFIXED"
+    },
+    {
+      "module": "cart",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": 10,
+      "failures": [
+        "[module_main.pointer_dereference.15] line 17 dereference failure: deallocated dynamic object in removed->product_id: FAILURE"
+      ],
+      "expected_failure": "deallocated dynamic object in removed->product_id",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/cart_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions"
+    },
+    {
+      "module": "cart",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "failures": [],
+      "expected_failure": "VERIFICATION SUCCESSFUL",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/cart_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions -DFIXED"
+    },
+    {
+      "module": "order",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": 10,
+      "failures": [
+        "[__CPROVER__start.memory-leak.1] dynamically allocated memory never freed in __CPROVER_memory_leak == NULL: FAILURE"
+      ],
+      "expected_failure": "dynamically allocated memory never freed",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/order_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions"
+    },
+    {
+      "module": "order",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "failures": [],
+      "expected_failure": "VERIFICATION SUCCESSFUL",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/order_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions -DFIXED"
+    },
+    {
+      "module": "payment",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": 10,
+      "failures": [
+        "[module_main.precondition_instance.7] line 13 free argument must be NULL or valid pointer: FAILURE",
+        "[module_main.precondition_instance.10] line 13 double free: FAILURE"
+      ],
+      "expected_failure": "double free",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/payment_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions"
+    },
+    {
+      "module": "payment",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "failures": [],
+      "expected_failure": "VERIFICATION SUCCESSFUL",
+      "command": "cbmc /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/tests/bmc_harnesses/payment_harness.c --function main --bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions -DFIXED"
+    }
+  ],
+  "passed": true,
+  "scope_limit": "CBMC checks the five C teaching modules, not the ASP.NET service. FIXED success is bounded by the harness and unwind limit."
+}

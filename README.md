@@ -9,6 +9,9 @@ Lượt kiểm chứng 22/10/2026: **149 unit + 35 integration PASS, không SKIP
 Charge/refund khi PostgreSQL stop/start được đối soát với cùng API process;
 `ready` chuyển 200 → 503 → 200, không gọi lại charge/refund và refund trả kho một lần.
 Gateway là DurableFake local, chưa phải provider thu tiền thật hoặc production proof.
+Đợt bổ sung kỹ thuật đã chạy CBMC (10/10 case, bound unwind=64) và Valgrind
+Memcheck (10/10 case) trên 5 module C, cùng một runner end-to-end tái lập chuỗi
+kiểm chứng nhanh.
 
 ## Tài liệu nên đọc
 
@@ -91,6 +94,35 @@ filtered tests vào thư mục này. Build report từ chối summary toàn suit
 Manifest ghi base commit, dirty working tree và hashes; hash đóng gói không tự
 chứng minh source tại lần thực thi lịch sử. Không chạy các lệnh dotnet/coverage/fuzz
 song song dùng chung assemblies.
+
+## Chạy chuỗi kiểm chứng end-to-end
+
+Sau khi có evidence .NET (hoặc khi chỉ cần kiểm phần model/C), chạy:
+
+```bash
+python3 security-analysis/run_all_checks.py
+```
+
+Mặc định chạy workbook/ATPM checker, recovery model, liveness, payment/inventory
+SMT, threat model, C static, sanitizer, **CBMC**, **Valgrind**, rồi package + report.
+Kết quả từng bước và artifact check nằm ở
+[`security-analysis/results/end_to_end.results.json`](security-analysis/results/end_to_end.results.json).
+Các nhóm nặng là opt-in: `--with-dotnet-tests`, `--with-integration`, `--with-fuzz`,
+`--with-tlc`; `--no-package` chỉ chạy check. Mặc định runner không rerun 184 test
+.NET; nó kiểm evidence `application_tests.results.json` đã lưu. Runner không chạy
+GUI Windows của thầy; mục `atpm_gui` ghi BLOCKED và trỏ về checklist thủ công
+trong kịch bản demo.
+
+Chạy riêng hai lớp C chuyên sâu:
+
+```bash
+make -C security-analysis/c-memory bmc-check
+make -C security-analysis/c-memory valgrind-check
+```
+
+CBMC dùng bound `unwind=64`, input tượng trưng 48 byte; kết quả chỉ có giá trị
+trong bound/harness đó. Valgrind chạy trên build không sanitizer. Cả hai không
+phải chứng minh cho toàn bộ source C#.
 
 ## Chạy shop thủ công trên database demo riêng
 

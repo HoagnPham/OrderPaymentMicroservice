@@ -26,6 +26,15 @@ trong process riêng để crash ở một case không làm mất case còn lạ
 exit khác 0 **và** diagnostic mong đợi với BUGGY, hoặc exit 0 và không có diagnostic
 với FIXED. Chuỗi REJECTED là validation được xử lý, không được tính là crash.
 
+Hai lớp kiểm chứng độc lập bổ sung cho sanitizer: CBMC bounded model checking
+include trực tiếp 5 module thật với `--bounds-check --pointer-check
+--memory-leak-check --unwind 64 --unwinding-assertions`, input tượng trưng tối đa
+48 byte cho User/Product; và Valgrind Memcheck trên build riêng **không sanitizer**
+(`-fno-stack-protector`). CBMC kỳ vọng 5 BUGGY `VERIFICATION FAILED` đúng lỗi và 5
+FIXED `VERIFICATION SUCCESSFUL` trong bound; Memcheck kỳ vọng 5 BUGGY có lỗi đúng
+loại và 5 FIXED sạch. Với User, chuỗi dài làm hỏng return address nên Memcheck báo
+invalid jump; CBMC chỉ ra chính xác ghi ngoài `email[32]`.
+
 @@MEMORY_RUN_TABLE@@
 
 Lần sandbox đầu không đạt oracle ở nhiều case; lần chạy ngoài sandbox đạt 22/22.
@@ -66,7 +75,8 @@ với input dài báo đúng loại heap/stack-buffer-overflow.
 Năm BUGGY phải có diagnostic, năm FIXED cùng kịch bản phải sạch. Product và User
 thử length 0,1,31,32,128; 31 chấp nhận, 32 từ chối vì cần một byte cho NUL. Hai
 BUGGY với input ngắn vẫn chạy được, minh họa việc không crash ở một input không
-chứng minh chương trình không có lỗi. Tổng là 5+5+10+2=22 case.
+chứng minh chương trình không có lỗi. Tổng là 5+5+10+2=22 case sanitizer. CBMC và
+Valgrind có oracle riêng 10 case mỗi lớp, không cộng gộp vào 22.
 
 Đọc log cần xác định operation bị lỗi, vị trí source và allocation/free liên quan.
 Một nonzero exit do hết memory hoặc lỗi tool không phải bằng chứng bắt đúng CWE.
@@ -114,18 +124,22 @@ chỉ đưa kết luận đã có test tương ứng; không suy từ sanitizer 
 
 ### 4.8. Tái lập và giới hạn kết luận
 
-Các lệnh `make -C security-analysis/c-memory static-check` và `make -C
-security-analysis/c-memory test` chỉ dùng source/tool của project, không truy cập
-ATPM. Report giữ tool version, compiler command, case oracle, environment và hash;
-raw sanitizer log/binary là artifact cục bộ. Clang-Tidy và Clang Static Analyzer
-chưa chạy, không được ghi như kết quả có sẵn.
+Các lệnh `make -C security-analysis/c-memory static-check`, `test`, `bmc-check` và
+`valgrind-check` chỉ dùng source/tool của project, không truy cập ATPM. Report giữ
+tool version, compiler command, case oracle, environment và hash; raw log/binary là
+artifact cục bộ. Clang-Tidy và Clang Static Analyzer chưa chạy, không được ghi như
+kết quả có sẵn. CBMC có bound unwind=64/input 48 byte; Valgrind chỉ kết luận trên
+input/harness đã chọn.
 
-Static và dynamic bổ sung cho nhau: finding static giúp định vị trước execution;
-sanitizer xác nhận đường đã chạy; code review giải thích ownership; regression
-kiểm bản sửa không làm hỏng input hợp lệ. Chưa có proof memory safety tổng quát,
-coverage mọi nhánh, đa luồng hoặc kiểm mọi allocation failure.
+Static, dynamic, BMC và Memcheck bổ sung cho nhau: finding static giúp định vị
+trước execution; sanitizer/Memcheck xác nhận đường đã chạy; CBMC tìm hoặc loại bỏ
+counterexample trong bound; code review giải thích ownership; regression kiểm bản
+sửa không làm hỏng input hợp lệ. Chưa có proof memory safety tổng quát, coverage
+mọi nhánh, đa luồng hoặc kiểm mọi allocation failure.
 
 Nguồn: [module C](../c-memory/README.md),
 [static evidence](../c-memory/evidence/static-analysis.json),
 [dynamic evidence](../c-memory/evidence/dynamic-analysis.json),
+[CBMC evidence](../c-memory/evidence/bmc-analysis.json),
+[Valgrind evidence](../c-memory/evidence/valgrind-analysis.json),
 [Phụ lục C](PHU_LUC_A_G.md#phụ-lục-c--static-và-bộ-nhớ).

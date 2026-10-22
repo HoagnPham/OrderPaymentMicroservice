@@ -524,8 +524,9 @@ chưa có refinement proof.
 `verify_recovery_model.py` và `audit_liveness.py` chạy độc lập với thư mục ATPM.
 Kết quả gồm property, mutation, witness và hash model trong audit. Duyệt graph hữu
 hạn và TLC không được gọi là thí nghiệm bounded model checking có bound k. BMC
-riêng cần encode transition/initial/bad, công bố k, solver và verdict; UNSAT trong
-bound không tự chứng minh safety vô hạn.
+cho 5 module C dùng CBMC, bound unwind=64/input 48 byte, nằm ở chương 4 và Phụ lục
+C.3; UNSAT/SUCCESS trong bound không tự chứng minh safety vô hạn và không áp cho C#.
+BMC cho C#/pipeline CNF vẫn cần encode transition/initial/bad, công bố k, solver và verdict.
 
 Nguồn: [recovery model](../order_payment_recovery_model.json),
 [checker](../verify_recovery_model.py), [audit](../results/liveness_audit.results.json),
@@ -577,10 +578,21 @@ trong process riêng để crash ở một case không làm mất case còn lạ
 exit khác 0 **và** diagnostic mong đợi với BUGGY, hoặc exit 0 và không có diagnostic
 với FIXED. Chuỗi REJECTED là validation được xử lý, không được tính là crash.
 
+Hai lớp kiểm chứng độc lập bổ sung cho sanitizer: CBMC bounded model checking
+include trực tiếp 5 module thật với `--bounds-check --pointer-check
+--memory-leak-check --unwind 64 --unwinding-assertions`, input tượng trưng tối đa
+48 byte cho User/Product; và Valgrind Memcheck trên build riêng **không sanitizer**
+(`-fno-stack-protector`). CBMC kỳ vọng 5 BUGGY `VERIFICATION FAILED` đúng lỗi và 5
+FIXED `VERIFICATION SUCCESSFUL` trong bound; Memcheck kỳ vọng 5 BUGGY có lỗi đúng
+loại và 5 FIXED sạch. Với User, chuỗi dài làm hỏng return address nên Memcheck báo
+invalid jump; CBMC chỉ ra chính xác ghi ngoài `email[32]`.
+
 | Phép kiểm | Outcome | Điều kiện |
 | --- | --- | --- |
 | GCC + cppcheck + scanner + layout | True | gcc (Ubuntu 13.3.0-6ubuntu2~24.04.1) 13.3.0; Cppcheck 2.13.0 |
 | Sanitizer case oracle | 22/22 PASS | Ngoài sandbox, ASan/UBSan/LSan; detect_leaks=1 |
+| CBMC bounded model checking | 10/10 PASS | unwind=64; input tượng trưng 48 byte |
+| Valgrind Memcheck | 10/10 PASS | Build không sanitizer; BUGGY có lỗi, FIXED sạch |
 | Đóng gói evidence | True | Hash source/binary/evidence; timestamp ghi sau lệnh |
 
 
@@ -622,7 +634,8 @@ với input dài báo đúng loại heap/stack-buffer-overflow.
 Năm BUGGY phải có diagnostic, năm FIXED cùng kịch bản phải sạch. Product và User
 thử length 0,1,31,32,128; 31 chấp nhận, 32 từ chối vì cần một byte cho NUL. Hai
 BUGGY với input ngắn vẫn chạy được, minh họa việc không crash ở một input không
-chứng minh chương trình không có lỗi. Tổng là 5+5+10+2=22 case.
+chứng minh chương trình không có lỗi. Tổng là 5+5+10+2=22 case sanitizer. CBMC và
+Valgrind có oracle riêng 10 case mỗi lớp, không cộng gộp vào 22.
 
 Đọc log cần xác định operation bị lỗi, vị trí source và allocation/free liên quan.
 Một nonzero exit do hết memory hoặc lỗi tool không phải bằng chứng bắt đúng CWE.
@@ -684,20 +697,24 @@ chỉ đưa kết luận đã có test tương ứng; không suy từ sanitizer 
 
 ### 4.8. Tái lập và giới hạn kết luận
 
-Các lệnh `make -C security-analysis/c-memory static-check` và `make -C
-security-analysis/c-memory test` chỉ dùng source/tool của project, không truy cập
-ATPM. Report giữ tool version, compiler command, case oracle, environment và hash;
-raw sanitizer log/binary là artifact cục bộ. Clang-Tidy và Clang Static Analyzer
-chưa chạy, không được ghi như kết quả có sẵn.
+Các lệnh `make -C security-analysis/c-memory static-check`, `test`, `bmc-check` và
+`valgrind-check` chỉ dùng source/tool của project, không truy cập ATPM. Report giữ
+tool version, compiler command, case oracle, environment và hash; raw log/binary là
+artifact cục bộ. Clang-Tidy và Clang Static Analyzer chưa chạy, không được ghi như
+kết quả có sẵn. CBMC có bound unwind=64/input 48 byte; Valgrind chỉ kết luận trên
+input/harness đã chọn.
 
-Static và dynamic bổ sung cho nhau: finding static giúp định vị trước execution;
-sanitizer xác nhận đường đã chạy; code review giải thích ownership; regression
-kiểm bản sửa không làm hỏng input hợp lệ. Chưa có proof memory safety tổng quát,
-coverage mọi nhánh, đa luồng hoặc kiểm mọi allocation failure.
+Static, dynamic, BMC và Memcheck bổ sung cho nhau: finding static giúp định vị
+trước execution; sanitizer/Memcheck xác nhận đường đã chạy; CBMC tìm hoặc loại bỏ
+counterexample trong bound; code review giải thích ownership; regression kiểm bản
+sửa không làm hỏng input hợp lệ. Chưa có proof memory safety tổng quát, coverage
+mọi nhánh, đa luồng hoặc kiểm mọi allocation failure.
 
 Nguồn: [module C](../c-memory/README.md),
 [static evidence](../c-memory/evidence/static-analysis.json),
 [dynamic evidence](../c-memory/evidence/dynamic-analysis.json),
+[CBMC evidence](../c-memory/evidence/bmc-analysis.json),
+[Valgrind evidence](../c-memory/evidence/valgrind-analysis.json),
 [Phụ lục C](PHU_LUC_A_G.md#phụ-lục-c--static-và-bộ-nhớ).
 
 
@@ -819,7 +836,9 @@ không sửa implementation chỉ để làm số coverage đẹp hơn. Coverage
 kèm Include filter và tool command. Với sanitizer, lần sandbox thất bại và lần
 ngoài sandbox PASS được phân biệt bằng môi trường thực thi, giữ detect_leaks.
 Nếu timeout, tool error hoặc build error xuất hiện, lưu outcome đó riêng; không
-chuyển sang controlled rejection bằng catch quá rộng trong harness.
+chuyển sang controlled rejection bằng catch quá rộng trong harness. CBMC/Valgrind
+được chạy trong chuỗi `run_all_checks.py` và có evidence riêng; chúng không làm
+thay đổi oracle 22 ca sanitizer.
 
 ### 6.5. Process-kill recovery đã thực hiện
 
@@ -1008,6 +1027,8 @@ Nguồn: [kịch bản thuyết trình và demo](../KICH_BAN_THUYET_TRINH_VA_DEM
 | Recovery | 15/15 thuộc tính; 6 mutation detected | Graph hữu hạn, giả định được khai báo |
 | Payment SMT | 7/7 đúng kỳ vọng | Số học integer cents |
 | Inventory SMT | 3/3 đúng kỳ vọng | Hai dòng của một sản phẩm |
+| CBMC | 10/10 case PASS | Bound unwind=64, input tượng trưng 48 byte; 5 module C |
+| Valgrind | 10/10 case PASS | Memcheck trên build không sanitizer; 5 module C |
 | Workbook checker | 10 sheet; 9/10 CTL đúng, 1 vi phạm cố ý | Checker độc lập; CWE-667/693 tại conflict là chủ đích |
 | Model projection | 35 event → 22 cặp vòng đời | Tập cạnh sau phép chiếu progress bằng nhau |
 
@@ -1038,7 +1059,8 @@ Chuỗi inventory bắt đầu từ điều kiện sai theo từng dòng, witnes
 kiểm tổng lượng, SMT cho phép trừ mới, unit test biên 5+5 và HTTP/database
 regression. Chuỗi liveness bắt đầu từ assumption stutter, audit raw graph, lasso
 counterexample và giới hạn fair-CTL. Chuỗi memory bắt đầu từ ownership allocation,
-static finding hoặc false negative, diagnostic sanitizer và bản FIXED cùng input.
+static finding hoặc false negative, diagnostic sanitizer và bản FIXED cùng input;
+CBMC/Valgrind bổ sung góc nhìn bounded proof và Memcheck độc lập.
 
 Ma trận truy vết giữ SEC-* cho yêu cầu bổ sung, REQ-* cho workbook gốc. Tên property
 luôn cần namespace model khi P1..P4 trùng ID. Không tự gán risk score residual khi
@@ -1050,7 +1072,9 @@ chỉ có source guard hoặc vài test PASS.
 và kiểm lại oracle. Khi môi trường hoặc input thay đổi, lưu run mới và phân loại
 kết quả mới thay vì ghi đè kết luận lịch sử không giải thích. Không cần đưa local
 binary vào source control; manifest lưu hash và raw log có thể tạo lại bằng các
-lệnh thuộc project. Không lệnh tái lập trong bộ báo cáo mới cần truy cập ATPM.
+lệnh thuộc project. `run_all_checks.py` tái lập chuỗi nhanh (không đọc ATPM) và
+ghi `end_to_end.results.json`; các nhóm .NET/PostgreSQL/TLC/fuzz là opt-in.
+Không lệnh tái lập trong bộ báo cáo mới cần truy cập ATPM.
 
 
 ## 8. Phát hiện, sửa lỗi và giới hạn
@@ -1077,7 +1101,7 @@ Gateway mặc định DurableFake lưu journal bền vững; process-kill recove
 PostgreSQL stop/start với cùng API process đã có evidence charge/refund riêng.
 External audit outbox, retention, DB RBAC, distributed quota, callback thật và Kubernetes
 là future work ngoài nghiệm thu Order–Payment; không cần mở rộng các phần này để chốt đề tài.
-Refund crash windows khác và BMC riêng chỉ bổ sung khi có tiêu chí kiểm chứng tương ứng.
+Refund crash windows khác và BMC cho C#/pipeline CNF chỉ bổ sung khi có tiêu chí kiểm chứng tương ứng; BMC cho 5 module C đã có ở chương 4.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -1111,8 +1135,9 @@ nghiệm thu Order–Payment, không phải việc bắt buộc thêm vào proje
 Precision/scale và timeout/cancellation worker đã có regression; phần tiếp theo
 là network/commit fault injection đa dạng, worker scheduler trên tải thực tế và
 backpressure khi provider không tuân cancellation. Historical evidence cần liên
-kết run-time hashes khi chạy lại. BMC riêng chỉ bổ
-sung nếu tiêu chí học phần yêu cầu, với bound và semantics công bố. Không thêm
+kết run-time hashes khi chạy lại. BMC cho 5 module C đã có (CBMC, bound unwind=64);
+mở rộng BMC sang C#/pipeline CNF chỉ bổ sung nếu tiêu chí học phần yêu cầu, với
+bound và semantics công bố. Không thêm
 Kafka/Kubernetes chỉ để tăng số công nghệ khi chưa có nghĩa vụ nghiệp vụ cần nó.
 
 ### 8.3. Rủi ro khi áp dụng migration

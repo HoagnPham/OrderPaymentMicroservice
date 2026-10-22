@@ -4,7 +4,7 @@ SANFLAGS = -fsanitize=address,undefined -fno-sanitize-recover=all -fno-pie -no-p
 MODULES = order payment cart product user
 BUGGY = $(addprefix build/,$(addsuffix _buggy,$(MODULES)))
 FIXED = $(addprefix build/,$(addsuffix _fixed,$(MODULES)))
-.PHONY: all test static-check clean
+.PHONY: all test static-check bmc-check valgrind-check deep-check clean
 all: $(BUGGY) $(FIXED)
 build:
 	mkdir -p build
@@ -16,5 +16,10 @@ test: all
 	python3 tests/check_memory.py
 static-check:
 	python3 tests/check_static.py --output evidence/static-analysis.json
+bmc-check:
+	python3 tests/check_bmc.py
+valgrind-check:
+	python3 tests/check_valgrind.py
+deep-check: bmc-check valgrind-check
 clean:
 	rm -rf build results

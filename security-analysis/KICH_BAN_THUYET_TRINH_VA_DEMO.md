@@ -1,10 +1,10 @@
 # Đánh giá project, cách dùng ATPM và kịch bản thuyết trình
 
-Ngày đánh giá: **15/10/2026 — Asia/Bangkok**. Chạy các lệnh Bash từ **thư mục gốc repository**, trừ phần ghi rõ PowerShell/Windows. Tài liệu này là kịch bản bảo vệ; phần giải thích source chi tiết nằm trong [hướng dẫn bốn chương](../HUONG_DAN_DU_AN_VA_KIEM_CHUNG_4_CHUONG.md).
+Ngày đánh giá: **22/10/2026 — Asia/Bangkok** (cập nhật P2: CBMC/Valgrind/end-to-end). Chạy các lệnh Bash từ **thư mục gốc repository**, trừ phần ghi rõ PowerShell/Windows. Tài liệu này là kịch bản bảo vệ; phần giải thích source chi tiết nằm trong [hướng dẫn bốn chương](../HUONG_DAN_DU_AN_VA_KIEM_CHUNG_4_CHUONG.md).
 
 ## 1. Project đã hoàn thiện đến đâu?
 
-**Kết luận: phần ứng dụng và kiểm thử đã hoàn thiện ở mức cao, đủ cơ sở demo đồ án. Hồ sơ đặc tả theo checklist Excel của thầy chưa hoàn chỉnh; hệ thống chưa ở mức triển khai thanh toán thật.** Không quy đổi thành một phần trăm chính xác vì chưa có rubric chấm điểm riêng của lớp.
+**Kết luận: phần ứng dụng và kiểm thử đã hoàn thiện ở mức cao, đủ cơ sở demo đồ án. Hồ sơ đặc tả đã đạt checklist Excel theo checker độc lập; xác nhận cuối bằng GUI Windows của thầy vẫn chưa chạy trong môi trường Linux này. Hệ thống chưa ở mức triển khai thanh toán thật.** Không quy đổi thành một phần trăm chính xác vì chưa có rubric chấm điểm riêng của lớp.
 
 Tên project là OrderPaymentMicroservice nhưng hiện thực hiện tại là **một host ASP.NET Core .NET 10, các module dùng chung PostgreSQL**. Khi trình bày, gọi là hệ thống Order–Payment được tổ chức theo module; không khẳng định đã tách thành nhiều microservice triển khai độc lập.
 
@@ -19,6 +19,9 @@ Tên project là OrderPaymentMicroservice nhưng hiện thực hiện tại là 
 | Liveness audit              | **PASS phép đối chiếu**                           | Raw `AG AF terminal = false`; progress-only = true                                             |
 | Payment SMT / inventory SMT | **7/7 và 3/3 PASS**                                  | SAT/UNSAT đúng oracle, không phải tất cả phải UNSAT                                       |
 | C static / dynamic          | **Static PASS; dynamic 22/22 PASS**                   | Bản lỗi phải có đúng diagnostic; bản sửa và ca biên đạt                              |
+| C BMC (CBMC)                | **10/10 case PASS**                                   | 5 BUGGY `VERIFICATION FAILED` đúng lỗi; 5 FIXED `SUCCESSFUL`; bound unwind=64, input 48 byte |
+| C Valgrind                  | **10/10 case PASS**                                   | Memcheck trên build không sanitizer; BUGGY có lỗi đúng loại, FIXED sạch          |
+| End-to-end runner            | **PASS**                                              | `run_all_checks.py` chạy chuỗi nhanh + kiểm artifact; GUI Windows vẫn BLOCKED   |
 | Fuzz ứng dụng             | Xem evidence lượt chạy mới                             | Seed 20261009; hai campaign random 25.000 vòng và một campaign stateful 2.000 chuỗi × tối đa 20 bước; coverage chỉ trên 5 target     |
 | Threat model consistency    | **PASS**                                              | 6 tài sản, 4 trust boundary, 9 threat, đủ 6 nhóm STRIDE; vẫn có threat mở                |
 
@@ -41,6 +44,14 @@ dotnet test OrderPaymentMicroservice.slnx --no-restore --nologo \
 
 TRX của lần chạy mới nằm tại `/tmp/orderpayment-assessment-verified/` trên máy đánh giá; integration mất khoảng 2 phút, unit khoảng 6 giây. Evidence sinh trong lần đánh giá được lưu riêng tại `/tmp/orderpayment-assessment-evidence/`. Thư mục `/tmp` là tạm, cần sao chép nếu muốn mang sang máy khác. Snapshot evidence đã có trong repository vẫn được giữ để không trộn với manifest/báo cáo lịch sử. Số coverage riêng InputValidator 97,22% và TLC 35 state sinh/20 state phân biệt là **snapshot cũ**, không phải hai phép đo được chạy lại trong lần này.
 
+Chuỗi kiểm chứng nhanh (không cần .NET/PostgreSQL) dùng khi demo phần model/C:
+
+```bash
+python3 security-analysis/run_all_checks.py
+```
+
+Runner chạy workbook/ATPM checker, recovery, liveness, SMT, threat, C static/sanitizer/CBMC/Valgrind, rồi package + report; kết quả ở `security-analysis/results/end_to_end.results.json`. Các nhóm .NET/PostgreSQL/TLC/fuzz là opt-in; mặc định runner không rerun 184 test .NET mà kiểm evidence đã lưu. Runner không chạy GUI Windows.
+
 ### 1.2. Những phần đã xây dựng
 
 | Phần            | Hiện thực và cách chứng minh                                                                                                                                                                                                                  |
@@ -62,9 +73,9 @@ TRX của lần chạy mới nằm tại `/tmp/orderpayment-assessment-verified/
 **Ưu tiên trước khi nộp:**
 
 1. **Chạy GUI Windows của thầy trên máy bảo vệ và lưu báo cáo/ảnh.** Hai EXE đã được xác định là Windows x64 và kiểm tra tĩnh metadata/chuỗi giao diện, nhưng chưa chạy GUI trong môi trường Linux này. Python checker PASS không thay thế xác nhận EXE nạp và chạy hết pipeline.
-2. **Rà lại workbook theo PDF, không chỉ theo checker tự viết.** Xem bảng bên dưới. Đây là khoảng trống hồ sơ có thật, không phải lỗi build/API.
+2. **Đối chiếu lần cuối workbook với PDF bằng GUI Windows.** Checker độc lập đã PASS 10 sheet/27 FR/10 NFR/14 ràng buộc/50 testcase; vẫn nên xem cảnh báo/lỗi thực tế của EXE, vì checker không tái hiện đầy đủ parser của thầy.
 3. **Thống nhất bản đặc tả dùng để nộp.** Dùng workbook tại gốc và JSON trong `security-analysis/`. JSON Order–Payment trong ATPM là phiên bản cũ khác nội dung.
-4. **Dọn tham chiếu tài liệu bị thiếu.** Tại thời điểm kiểm tra, README/workbook còn dẫn tới `PHAM_VI_KIEM_CHUNG.md`, `IMPLEMENTATION_CONTRACTS.md`, `OPERATIONS.md`, `GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md` nhưng các file này không tồn tại. Kịch bản đang đọc đã bổ sung đúng đường dẫn README mong đợi; bốn tài liệu còn lại vẫn cần thay liên kết hoặc khôi phục nội dung trước khi đóng gói. Trong buổi bảo vệ, dùng hướng dẫn bốn chương và báo cáo hiện có.
+4. **Kiểm tra link tài liệu trước khi đóng gói.** Các file `PHAM_VI_KIEM_CHUNG.md`, `IMPLEMENTATION_CONTRACTS.md`, `OPERATIONS.md`, `GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md` đã có; chỉ cần kiểm lại link sau khi đổi tên hoặc di chuyển.
 
 Đối chiếu [PDF hướng dẫn Excel](<../ATPM/Hướng%20dẫn%20tạo%20Spec%20file%20dạng%20excel.pdf>), đặc biệt trang 4 và 25–26:
 
@@ -388,6 +399,18 @@ Bản buggy dự kiến thoát khác 0 và báo `heap-use-after-free`; bản fix
 
 Evidence: `c-memory/results/summary.json` và log từng ca sau chạy; snapshot bàn giao tại `c-memory/evidence/`. Static scanner chỉ phù hợp nhóm module này; Cppcheck có thể bỏ sót lỗi, nên không dùng “không cảnh báo” làm chứng minh tuyệt đối.
 
+Hai lớp kiểm chứng chuyên sâu đã chạy lại, không chỉ là lệnh tham khảo:
+
+```bash
+make -C security-analysis/c-memory bmc-check
+make -C security-analysis/c-memory valgrind-check
+```
+
+- **CBMC** include trực tiếp 5 module C, đổi tên `main` để làm harness; kiểm `--bounds-check --pointer-check --memory-leak-check --unwind 64 --unwinding-assertions`. User/Product nhận input tượng trưng tối đa 48 byte. Kết quả: 5/5 BUGGY bị bác đúng lỗi (ghi ngoài buffer, use-after-free, leak, double-free), 5/5 FIXED được chứng minh trong bound. Evidence: `c-memory/evidence/bmc-analysis.json`.
+- **Valgrind Memcheck** chạy trên build riêng không sanitizer (`-fno-stack-protector`) để thấy truy cập thô: 5/5 BUGGY có lỗi đúng loại, 5/5 FIXED sạch. Với User, chuỗi dài làm hỏng return address nên Memcheck báo invalid jump; CBMC chỉ ra chính xác ghi ngoài `email[32]`. Evidence: `c-memory/evidence/valgrind-analysis.json`.
+
+Nói rõ giới hạn: đây là BMC **có bound** và Memcheck trên input/harness đã chọn, không phải chứng minh cho toàn bộ source C# hay mọi input. Không lấy TLC hay duyệt graph hữu hạn để gọi là BMC.
+
 ### 6.3. Chương 3 — SMT/Z3 và phân tích tĩnh
 
 ```bash
@@ -403,7 +426,7 @@ Mở source `OrderPaymentMicroservice/Security/PaymentVerification.z3` và `Inve
 
 Payment SMT có 7 ca, inventory SMT có 3 ca. Giá trị tiền SMT dùng số nguyên cents; ứng dụng dùng decimal kèm guard. Chứng minh trên số nguyên toán học không tự chứng minh compiler/runtime, transaction hay mọi interleaving đúng.
 
-**TLA+/TLC kiểm model TLA+ riêng**, không phải CBMC trên code C#. Đã chạy lại thành công ngày 15/10/2026 với Java 17 và JAR từ [release chính thức v1.7.4](https://github.com/tlaplus/tlaplus/releases/tag/v1.7.4). JAR hiện có tại `tmp/tools/tla2tools.jar` trong repository trên máy này; chạy từ gốc repository:
+**TLA+/TLC kiểm model TLA+ riêng**, không phải CBMC trên code C# (CBMC cho 5 module C ở mục 6.2). Đã chạy lại thành công ngày 15/10/2026 với Java 17 và JAR từ [release chính thức v1.7.4](https://github.com/tlaplus/tlaplus/releases/tag/v1.7.4). JAR hiện có tại `tmp/tools/tla2tools.jar` trong repository trên máy này; chạy từ gốc repository:
 
 ```bash
 python3 security-analysis/run_tlc.py --jar tmp/tools/tla2tools.jar
@@ -424,7 +447,7 @@ Chỉ chạy Python sau khi tải thành công. `/duong-dan-thuc-te/tla2tools.ja
 
 Kết quả mới: `Model checking completed. No error has been found.`, **35 state sinh, 20 phân biệt, độ sâu 9**, lưu tại `results/tlc/OrderPayment.tlc.log` và `OrderPayment.tlc.results.json`. Nếu gặp `java.rmi.server.ExportException` / `Operation not permitted`, môi trường đang chặn cổng local Java RMI: chạy từ terminal thường ngoài sandbox. Đây là lỗi môi trường, không phải phản ví dụ của model.
 
-Config hiện đặt `MaxAttempts = 2`, kiểm 5 invariant và `Termination`. Nêu rõ model/giả định này khác raw recovery graph. Project không có bằng chứng đã áp dụng CBMC hay tự động suy toàn bộ model từ source C#; lab BMC trong ATPM là phần tham khảo. Các số TLC trong report/manifest cũ vẫn thuộc lần chạy lịch sử cho tới khi đóng gói lại; kết quả mới nằm trong hai file TLC nêu trên.
+Config hiện đặt `MaxAttempts = 2`, kiểm 5 invariant và `Termination`. Nêu rõ model/giả định này khác raw recovery graph. TLC là model checking cho model TLA+, không phải BMC; BMC có bound riêng cho 5 module C ở mục 6.2 (`bmc-analysis.json`). Project không có bằng chứng tự động suy toàn bộ model từ source C#, và không lấy `MaxAttempts=2` làm bound BMC. Các số TLC trong report/manifest cũ vẫn thuộc lần chạy lịch sử cho tới khi đóng gói lại; kết quả mới nằm trong hai file TLC nêu trên.
 
 ### 6.4. Chương 4 — fuzzing, oracle, coverage và hồi quy
 
@@ -498,7 +521,10 @@ Lời kết khoảng 45 giây:
 | Recovery model            | `python3 security-analysis/verify_recovery_model.py`            | 15 property + 6 mutation                                          |
 | Liveness                  | `python3 security-analysis/audit_liveness.py`                   | raw false, progress-only true                                     |
 | Safety/recovery thực     | `python3 security-analysis/run_recovery_demo.py`                | Charge/refund count và ready 200→503→200                       |
-| Bộ nhớ C                | `make -C security-analysis/c-memory test`                       | 22 ca với diagnostic đúng                                      |
+| Bộ nhớ C                | `make -C security-analysis/c-memory test`                       | 22 ca sanitizer với diagnostic đúng                            |
+| BMC C                     | `make -C security-analysis/c-memory bmc-check`                  | 10/10; 5 BUGGY FAILED, 5 FIXED SUCCESSFUL; bound 64/48 byte    |
+| Valgrind C                | `make -C security-analysis/c-memory valgrind-check`             | 10/10; BUGGY có lỗi, FIXED sạch                               |
+| End-to-end                | `python3 security-analysis/run_all_checks.py`                   | Chuỗi nhanh + artifact PASS; GUI Windows vẫn BLOCKED          |
 | Static C                  | `make -C security-analysis/c-memory static-check`               | Finding BUGGY/FIXED và layout                                    |
 | SMT tiền/kho             | Hai script `verify_payment_smt.py`, `verify_inventory_smt.py` | 7/7, 3/3 theo kỳ vọng                                           |
 | Fuzz C#                   | `python3 security-analysis/run_fuzzing.py`                      | 3 test, seed, coverage đúng target                              |
@@ -510,6 +536,7 @@ Khi gặp sự cố demo:
 - **Không thấy file trong danh sách mẫu:** dùng nút nạp file khác, chọn đúng đường dẫn đã giải nén, không nhập ZIP.
 - **JSON báo thiếu `state_machine` hoặc `states`:** đang nhầm Spec JSON với Kripke JSON; chọn đúng tab/schema theo §2.
 - **Không có fuzz Python từ workbook:** do `HamSinhMa` hiện chỉ có C; dùng fuzz C# để trình phần đã làm, ghi nhận phần Excel cần bổ sung.
+- **Máy demo thiếu CBMC/Valgrind:** mở evidence `bmc-analysis.json`/`valgrind-analysis.json` đã đóng gói và nói rõ công cụ/phiên bản/bound; không đọc log cũ như lượt chạy mới. Trên Ubuntu có thể cài `cbmc valgrind` trước buổi demo.
 - **Test SKIP:** thiếu môi trường; không tính là PASS. Kiểm PostgreSQL local và Chrome, hoặc trình evidence đã lưu và nói rõ ngày chạy.
 - **Shop không lên:** đọc lỗi startup; kiểm DB demo, connection string và JWT key ít nhất 32 ký tự; không đổi sang DB thật để cứu demo.
 - **Không đủ thời gian:** mở JSON/report đã chuẩn bị, nói rõ đây là evidence của lượt nào; không gọi việc mở file là chạy lại kiểm thử.

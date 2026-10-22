@@ -107,7 +107,7 @@ TRACE = [
     ('REQ-5 / REQ-14', 'Chuyển trạng thái đúng và liveness có giả định', 'Recovery P1/P10/P12; OrderPayment.tla', '6 negative mutations; state-machine tests', 'order_payment_recovery_model.results.json; tlc/OrderPayment.tlc.results.json; application_tests.results.json', 'MODEL_UNIT', 'TLC là evidence cũ; không chạy lại trong đợt này'),
     ('REQ-7 / REQ-18', 'Một logical payment và payment-cancel nhất quán', 'PaymentService; unique indexes; Version', 'Concurrent_payment_requests_create_only_one_charge_record; Concurrent_payment_and_cancellation_end_in_one_consistent_outcome', 'application_tests.results.json', 'HTTP_POSTGRES', 'Gateway mock trong process'),
     ('REQ-16 / REQ-17', 'UNKNOWN giữ kho; refund giữ dấu vết charge', 'Recovery P13/P14; PaymentService', 'ExhaustedUnknownPaymentRemainsReservedUntilOutcomeIsKnown; SuccessfulRefundCompensatesOrderAndReleasesInventory', 'order_payment_recovery_model.results.json; application_tests.results.json', 'MODEL_UNIT', 'Process-kill charge recovery đã có; refund process-kill sau journal đã xác minh; crash windows khác/gateway thật chưa xác minh'),
-    ('REQ-9..REQ-13', 'Ownership/lifetime trong mô hình C', 'c-memory/modules/*.c', 'BUGGY/FIXED; scanner; sanitizer', 'c-memory/evidence/static-analysis.json; c-memory/evidence/dynamic-analysis.json', 'HISTORICAL_C', 'Không chạy lại; không chứng minh C# an toàn bộ nhớ'),
+    ('REQ-9..REQ-13', 'Ownership/lifetime trong mô hình C', 'c-memory/modules/*.c; CBMC harness; Valgrind', 'BUGGY/FIXED; scanner; sanitizer; CBMC; Memcheck', 'c-memory/evidence/static-analysis.json; c-memory/evidence/dynamic-analysis.json; c-memory/evidence/bmc-analysis.json; c-memory/evidence/valgrind-analysis.json', 'C_STATIC_DYNAMIC_BMC', 'BMC bound unwind=64, input 48 byte; không chứng minh C# hay mọi input'),
     ('NFR-2', 'Coverage và fuzz cho target cụ thể', 'SecurityFuzzingTests', '3 fuzz campaigns', 'application_fuzzing.results.json; coverage_summary.json', 'TARGET_COVERAGE', 'Chỉ target fuzz và validator; không phải toàn API'),
 ]
 
@@ -127,7 +127,7 @@ def main():
             relative = path.relative_to(ROOT)
             if not path.is_file() or any(part in {'bin', 'obj', '__pycache__', 'dotnet', 'build', 'TestResults'} for part in relative.parts):
                 continue
-            if path.name == 'evidence_manifest.json' or path.suffix not in {'.cs', '.csproj', '.c', '.h', '.py', '.json', '.tla', '.cfg', '.z3', '.csv', '.md', '.xml', '.log', '.js', '.html'}:
+            if path.name in {'evidence_manifest.json', 'end_to_end.results.json'} or path.suffix not in {'.cs', '.csproj', '.c', '.h', '.py', '.json', '.tla', '.cfg', '.z3', '.csv', '.md', '.xml', '.log', '.js', '.html'}:
                 continue
             artifacts.append({'path': str(relative), 'sha256': digest(path), 'bytes': path.stat().st_size})
     workbook = ROOT / 'OrderPaymentMicroservice_Security_Spec.xlsx'
@@ -138,7 +138,7 @@ def main():
         'schema_version': 1, 'packaged_at_utc': datetime.now(timezone.utc).isoformat(),
         'git_base_commit': revision, 'working_tree_dirty': dirty,
         'dotnet_version': subprocess.run(['dotnet', '--version'], capture_output=True, text=True, check=True).stdout.strip(),
-        'fresh_checks': ['postgres_reconnect_charge.results.json', 'postgres_reconnect_refund.results.json', 'application_tests.results.json', 'checkout_retry.results.json', 'backup_restore.results.json', 'load_probe.results.json', 'refund_restart.results.json', 'order_retry_load.results.json', 'application_smoke.results.json', 'application_fuzzing.results.json', 'coverage_summary.json', 'model_projection.results.json', 'inventory_verification.results.json', 'payment_verification.results.json', 'order_payment_recovery_model.results.json', 'teacher_spec_verification.json', 'liveness_audit.results.json', 'process_restart.results.json', 'threat_model_results.json', 'chapter4_run.results.json', 'c-memory/evidence/static-analysis.json', 'c-memory/evidence/dynamic-analysis.json'],
+        'fresh_checks': ['postgres_reconnect_charge.results.json', 'postgres_reconnect_refund.results.json', 'application_tests.results.json', 'checkout_retry.results.json', 'backup_restore.results.json', 'load_probe.results.json', 'refund_restart.results.json', 'order_retry_load.results.json', 'application_smoke.results.json', 'application_fuzzing.results.json', 'coverage_summary.json', 'model_projection.results.json', 'inventory_verification.results.json', 'payment_verification.results.json', 'order_payment_recovery_model.results.json', 'teacher_spec_verification.json', 'liveness_audit.results.json', 'process_restart.results.json', 'threat_model_results.json', 'chapter4_run.results.json', 'c-memory/evidence/static-analysis.json', 'c-memory/evidence/dynamic-analysis.json', 'c-memory/evidence/bmc-analysis.json', 'c-memory/evidence/valgrind-analysis.json'],
         'historical_checks_not_rerun': ['tlc/OrderPayment.tlc.results.json'],
         'artifacts': artifacts,
         'limitations': ['Hash captures packaging-time bytes, not historical tool-run provenance.',

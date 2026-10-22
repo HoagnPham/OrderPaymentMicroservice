@@ -23,6 +23,8 @@ def chapter_tokens():
     audit = read('results/liveness_audit.results.json')
     memory = read('results/chapter4_run.results.json')
     static = read('c-memory/evidence/static-analysis.json')
+    bmc = read('c-memory/evidence/bmc-analysis.json')
+    valgrind = read('c-memory/evidence/valgrind-analysis.json')
     recovery = read('results/order_payment_recovery_model.results.json')
     assets = table(['Asset', 'Tên', 'Phân loại', 'C / I / A'], [
         [a['id'], a['name'], a['classification'], ' / '.join(a['cia'][k] for k in ('confidentiality','integrity','availability'))]
@@ -41,6 +43,8 @@ def chapter_tokens():
     memory_table = table(['Phép kiểm', 'Outcome', 'Điều kiện'], [
         ['GCC + cppcheck + scanner + layout', static['assertions']['passed'], static['environment']['gcc']+'; '+static['environment']['cppcheck']],
         ['Sanitizer case oracle', '22/22 PASS', 'Ngoài sandbox, ASan/UBSan/LSan; detect_leaks=1'],
+        ['CBMC bounded model checking', f"{sum(1 for c in bmc['cases'] if c['passed'])}/{len(bmc['cases'])} PASS", f"unwind={bmc['bound']['unwind']}; input tượng trưng {bmc['bound']['symbolic_input_bytes']} byte"],
+        ['Valgrind Memcheck', f"{sum(1 for c in valgrind['cases'] if c['passed'])}/{len(valgrind['cases'])} PASS", 'Build không sanitizer; BUGGY có lỗi, FIXED sạch'],
         ['Đóng gói evidence', memory['passed'], 'Hash source/binary/evidence; timestamp ghi sau lệnh'],
     ])
     static_table = table(['Module', 'Scanner BUGGY', 'Scanner FIXED', 'Cppcheck trực tiếp memory finding BUGGY'], [
@@ -163,13 +167,13 @@ riêng. Hash/authenticity của gateway response chưa được mock chứng min
           'Các cạnh được checker loại dù thay đổi state:\n',table(['Nguồn','Event','Đích','Kind'],[[e['source'],e['event'],e['to'],e['kind']]for e in audit['excluded_edges_with_state_change']]),
           'Fixed-point rounds của cả graph nằm trong [liveness audit](../results/liveness_audit.results.json). Policy lọc cạnh không tự chứng minh fair-CTL.\n']
     additions['B'] = '\n'.join(b)
-    c = ['### C.3. Compiler, configuration và ground truth\n',chapter_tokens()['@@STATIC_DETECTION_TABLE@@'],
+    c = ['### C.5. Compiler, configuration và ground truth\n',chapter_tokens()['@@STATIC_DETECTION_TABLE@@'],
          'Cppcheck return_code=0 không đồng nghĩa không finding; XML vẫn có error/style. BUGGY và FIXED được chạy theo cấu hình preprocessor riêng.\n',
-         '### C.4. Source minh họa ownership/lifetime\n']
+         '### C.6. Source minh họa ownership/lifetime\n']
     for module in static['scope']:
         path = BASE/'c-memory/modules'/f'{module}.c'
         c += [f'#### {module}.c\n','```c\n'+'\n'.join(line.rstrip() for line in path.read_text().splitlines())+'\n```\n']
-    c += ['### C.5. Diagnostic thực thi\n']
+    c += ['### C.7. Diagnostic thực thi\n']
     for module in static['scope']:
         path = BASE/'c-memory/results'/f'{module}_buggy.log'
         if path.exists():
@@ -178,11 +182,11 @@ riêng. Hash/authenticity của gateway response chưa được mock chứng min
             c += [f'#### {module}_buggy\n','```text\n'+excerpt[:3500]+'\n```\n']
         else:
             c += [f'{module}: raw log không có tại thời điểm sinh; dùng summary evidence, không tạo stack trace giả.\n']
-    c += ['### C.6. ABI và provenance\n',chapter_tokens()['@@LAYOUT_TABLE@@'],
+    c += ['### C.8. ABI và provenance\n',chapter_tokens()['@@LAYOUT_TABLE@@'],
           'Offsets đo được: '+json.dumps(static['layout']['offsets'])+'.\n',
           'Metadata source/binary/environment: [chapter4 run](../results/chapter4_run.results.json). Không có timestamp start/finish chính xác; make dùng binary hiện có nếu còn mới hơn source.\n',
-          '### C.7. Tái lập chỉ bằng project\n',
-          '```bash\nmake -C security-analysis/c-memory static-check\nmake -C security-analysis/c-memory test\n```\n',
+          '### C.9. Tái lập chỉ bằng project\n',
+          '```bash\nmake -C security-analysis/c-memory static-check\nmake -C security-analysis/c-memory test\nmake -C security-analysis/c-memory bmc-check\nmake -C security-analysis/c-memory valgrind-check\n```\n',
           'Không chạy make clean nếu muốn giữ raw log để đọc. Khi sandbox làm LSan thất bại, giữ failure riêng và chạy trong môi trường được phép; không tắt detect_leaks để đạt PASS.\n']
     additions['C'] = '\n'.join(c)
     import re
@@ -207,6 +211,8 @@ def main():
     fuzz = read('results/application_fuzzing.results.json')
     coverage = read('results/coverage_summary.json')
     dynamic = read('c-memory/evidence/dynamic-analysis.json')
+    bmc = read('c-memory/evidence/bmc-analysis.json')
+    valgrind = read('c-memory/evidence/valgrind-analysis.json')
     unit = tests['suites']['unit']; integration = tests['suites']['integration']
     day = datetime.now(ZoneInfo('Asia/Bangkok')).strftime('%d/%m/%Y')
     OUT.mkdir(exist_ok=True)
@@ -265,22 +271,29 @@ ATPM phát hiện CWE-667/CWE-693, đúng yêu cầu bài tập.
 Liveness phụ thuộc giả định tiến triển/fairness và cách xử lý stutter. Thực tế một
 gateway có thể tiếp tục UNKNOWN; lúc đó hệ thống giữ reservation để tránh hoàn kho
 trong khi đã thu tiền. TLC có evidence lịch sử với 20 trạng thái phân biệt, không
-được chạy lại trong đợt này. Đây là TLC model checking; không gọi kết quả đó là một
-thí nghiệm BMC có bound k.
+được chạy lại trong đợt này. Đây là TLC model checking, không phải BMC; BMC có bound
+riêng cho 5 module C được trình bày ở chương 4.
 
 Danh sách state, event, property và giả định: [Phụ lục B](PHU_LUC_A_G.md#phụ-lục-b--model-và-thuộc-tính).
 
 ## 4. Phân tích bộ nhớ và mã nguồn
 
 Năm module C học tập tương ứng User/Product/Cart/Order/Payment có phiên bản BUGGY và
-FIXED. Evidence lịch sử ghi nhận scanner/cppcheck/layout và 22 ca sanitizer đúng kỳ
-vọng. Với BUGGY, test PASS nghĩa là diagnostic lỗi mong đợi đã được phát hiện; không
-có nghĩa chương trình lỗi an toàn. Scanner riêng theo pattern không thay thế một
-static analyzer đầy đủ.
+FIXED. Chuỗi `run_all_checks.py` chạy lại scanner/cppcheck/layout, 22 ca sanitizer,
+CBMC và Valgrind trong cùng một lượt. Với BUGGY, test PASS nghĩa là diagnostic lỗi
+mong đợi đã được phát hiện; không có nghĩa chương trình lỗi an toàn. Scanner riêng
+theo pattern không thay thế một static analyzer đầy đủ.
+
+CBMC kiểm 5 module với `--bounds-check --pointer-check --memory-leak-check`, unwind
+64 và input tượng trưng tối đa 48 byte: 5/5 bản BUGGY bị bác đúng lỗi (buffer copy,
+use-after-free, leak, double-free), 5/5 bản FIXED được chứng minh trong bound. Valgrind
+Memcheck chạy trên build không sanitizer: 5/5 BUGGY có lỗi bộ nhớ đúng loại, 5/5 FIXED
+sạch. Đây là bằng chứng bổ sung, không phải chứng minh cho toàn bộ source C# hay mọi
+input ngoài bound.
 
 Các module C không phải bản dịch của source C#. Kết quả chỉ chứng minh hành vi đã
-quan sát trong executable và input đã chọn. Static/sanitizer không chạy lại trong
-đợt này. Danh mục CWE và kết quả: [Phụ lục C](PHU_LUC_A_G.md#phụ-lục-c--static-và-bộ-nhớ).
+quan sát trong executable/harness và input đã chọn. Danh mục CWE, bảng CBMC và Valgrind:
+[Phụ lục C](PHU_LUC_A_G.md#phụ-lục-c--static-và-bộ-nhớ).
 
 ## 5. Kiểm chứng số học
 
@@ -322,6 +335,8 @@ mọi cửa sổ crash; process-kill sau charge đã có evidence riêng. Cấu 
     ['Recovery', '15/15 thuộc tính; 6 mutation detected', 'Graph hữu hạn, giả định được khai báo'],
     ['Payment SMT', '7/7 đúng kỳ vọng', 'Số học integer cents'],
     ['Inventory SMT', '3/3 đúng kỳ vọng', 'Hai dòng của một sản phẩm'],
+    ['CBMC', f"{sum(1 for c in bmc['cases'] if c['passed'])}/{len(bmc['cases'])} case PASS", 'Bound unwind=64, input tượng trưng 48 byte; 5 module C'],
+    ['Valgrind', f"{sum(1 for c in valgrind['cases'] if c['passed'])}/{len(valgrind['cases'])} case PASS", 'Memcheck trên build không sanitizer; 5 module C'],
     ['Workbook checker', f"{workbook['sheet_count']} sheet; 9/10 CTL đúng, 1 vi phạm cố ý", 'Checker độc lập; CWE-667/693 tại conflict là chủ đích'],
     ['Model projection', f"35 event → {mapping['pipeline_state_pairs']} cặp vòng đời", 'Tập cạnh sau phép chiếu progress bằng nhau'],
 ])}
@@ -355,7 +370,7 @@ Gateway mặc định DurableFake lưu journal bền vững; process-kill recove
 PostgreSQL stop/start với cùng API process đã có evidence charge/refund riêng.
 External audit outbox, retention, DB RBAC, distributed quota, callback thật và Kubernetes
 là future work ngoài nghiệm thu Order–Payment; không cần mở rộng các phần này để chốt đề tài.
-Refund crash windows khác và BMC riêng chỉ bổ sung khi có tiêu chí kiểm chứng tương ứng.
+Refund crash windows khác và BMC cho C#/pipeline CNF chỉ bổ sung khi có tiêu chí kiểm chứng tương ứng; BMC cho 5 module C đã có ở chương 4.
 Không dùng PASS của suite hiện tại để gọi hệ thống production-ready.
 [Phụ lục G](PHU_LUC_A_G.md#phụ-lục-g--hạn-chế-và-công-việc-còn-mở).
 
@@ -413,12 +428,20 @@ thay thế trực tiếp state Order.
               '### C.1. CWE và phạm vi\n', table(['Module','Lỗi BUGGY','CWE'], [['Order','Owned allocation leak','CWE-401'],['Payment','Double free','CWE-415'],['Cart','Use after free','CWE-416'],['Product','Heap buffer copy','CWE-120'],['User','Stack buffer copy','CWE-120']]),
               'GCC/cppcheck version, finding và layout: ../c-memory/evidence/static-analysis.json. Pattern rules là scanner riêng; cppcheck có false negative được ghi rõ trong ../c-memory/README.md. Không tuyên bố Clang-Tidy/Clang Analyzer đã chạy.\n',
               '### C.2. Toàn bộ case sanitizer (lần chạy ngoài sandbox mới nhất)\n', table(['Case','Test PASS','Exit code','Diagnostic mong đợi'], [[c['case'],c['passed'],c['exit_code'],c['expected_diagnostic']] for c in dynamic['cases']]),
+              '### C.3. CBMC bounded model checking\n',
+              f"Tool: {bmc['tool']}; bound unwind={bmc['bound']['unwind']}, input tượng trưng tối đa {bmc['bound']['symbolic_input_bytes']} byte. BUGGY phải FAILED đúng lỗi, FIXED phải SUCCESSFUL trong bound.\n",
+              table(['Module','Variant','PASS','Exit code','Failure/Expectation'],
+                    [[c['module'],c['variant'],c['passed'],c['exit_code'],'; '.join(c['failures']) or c['expected_failure']] for c in bmc['cases']]),
+              '### C.4. Valgrind Memcheck\n',
+              f"Tool: {valgrind['tool']}; build `{valgrind['build']}`. BUGGY phải có lỗi bộ nhớ đúng loại, FIXED phải sạch.\n",
+              table(['Module','Variant','PASS','Exit code','Diagnostic'],
+                    [[c['module'],c['variant'],c['passed'],c['exit_code'],'; '.join(c['diagnostics']) or c['expected']] for c in valgrind['cases']]),
               '## Phụ lục D — SMT và biên\n',
               '### D.1. Payment SMT\n', table(['Query','Expected','Actual','PASS'], [[c['id'],c['expected'],c['actual'],c['passed']] for c in payment['cases']]),
               'Đặc tả: ../../OrderPaymentMicroservice/Security/PaymentVerification.z3. Model integer cents; witness/model solver nằm trong ../results/payment_verification.results.json.\n',
               '### D.2. Inventory SMT\n', table(['Query','Expected','Actual','PASS'], [[c['id'],c['expected'],c['actual'],c['passed']] for c in inventory['cases']]),
               'Stock=10/q1=q2=6 minh họa baseline sai. Guard tổng quantity loại stock âm. Biên 5+5 vẫn được chấp nhận, và regression kiểm cancel trả lại đúng 10.\n',
-              '### D.3. BMC\n', 'Chưa có thí nghiệm BMC riêng với bound k trong đợt này. Không thay bằng kết quả TLC hay gọi duyệt graph hữu hạn là BMC.\n',
+              '### D.3. BMC\n', 'CBMC bounded model checking cho 5 module C nằm ở C.3: unwind=64, input tượng trưng 48 byte, 5/5 BUGGY bị bác và 5/5 FIXED được chứng minh trong bound. Đây là BMC trên harness C, không phải BMC cho toàn bộ source C#; không thay bằng kết quả TLC hay duyệt graph hữu hạn.\n',
               '## Phụ lục E — Fuzzing và test\n',
               table(['Cấu hình campaign mới nhất','Giá trị'], [['Seed',fuzz['seed']],['Iterations mỗi campaign random',fuzz['iterations_per_random_campaign']],['Timeout giây',fuzz['timeout_seconds']],['Targets',', '.join(fuzz['targets'])],['Crash policy',fuzz['crash_policy']],['Branch coverage target',fuzz['coverage']['branch_percent']]]),
               'Corpus: ../../OrderPaymentMicroservice.Tests/FuzzCorpus/order_requests.json. Oracle thực thi: ../../OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs. Coverage XML: ../results/application-fuzzing-coverage.cobertura.xml. Campaign có random xác định, không chứng minh mọi input hoặc coverage-guided native fuzzing.\n',

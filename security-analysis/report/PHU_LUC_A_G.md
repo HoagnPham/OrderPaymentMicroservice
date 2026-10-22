@@ -550,7 +550,41 @@ GCC/cppcheck version, finding và layout: ../c-memory/evidence/static-analysis.j
 | user_fixed_length_128 | True | 0 | clean sanitizer run |
 | user_buggy_valid | True | 0 | clean sanitizer run |
 
-### C.3. Compiler, configuration và ground truth
+### C.3. CBMC bounded model checking
+
+Tool: cbmc (5.95.1 (cbmc-5.95.1)); bound unwind=64, input tượng trưng tối đa 48 byte. BUGGY phải FAILED đúng lỗi, FIXED phải SUCCESSFUL trong bound.
+
+| Module | Variant | PASS | Exit code | Failure/Expectation |
+| --- | --- | --- | --- | --- |
+| user | buggy | True | 10 | [strcpy.pointer_dereference.11] line 30 dereference failure: pointer outside object bounds in dst[(signed long int)i]: FAILURE |
+| user | fixed | True | 0 | VERIFICATION SUCCESSFUL |
+| product | buggy | True | 10 | [strcpy.pointer_dereference.11] line 30 dereference failure: pointer outside object bounds in dst[(signed long int)i]: FAILURE |
+| product | fixed | True | 0 | VERIFICATION SUCCESSFUL |
+| cart | buggy | True | 10 | [module_main.pointer_dereference.15] line 17 dereference failure: deallocated dynamic object in removed->product_id: FAILURE |
+| cart | fixed | True | 0 | VERIFICATION SUCCESSFUL |
+| order | buggy | True | 10 | [__CPROVER__start.memory-leak.1] dynamically allocated memory never freed in __CPROVER_memory_leak == NULL: FAILURE |
+| order | fixed | True | 0 | VERIFICATION SUCCESSFUL |
+| payment | buggy | True | 10 | [module_main.precondition_instance.7] line 13 free argument must be NULL or valid pointer: FAILURE; [module_main.precondition_instance.10] line 13 double free: FAILURE |
+| payment | fixed | True | 0 | VERIFICATION SUCCESSFUL |
+
+### C.4. Valgrind Memcheck
+
+Tool: valgrind (valgrind-3.22.0); build `gcc -std=c11 -g -O0 -Wall -Wextra -fno-stack-protector (no sanitizers)`. BUGGY phải có lỗi bộ nhớ đúng loại, FIXED phải sạch.
+
+| Module | Variant | PASS | Exit code | Diagnostic |
+| --- | --- | --- | --- | --- |
+| user | buggy | True | -11 | memory error |
+| user | fixed | True | 0 | clean Memcheck run |
+| product | buggy | True | 1 | ==48279== Invalid write of size 1 |
+| product | fixed | True | 0 | clean Memcheck run |
+| cart | buggy | True | 99 | ==48303== Invalid read of size 4 |
+| cart | fixed | True | 0 | clean Memcheck run |
+| order | buggy | True | 99 | ==48315== 240 bytes in 5 blocks are definitely lost in loss record 1 of 1 |
+| order | fixed | True | 0 | clean Memcheck run |
+| payment | buggy | True | 99 | ==48342== Invalid free() / delete / delete[] / realloc() |
+| payment | fixed | True | 0 | clean Memcheck run |
+
+### C.5. Compiler, configuration và ground truth
 
 | Module | Scanner BUGGY | Scanner FIXED | Cppcheck trực tiếp memory finding BUGGY |
 | --- | --- | --- | --- |
@@ -562,7 +596,7 @@ GCC/cppcheck version, finding và layout: ../c-memory/evidence/static-analysis.j
 
 Cppcheck return_code=0 không đồng nghĩa không finding; XML vẫn có error/style. BUGGY và FIXED được chạy theo cấu hình preprocessor riêng.
 
-### C.4. Source minh họa ownership/lifetime
+### C.6. Source minh họa ownership/lifetime
 
 #### order.c
 
@@ -687,14 +721,14 @@ int main(int argc, char **argv) {
 }
 ```
 
-### C.5. Diagnostic thực thi
+### C.7. Diagnostic thực thi
 
 #### order_buggy
 
 ```text
-==35394==ERROR: LeakSanitizer: detected memory leaks
+==47908==ERROR: LeakSanitizer: detected memory leaks
 Direct leak of 240 byte(s) in 5 object(s) allocated from:
-    #0 0x772c9e2fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x7b2fcfefd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x40136d in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: 240 byte(s) leaked in 5 allocation(s).
 ```
@@ -702,12 +736,12 @@ SUMMARY: AddressSanitizer: 240 byte(s) leaked in 5 allocation(s).
 #### payment_buggy
 
 ```text
-==35398==ERROR: AddressSanitizer: attempting double-free on 0x503000000040 in thread T0:
-    #0 0x7eb4338fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+==47912==ERROR: AddressSanitizer: attempting double-free on 0x503000000040 in thread T0:
+    #0 0x78e2930fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
     #1 0x40142e in main modules/payment.c:13
-    #0 0x7eb4338fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #0 0x78e2930fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
     #1 0x401421 in main modules/payment.c:9
-    #0 0x7eb4338fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x78e2930fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x4012ed in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: double-free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52 in free
 ```
@@ -715,12 +749,12 @@ SUMMARY: AddressSanitizer: double-free ../../../../src/libsanitizer/asan/asan_ma
 #### cart_buggy
 
 ```text
-==35401==ERROR: AddressSanitizer: heap-use-after-free on address 0x502000000010 at pc 0x00000040160c bp 0x7ffc058378e0 sp 0x7ffc058378d0
+==47915==ERROR: AddressSanitizer: heap-use-after-free on address 0x502000000010 at pc 0x00000040160c bp 0x7ffd3e983330 sp 0x7ffd3e983320
     #0 0x40160b in main modules/cart.c:17
-    #1 0x7a9b6ae2a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
-    #0 0x7a9b6bafc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x7e845782a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #0 0x7e84584fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
     #1 0x4015b9 in main modules/cart.c:16
-    #0 0x7a9b6bafd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x7e84584fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x40134d in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: heap-use-after-free modules/cart.c:17 in main
 ```
@@ -728,10 +762,10 @@ SUMMARY: AddressSanitizer: heap-use-after-free modules/cart.c:17 in main
 #### product_buggy
 
 ```text
-==35404==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x503000000060 at pc 0x7b2d576a7923 bp 0x7fff93062150 sp 0x7fff930618f8
-    #0 0x7b2d576a7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
+==47918==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x503000000060 at pc 0x7bb1fbca7923 bp 0x7fff88f6d0f0 sp 0x7fff88f6c898
+    #0 0x7bb1fbca7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
     #1 0x4014ee in main modules/product.c:17
-    #0 0x7b2d576fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x7bb1fbcfd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x40132d in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563 in strcpy
 ```
@@ -739,14 +773,14 @@ SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/asa
 #### user_buggy
 
 ```text
-==35407==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x77f434e00040 at pc 0x77f437ea7923 bp 0x7ffc482807b0 sp 0x7ffc4827ff58
-    #0 0x77f437ea7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
+==47921==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x70f993600040 at pc 0x70f9966a7923 bp 0x7ffe1517e3b0 sp 0x7ffe1517db58
+    #0 0x70f9966a7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
     #1 0x401375 in register_user modules/user.c:13
     #0 0x4012c5 in register_user modules/user.c:5
 SUMMARY: AddressSanitizer: stack-buffer-overflow ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563 in strcpy
 ```
 
-### C.6. ABI và provenance
+### C.8. ABI và provenance
 
 | Struct | sizeof | _Alignof | Môi trường |
 | --- | --- | --- | --- |
@@ -760,11 +794,13 @@ Offsets đo được: {"Order.items": 16, "Payment.transaction_code": 8, "Produc
 
 Metadata source/binary/environment: [chapter4 run](../results/chapter4_run.results.json). Không có timestamp start/finish chính xác; make dùng binary hiện có nếu còn mới hơn source.
 
-### C.7. Tái lập chỉ bằng project
+### C.9. Tái lập chỉ bằng project
 
 ```bash
 make -C security-analysis/c-memory static-check
 make -C security-analysis/c-memory test
+make -C security-analysis/c-memory bmc-check
+make -C security-analysis/c-memory valgrind-check
 ```
 
 Không chạy make clean nếu muốn giữ raw log để đọc. Khi sandbox làm LSan thất bại, giữ failure riêng và chạy trong môi trường được phép; không tắt detect_leaks để đạt PASS.
@@ -798,7 +834,7 @@ Stock=10/q1=q2=6 minh họa baseline sai. Guard tổng quantity loại stock âm
 
 ### D.3. BMC
 
-Chưa có thí nghiệm BMC riêng với bound k trong đợt này. Không thay bằng kết quả TLC hay gọi duyệt graph hữu hạn là BMC.
+CBMC bounded model checking cho 5 module C nằm ở C.3: unwind=64, input tượng trưng 48 byte, 5/5 BUGGY bị bác và 5/5 FIXED được chứng minh trong bound. Đây là BMC trên harness C, không phải BMC cho toàn bộ source C#; không thay bằng kết quả TLC hay duyệt graph hữu hạn.
 
 ## Phụ lục E — Fuzzing và test
 

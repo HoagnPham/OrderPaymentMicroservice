@@ -19,7 +19,8 @@ Chuỗi inventory bắt đầu từ điều kiện sai theo từng dòng, witnes
 kiểm tổng lượng, SMT cho phép trừ mới, unit test biên 5+5 và HTTP/database
 regression. Chuỗi liveness bắt đầu từ assumption stutter, audit raw graph, lasso
 counterexample và giới hạn fair-CTL. Chuỗi memory bắt đầu từ ownership allocation,
-static finding hoặc false negative, diagnostic sanitizer và bản FIXED cùng input.
+static finding hoặc false negative, diagnostic sanitizer và bản FIXED cùng input;
+CBMC/Valgrind bổ sung góc nhìn bounded proof và Memcheck độc lập.
 
 Ma trận truy vết giữ SEC-* cho yêu cầu bổ sung, REQ-* cho workbook gốc. Tên property
 luôn cần namespace model khi P1..P4 trùng ID. Không tự gán risk score residual khi
@@ -31,4 +32,6 @@ chỉ có source guard hoặc vài test PASS.
 và kiểm lại oracle. Khi môi trường hoặc input thay đổi, lưu run mới và phân loại
 kết quả mới thay vì ghi đè kết luận lịch sử không giải thích. Không cần đưa local
 binary vào source control; manifest lưu hash và raw log có thể tạo lại bằng các
-lệnh thuộc project. Không lệnh tái lập trong bộ báo cáo mới cần truy cập ATPM.
+lệnh thuộc project. `run_all_checks.py` tái lập chuỗi nhanh (không đọc ATPM) và
+ghi `end_to_end.results.json`; các nhóm .NET/PostgreSQL/TLC/fuzz là opt-in.
+Không lệnh tái lập trong bộ báo cáo mới cần truy cập ATPM.

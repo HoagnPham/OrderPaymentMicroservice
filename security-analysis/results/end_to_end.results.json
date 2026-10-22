@@ -1,0 +1,317 @@
+{
+  "schema_version": 1,
+  "run_at_utc": "2026-10-22T00:39:43.049835+00:00",
+  "finished_at_utc": "2026-10-22T00:39:55.448278+00:00",
+  "root": "/home/phamhoang/OrderPaymentMicroservice",
+  "passed": true,
+  "steps": [
+    {
+      "name": "workbook",
+      "command": "/usr/bin/python3 security-analysis/verify_teacher_spec.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.056,
+      "passed": true,
+      "tail": [
+        "Teacher spec compatibility: PASS (10 sheets, 18 states, 10 CTL properties, 50 test cases)",
+        "Intentional detections: CWE-667, CWE-693 at ['conflict'] (CTL false: AG(!violation))",
+        "Result: /home/phamhoang/OrderPaymentMicroservice/security-analysis/results/teacher_spec_verification.json"
+      ]
+    },
+    {
+      "name": "recovery_model",
+      "command": "/usr/bin/python3 security-analysis/verify_recovery_model.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.045,
+      "passed": true,
+      "tail": [
+        "[P12] PASS - A terminal state can only reject/no-op and remain in the same terminal state.",
+        "[P13] PASS - A failure after successful payment can only preserve paid evidence or enter the refund path, never FAILED/CANCELLED.",
+        "[P14] PASS - An unknown payment outcome remains non-terminal with inventory reserved until an authoritative outcome is known.",
+        "[P15] PASS - Within one state, one event has exactly one declared next state.",
+        "[BUG-CANCELLED-PAID] DETECTED - failed P1, P10, P11, P12, P4",
+        "[BUG-WRONG-AMOUNT] DETECTED - failed P1, P10, P11",
+        "[BUG-DUPLICATE-SUCCESS] DETECTED - failed P1, P10, P11",
+        "[BUG-RESOURCE-CONFLICT] DETECTED - failed P1, P10, P11, P7",
+        "[BUG-PAID-FAILED-WITHOUT-REFUND] DETECTED - failed P11, P13",
+        "[BUG-UNKNOWN-RELEASED] DETECTED - failed P11, P14",
+        "Result: /home/phamhoang/OrderPaymentMicroservice/security-analysis/results/order_payment_recovery_model.results.json",
+        "State response matrix: /home/phamhoang/OrderPaymentMicroservice/security-analysis/results/order_payment_state_response_matrix.csv"
+      ]
+    },
+    {
+      "name": "liveness",
+      "command": "/usr/bin/python3 security-analysis/audit_liveness.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.029,
+      "passed": true,
+      "tail": [
+        "Liveness audit: PASS",
+        "Raw AG AF terminal: False",
+        "Progress-only AG AF terminal: True"
+      ]
+    },
+    {
+      "name": "payment_smt",
+      "command": "/usr/bin/python3 security-analysis/verify_payment_smt.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.053,
+      "passed": true,
+      "tail": [
+        "SMT verification: 7/7 PASS",
+        "[TEST1_VALID_PAID] sat (expected sat)",
+        "[TEST2_TOTAL_MISMATCH] unsat (expected unsat)",
+        "[TEST3_PAID_UNDERPAYMENT] unsat (expected unsat)",
+        "[TEST4_NEGATIVE_PAYMENT] unsat (expected unsat)",
+        "[TEST5_PAYMENT_EXCEEDS_TOTAL] unsat (expected unsat)",
+        "[TEST6_INT32_SUBTOTAL_OVERFLOW_EXISTS] sat (expected sat)",
+        "[TEST7_TOTAL_BOUND_BLOCKS_OVERSIZED_SUBTOTAL] unsat (expected unsat)",
+        "Result: /home/phamhoang/OrderPaymentMicroservice/security-analysis/results/payment_verification.results.json"
+      ]
+    },
+    {
+      "name": "inventory_smt",
+      "command": "/usr/bin/python3 security-analysis/verify_inventory_smt.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.061,
+      "passed": true,
+      "tail": [
+        "Inventory SMT: 3/3 PASS"
+      ]
+    },
+    {
+      "name": "checkout_retry",
+      "command": "/usr/bin/python3 security-analysis/verify_checkout.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.838,
+      "passed": true,
+      "tail": [
+        "PASS: checkout key persistence; transient retry; stable payload/key; bounded jitter and attempts; no business/503 retry; cancellation; JSON/text API errors"
+      ]
+    },
+    {
+      "name": "threat_model",
+      "command": "/usr/bin/python3 security-analysis/verify_threat_model.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.044,
+      "passed": true,
+      "tail": [
+        "Threat model: PASS (6 assets, 4 boundaries, 9 threats, 6/6 STRIDE)"
+      ]
+    },
+    {
+      "name": "c_static",
+      "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_static.py --output security-analysis/c-memory/evidence/static-analysis.json",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.289,
+      "passed": true,
+      "tail": [
+        "PASS static analysis: security-analysis/c-memory/evidence/static-analysis.json"
+      ]
+    },
+    {
+      "name": "c_sanitizers",
+      "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_memory.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.862,
+      "passed": true,
+      "tail": [
+        "PASS product_fixed_length_0",
+        "PASS product_fixed_length_1",
+        "PASS product_fixed_length_31",
+        "PASS product_fixed_length_32",
+        "PASS product_fixed_length_128",
+        "PASS product_buggy_valid",
+        "PASS user_fixed_length_0",
+        "PASS user_fixed_length_1",
+        "PASS user_fixed_length_31",
+        "PASS user_fixed_length_32",
+        "PASS user_fixed_length_128",
+        "PASS user_buggy_valid"
+      ]
+    },
+    {
+      "name": "c_bmc",
+      "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_bmc.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 2.429,
+      "passed": true,
+      "tail": [
+        "PASS user_buggy",
+        "PASS user_fixed",
+        "PASS product_buggy",
+        "PASS product_fixed",
+        "PASS cart_buggy",
+        "PASS cart_fixed",
+        "PASS order_buggy",
+        "PASS order_fixed",
+        "PASS payment_buggy",
+        "PASS payment_fixed",
+        "CBMC: PASS (10 cases, unwind=64)"
+      ]
+    },
+    {
+      "name": "c_valgrind",
+      "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_valgrind.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 6.809,
+      "passed": true,
+      "tail": [
+        "PASS user_buggy",
+        "PASS user_fixed",
+        "PASS product_buggy",
+        "PASS product_fixed",
+        "PASS cart_buggy",
+        "PASS cart_fixed",
+        "PASS order_buggy",
+        "PASS order_fixed",
+        "PASS payment_buggy",
+        "PASS payment_fixed",
+        "Valgrind: PASS (10 cases)"
+      ]
+    },
+    {
+      "name": "package_evidence",
+      "command": "/usr/bin/python3 security-analysis/package_evidence.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.398,
+      "passed": true,
+      "tail": [
+        "unit: 149/149 passed, 0 skipped",
+        "integration: 35/35 passed, 0 skipped",
+        "Model projection: PASS; 35 events -> 22 state pairs"
+      ]
+    },
+    {
+      "name": "build_report",
+      "command": "/usr/bin/python3 security-analysis/build_report.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.056,
+      "passed": true,
+      "tail": [
+        "/home/phamhoang/OrderPaymentMicroservice/security-analysis/report/BAO_CAO.md",
+        "/home/phamhoang/OrderPaymentMicroservice/security-analysis/report/PHU_LUC_A_G.md"
+      ]
+    },
+    {
+      "name": "package_final",
+      "command": "/usr/bin/python3 security-analysis/package_evidence.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 0.426,
+      "passed": true,
+      "tail": [
+        "unit: 149/149 passed, 0 skipped",
+        "integration: 35/35 passed, 0 skipped",
+        "Model projection: PASS; 35 events -> 22 state pairs"
+      ]
+    }
+  ],
+  "artifact_checks": [
+    {
+      "path": "results/teacher_spec_verification.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "results/order_payment_recovery_model.results.json",
+      "passed": true,
+      "reason": "model.all_hold=True"
+    },
+    {
+      "path": "results/liveness_audit.results.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "results/payment_verification.results.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "results/inventory_verification.results.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "results/checkout_retry.results.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "results/threat_model_results.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "c-memory/evidence/static-analysis.json",
+      "passed": true,
+      "reason": "assertions.passed=True"
+    },
+    {
+      "path": "c-memory/evidence/dynamic-analysis.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "c-memory/evidence/bmc-analysis.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "c-memory/evidence/valgrind-analysis.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "results/application_tests.results.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "results/model_projection.results.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "results/evidence_manifest.json",
+      "passed": true,
+      "reason": "exists"
+    },
+    {
+      "path": "report/BAO_CAO.md",
+      "passed": true,
+      "reason": "exists"
+    },
+    {
+      "path": "report/PHU_LUC_A_G.md",
+      "passed": true,
+      "reason": "exists"
+    }
+  ],
+  "skipped": [
+    "dotnet build/unit tests (use --with-dotnet-tests)",
+    "PostgreSQL integration tests (use --with-integration)",
+    "deterministic .NET fuzz campaign (use --with-fuzz)",
+    "TLC (use --with-tlc with TLA2TOOLS_JAR)"
+  ],
+  "atpm_gui": "BLOCKED: SpecVerificationLab.exe is a Windows GUI (PyInstaller/Python 3.14/Tkinter) and was not executed here; run the manual checklist in KICH_BAN_THUYET_TRINH_VA_DEMO.md.",
+  "limitations": [
+    "This runner proves only that the listed commands exited successfully in this environment.",
+    "Default mode validates stored .NET evidence; it does not rerun the 184 unit/integration tests unless --with-dotnet-tests/--with-integration is used.",
+    "CBMC results are bounded by the harness and unwind limit.",
+    "Artifact predicates check stored JSON flags, not a second independent implementation."
+  ]
+}

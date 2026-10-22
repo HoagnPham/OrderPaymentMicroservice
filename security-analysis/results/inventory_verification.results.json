@@ -21,7 +21,7 @@
     }
   ],
   "tool": "Z3 version 5.1.0 - 64 bit",
-  "run_at_utc": "2026-10-15T09:18:32.831581+00:00",
+  "run_at_utc": "2026-10-22T00:39:43.285216+00:00",
   "command": "z3 OrderPaymentMicroservice/Security/InventoryVerification.z3",
   "spec_sha256": "c0cd7fa578070485e7ee31e9172bf4d1abde23d1961ea816c859241b6e0ea68b",
   "stdout": "DUPLICATE_LINES_BASELINE_OVERSOLD\nsat\n((stock 10)\n (q1 6)\n (q2 6))\nAGGREGATED_STOCK_CANNOT_BE_NEGATIVE\nunsat\nAGGREGATED_EXACT_STOCK_ACCEPTED\nsat\n",

@@ -1,0 +1,116 @@
+{
+  "schema_version": 1,
+  "tool": "valgrind (valgrind-3.22.0)",
+  "command": "python3 security-analysis/c-memory/tests/check_valgrind.py",
+  "platform": "Linux-7.0.0-34-generic-x86_64-with-glibc2.39",
+  "build": "gcc -std=c11 -g -O0 -Wall -Wextra -fno-stack-protector (no sanitizers)",
+  "options": [
+    "--error-exitcode=99",
+    "--leak-check=full",
+    "--show-leak-kinds=definite",
+    "--errors-for-leak-kinds=definite",
+    "--quiet"
+  ],
+  "cases": [
+    {
+      "module": "user",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": -11,
+      "expected": "memory error",
+      "diagnostics": [],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/user_buggy"
+    },
+    {
+      "module": "user",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected": "clean Memcheck run",
+      "diagnostics": [],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/user_fixed"
+    },
+    {
+      "module": "product",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": 1,
+      "expected": "memory error",
+      "diagnostics": [
+        "==48279== Invalid write of size 1"
+      ],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/product_buggy"
+    },
+    {
+      "module": "product",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected": "clean Memcheck run",
+      "diagnostics": [],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/product_fixed"
+    },
+    {
+      "module": "cart",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": 99,
+      "expected": "memory error",
+      "diagnostics": [
+        "==48303== Invalid read of size 4"
+      ],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/cart_buggy"
+    },
+    {
+      "module": "cart",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected": "clean Memcheck run",
+      "diagnostics": [],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/cart_fixed"
+    },
+    {
+      "module": "order",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": 99,
+      "expected": "memory error",
+      "diagnostics": [
+        "==48315== 240 bytes in 5 blocks are definitely lost in loss record 1 of 1"
+      ],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/order_buggy"
+    },
+    {
+      "module": "order",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected": "clean Memcheck run",
+      "diagnostics": [],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/order_fixed"
+    },
+    {
+      "module": "payment",
+      "variant": "buggy",
+      "passed": true,
+      "exit_code": 99,
+      "expected": "memory error",
+      "diagnostics": [
+        "==48342== Invalid free() / delete / delete[] / realloc()"
+      ],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/payment_buggy"
+    },
+    {
+      "module": "payment",
+      "variant": "fixed",
+      "passed": true,
+      "exit_code": 0,
+      "expected": "clean Memcheck run",
+      "diagnostics": [],
+      "command": "valgrind --error-exitcode=99 --leak-check=full --show-leak-kinds=definite --errors-for-leak-kinds=definite --quiet /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/build/valgrind/payment_fixed"
+    }
+  ],
+  "passed": true,
+  "scope_limit": "Memcheck covers the five C teaching modules and the executed inputs only; it is not a proof for the ASP.NET service or every possible input."
+}
