@@ -594,13 +594,13 @@ Tool: valgrind (valgrind-3.22.0); build `gcc -std=c11 -g -O0 -Wall -Wextra -fno-
 | --- | --- | --- | --- | --- |
 | user | buggy | True | -11 | memory error |
 | user | fixed | True | 0 | clean Memcheck run |
-| product | buggy | True | 1 | ==60540== Invalid write of size 1 |
+| product | buggy | True | 1 | ==107823== Invalid write of size 1 |
 | product | fixed | True | 0 | clean Memcheck run |
-| cart | buggy | True | 99 | ==60552== Invalid read of size 4 |
+| cart | buggy | True | 99 | ==107847== Invalid read of size 4 |
 | cart | fixed | True | 0 | clean Memcheck run |
-| order | buggy | True | 99 | ==60564== 240 bytes in 5 blocks are definitely lost in loss record 1 of 1 |
+| order | buggy | True | 99 | ==107859== 240 bytes in 5 blocks are definitely lost in loss record 1 of 1 |
 | order | fixed | True | 0 | clean Memcheck run |
-| payment | buggy | True | 99 | ==60576== Invalid free() / delete / delete[] / realloc() |
+| payment | buggy | True | 99 | ==107872== Invalid free() / delete / delete[] / realloc() |
 | payment | fixed | True | 0 | clean Memcheck run |
 
 ### C.5. Compiler, configuration và ground truth
@@ -745,9 +745,9 @@ int main(int argc, char **argv) {
 #### order_buggy
 
 ```text
-==60187==ERROR: LeakSanitizer: detected memory leaks
+==107457==ERROR: LeakSanitizer: detected memory leaks
 Direct leak of 240 byte(s) in 5 object(s) allocated from:
-    #0 0x7ac8806fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x7512bb2fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x40136d in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: 240 byte(s) leaked in 5 allocation(s).
 ```
@@ -755,12 +755,12 @@ SUMMARY: AddressSanitizer: 240 byte(s) leaked in 5 allocation(s).
 #### payment_buggy
 
 ```text
-==60191==ERROR: AddressSanitizer: attempting double-free on 0x503000000040 in thread T0:
-    #0 0x77a2606fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+==107461==ERROR: AddressSanitizer: attempting double-free on 0x503000000040 in thread T0:
+    #0 0x7aaaae0fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
     #1 0x40142e in main modules/payment.c:13
-    #0 0x77a2606fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #0 0x7aaaae0fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
     #1 0x401421 in main modules/payment.c:9
-    #0 0x77a2606fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x7aaaae0fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x4012ed in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: double-free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52 in free
 ```
@@ -768,12 +768,12 @@ SUMMARY: AddressSanitizer: double-free ../../../../src/libsanitizer/asan/asan_ma
 #### cart_buggy
 
 ```text
-==60194==ERROR: AddressSanitizer: heap-use-after-free on address 0x502000000010 at pc 0x00000040160c bp 0x7fff76304890 sp 0x7fff76304880
+==107464==ERROR: AddressSanitizer: heap-use-after-free on address 0x502000000010 at pc 0x00000040160c bp 0x7ffc19ecaf30 sp 0x7ffc19ecaf20
     #0 0x40160b in main modules/cart.c:17
-    #1 0x7fa34582a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
-    #0 0x7fa3464fc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
+    #1 0x7d0b2402a1c9 in __libc_start_call_main ../sysdeps/nptl/libc_start_call_main.h:58
+    #0 0x7d0b24cfc4d8 in free ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:52
     #1 0x4015b9 in main modules/cart.c:16
-    #0 0x7fa3464fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x7d0b24cfd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x40134d in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: heap-use-after-free modules/cart.c:17 in main
 ```
@@ -781,10 +781,10 @@ SUMMARY: AddressSanitizer: heap-use-after-free modules/cart.c:17 in main
 #### product_buggy
 
 ```text
-==60197==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x503000000060 at pc 0x721a5a2a7923 bp 0x7ffdfdefef50 sp 0x7ffdfdefe6f8
-    #0 0x721a5a2a7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
+==107467==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x503000000060 at pc 0x7d4727ea7923 bp 0x7fff6c414e20 sp 0x7fff6c4145c8
+    #0 0x7d4727ea7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
     #1 0x4014ee in main modules/product.c:17
-    #0 0x721a5a2fd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
+    #0 0x7d4727efd9c7 in malloc ../../../../src/libsanitizer/asan/asan_malloc_linux.cpp:69
     #1 0x40132d in allocate modules/demo.h:8
 SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563 in strcpy
 ```
@@ -792,8 +792,8 @@ SUMMARY: AddressSanitizer: heap-buffer-overflow ../../../../src/libsanitizer/asa
 #### user_buggy
 
 ```text
-==60200==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x7b0d80000040 at pc 0x7b0d830a7923 bp 0x7ffdc71bac60 sp 0x7ffdc71ba408
-    #0 0x7b0d830a7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
+==107470==ERROR: AddressSanitizer: stack-buffer-overflow on address 0x78c63ce00040 at pc 0x78c63fea7923 bp 0x7ffc34288d40 sp 0x7ffc342884e8
+    #0 0x78c63fea7922 in strcpy ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563
     #1 0x401375 in register_user modules/user.c:13
     #0 0x4012c5 in register_user modules/user.c:5
 SUMMARY: AddressSanitizer: stack-buffer-overflow ../../../../src/libsanitizer/asan/asan_interceptors.cpp:563 in strcpy

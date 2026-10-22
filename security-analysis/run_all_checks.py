@@ -6,8 +6,9 @@ model, C static/sanitizer/CBMC/Valgrind evidence, packaging and report. Checkout
 retry needs Chrome/Chromium; C checks need gcc, cppcheck, cbmc and valgrind. The
 CNF/DIMACS/DRAT certificate pipeline is opt-in with --with-sat because it also
 needs CaDiCaL and drat-trim. The .NET suites and TLC are opt-in because they need
-extra services or a jar. The default chain does not read the read-only ATPM
-reference tree.
+extra services or a jar. Black-box HTTP and browser network fault fuzzing are
+opt-in with --with-http-fuzz/--with-browser-network-fuzz. The default chain does
+not read the read-only ATPM reference tree.
 
 This script does not replace the Windows-only ATPM GUI. It records exactly what
 was executed and which artifacts were checked.
@@ -67,6 +68,8 @@ ARTIFACTS = [
     ("c-memory/evidence/valgrind-analysis.json", "passed"),
     ("c-memory/evidence/sat-pipeline.json", "passed"),
     ("results/application_tests.results.json", "passed"),
+    ("results/http_fuzz.results.json", "passed"),
+    ("results/browser_network_fuzz.results.json", "passed"),
 ]
 
 PACKAGE_ARTIFACTS = [
@@ -143,6 +146,8 @@ def main() -> None:
     parser.add_argument("--with-dotnet-tests", action="store_true", help="run the unit test project")
     parser.add_argument("--with-integration", action="store_true", help="run the PostgreSQL integration project")
     parser.add_argument("--with-fuzz", action="store_true", help="run the deterministic .NET fuzz campaign")
+    parser.add_argument("--with-http-fuzz", action="store_true", help="run black-box HTTP fuzz against real local API/PostgreSQL")
+    parser.add_argument("--with-browser-network-fuzz", action="store_true", help="run Chrome CDP network fault fuzzing")
     parser.add_argument("--with-tlc", action="store_true", help="run TLC (requires TLA2TOOLS_JAR)")
     parser.add_argument("--with-sat", action="store_true", help="run CNF/DIMACS + DRAT proof checks (requires cadical and drat-trim)")
     parser.add_argument("--no-package", action="store_true", help="skip package_evidence and build_report")
@@ -171,6 +176,14 @@ def main() -> None:
         steps.append(("application_fuzz", command("security-analysis/run_fuzzing.py")))
     else:
         skipped.append("deterministic .NET fuzz campaign (use --with-fuzz)")
+    if args.with_http_fuzz:
+        steps.append(("http_fuzz", command("security-analysis/http_fuzz.py", "--iterations", "500", "--no-build")))
+    else:
+        skipped.append("black-box HTTP fuzz against real local API/PostgreSQL (use --with-http-fuzz)")
+    if args.with_browser_network_fuzz:
+        steps.append(("browser_network_fuzz", command("security-analysis/browser/network_fuzz.py")))
+    else:
+        skipped.append("Chrome CDP network fault fuzz (use --with-browser-network-fuzz)")
     if args.with_tlc:
         steps.append(("tlc", command("security-analysis/run_tlc.py")))
     else:
@@ -214,6 +227,8 @@ def main() -> None:
             "CBMC results are bounded by the harness and unwind limit.",
             "DRAT certificates prove UNSAT of the bounded CBMC CNF, not the ASP.NET service or unbounded executions.",
             "Artifact predicates check stored JSON flags, not a second independent implementation.",
+            "HTTP fuzzing is black-box and uses semantic feedback; it is not code-coverage-guided and covers only the bounded local API/DB surface.",
+            "Browser network fuzzing uses Chrome CDP response interception, not an external proxy or WAN; only the products fetch path is faulted.",
         ],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

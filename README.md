@@ -108,8 +108,10 @@ SMT, threat model, C static, sanitizer, **CBMC**, **Valgrind**, rồi package + 
 Kết quả từng bước và artifact check nằm ở
 [`security-analysis/results/end_to_end.results.json`](security-analysis/results/end_to_end.results.json).
 Các nhóm nặng là opt-in: `--with-dotnet-tests`, `--with-integration`, `--with-fuzz`,
-`--with-tlc`, `--with-sat`; `--no-package` chỉ chạy check. `--with-sat` cần
-`cadical` và `drat-trim` trên `PATH`; mặc định runner vẫn kiểm evidence SAT đã lưu.
+`--with-http-fuzz`, `--with-browser-network-fuzz`, `--with-tlc`, `--with-sat`;
+`--no-package` chỉ chạy check. `--with-sat` cần `cadical` và `drat-trim` trên `PATH`;
+mặc định runner vẫn kiểm evidence SAT đã lưu. HTTP fuzz dùng executable +
+PostgreSQL local, browser fuzz dùng Chrome CDP.
 Mặc định runner không rerun 184 test .NET; nó kiểm evidence
 `application_tests.results.json` đã lưu. Runner không chạy GUI Windows của thầy;
 mục `atpm_gui` ghi BLOCKED và trỏ về checklist thủ công trong kịch bản demo.

@@ -1037,21 +1037,24 @@ browser hoặc model khác **không tự thay thế** một hạng mục còn th
 
 | Hạng mục | Trạng thái | Bằng chứng / cách đọc | Việc còn thiếu |
 | --- | --- | --- | --- |
-| Fixed-seed | **Có** | `seed=20261009` trong `application_fuzzing.results.json`; budget 25.000/campaign và 2.000 chuỗi stateful. Seed chỉ tái lập khi cùng source/runtime. | Không có; đây là fuzz sinh dữ liệu có cấu trúc, không phải random byte stream. |
-| Coverage-guided | **Chưa** | Coverlet đo line/branch **sau** khi chạy; generator không đọc coverage để chọn mutation. | Edge/feature map, queue corpus, mutation/minimization và tiêu chí “new coverage”. |
-| Model-level end-to-end | **Không** | Campaign stateful chạy aggregate Order–Payment–Inventory trong process; trường `scope` ghi rõ không fuzz HTTP/PostgreSQL concurrency/gateway. | Harness gọi service/API thật, kiểm DB và transaction sau từng bước. |
-| Đập vào DB + HTTP service thật | **Có ở lớp integration/load, không trong fuzz** | `application_tests.results.json`, `load_probe.results.json`, `postgres_reconnect_*.results.json` dùng PostgreSQL/HTTP local thật; fuzz target chỉ là validator/state machine. | Fuzz request qua API thật, assert DB/transaction sau mỗi request; không gọi test tĩnh/unit là fuzz. |
-| Black-box HTTP fuzz | **Chưa** | `run_fuzzing.py` chạy xUnit in-process; HTTP/browser tests là kịch bản viết sẵn, không phải chiến dịch fuzz qua mạng. | RESTler/Schemathesis hoặc HTTP client fuzzer có auth, corpus, oracle và replay. |
-| Path/edge coverage chuyên sâu | **Chưa** | Chỉ có line 91,05% và branch 97,50% cho 5 target; không có path/edge report. | Instrumentation basic-block/edge, đo path bounded và lưu coverage map. |
-| Frontend fuzz qua mạng | **Chưa** | `checkout_retry.results.json` dùng mocked fetch/sessionStorage; `application_smoke.results.json` chỉ là một flow Chrome thật qua localhost. | Fuzz request/response qua proxy hoặc Playwright với backend thật; kiểm network loss, malformed body, retry và double-submit. |
+| Fixed-seed | **Có** | `.NET`: `seed=20261009`, 25.000/campaign, 2.000 chuỗi stateful. HTTP: `seed=20261022`, 10 setup + 40 seed + 9 business flow (51 request) + 500 mutation = 601 request. Seed chỉ tái lập khi cùng source/runtime. | Không có; đây là fuzz sinh dữ liệu có cấu trúc, không phải random byte stream. |
+| Coverage-guided | **Chưa** | Coverlet đo line/branch **sau** khi chạy; `http_fuzz.py` dùng semantic feedback (route/status/error/DB delta), không đọc code coverage để chọn mutation. | Edge/feature map ở mức mã, queue corpus, mutation/minimization và tiêu chí “new code coverage”. |
+| Model-level end-to-end | **Không** | Campaign stateful .NET chạy aggregate Order–Payment–Inventory trong process; trường `scope` ghi rõ không fuzz HTTP/PostgreSQL concurrency/gateway. `http_fuzz.py` là harness riêng, không biến campaign model thành end-to-end. | Harness model gọi service/API thật, kiểm DB và transaction sau từng bước. |
+| Đập vào DB + HTTP service thật | **Có trong HTTP fuzz opt-in** | `http_fuzz.results.json`: 601 request qua executable thật, PostgreSQL local thật; 0 HTTP 5xx, 0 vi phạm invariant DB; snapshot cuối có order PAYMENT_PENDING/COMPLETED/CANCELLED/REFUNDED và payment SUCCESS/REFUNDED. Integration/load/reconnect tests vẫn là lớp riêng. | Chưa phải production/TLS/proxy/network partition; chưa chứng minh concurrency toàn cục. |
+| Black-box HTTP fuzz | **Có (opt-in)** | `security-analysis/http_fuzz.py`; 10 setup + 40 seed + 9 business flow (51 request) + 500 mutation; auth, corpus, oracle response/DB, replay trace; evidence `http_fuzz.results.json`. | Chưa coverage-guided, chưa RESTler/Schemathesis; mutation set còn bounded. |
+| Path/edge coverage chuyên sâu | **Chưa code path/edge** | Chỉ có line 91,05%/branch 97,50% cho 5 target .NET. HTTP harness có 108 semantic feature và 500 semantic edge, **không phải** code path/edge. | Instrumentation basic-block/edge, đo path bounded và lưu coverage map. |
+| Frontend fuzz qua mạng | **Có một phần (CDP opt-in)** | `browser/network_fuzz.py`: 8 scenario (control, malformed JSON, wrong shape, empty, truncated, 500, 503, network error) trên Chrome + API/PostgreSQL thật; 0 uncaught JS. Vẫn là interception, không phải proxy/WAN. | Mở rộng sang login/cart/payment network faults, proxy thật, mobile/browser matrix. |
 | Taint analysis tự động | **Chưa** | Luồng source→sink được review thủ công; sanitizer/ASan không gắn nhãn taint. | DFSan/Semgrep/CodeQL rule và báo cáo source→sink. |
 
-Cách nói chính xác khi bảo vệ: **“Fuzz hiện tại là structured, fixed-seed,
-in-process, có oracle và đo line/branch coverage; chưa coverage-guided, chưa
-black-box HTTP fuzz và chưa phải end-to-end DB/HTTP.”** Các test HTTP/PostgreSQL,
-load và browser là bằng chứng riêng cho tầng tương ứng, không nâng campaign model
-thành end-to-end. Vì vậy 25.000 iteration hoặc 97,50% branch không được dùng để
-kết luận toàn API, database, frontend hay mọi path đã được kiểm.
+Cách nói chính xác khi bảo vệ: **“Fuzz hiện tại gồm ba lớp: structured fixed-seed
+in-process cho 5 target .NET, black-box HTTP fixed-seed với PostgreSQL thật, và
+Chrome CDP network fault fuzzing cho products fetch. HTTP harness dùng semantic
+feedback, chưa phải code-coverage-guided; chưa có code path/edge coverage; browser
+fuzz là interception, không phải proxy/WAN.”** Các test HTTP/PostgreSQL, load và
+browser smoke là bằng chứng riêng cho tầng tương ứng; HTTP fuzz không nâng campaign
+model thành end-to-end. Vì vậy 25.000 iteration, 601 HTTP request hoặc 97,50%
+branch không được dùng để kết luận toàn API, database, frontend hay mọi path đã
+được kiểm.
 
 
 ## 7. Kết quả và truy vết
@@ -1154,7 +1157,7 @@ Không dùng PASS của suite hiện tại để gọi hệ thống production-r
 | Audit scope | COMMIT nguyên tử với Orders/Payments; BEGIN/RESULT vẫn riêng; DBA có thể disable trigger | Retention/least-privilege và outbox nếu thêm external sink |
 | Tool capability | Scanner syntax-specific; cppcheck false negative | Kết hợp review và dynamic, không lấy zero finding làm proof |
 | Test coverage | Đã kill/restart sau charge; đã có refund crash sau journal; chưa network/commit fault đa dạng | PASS hiện tại không bao phủ crash windows ngoài kịch bản |
-| Fuzz scope | Structured in-process, fixed seed, oracle + line/branch; chưa coverage-guided, HTTP black-box, path/edge hay frontend network fuzz | 25.000 iteration/97,50% branch không là proof cho API/DB/UI hoặc mọi path |
+| Fuzz scope | Đã có structured in-process + black-box HTTP/PostgreSQL + Chrome CDP network fault opt-in; chưa code-coverage-guided, path/edge code coverage hay proxy/WAN | 25.000 iteration/601 HTTP request/8 browser scenario/97,50% branch không là proof cho API/DB/UI hoặc mọi path |
 | Provenance | Hash đóng gói của evidence lịch sử | Không biết source tại thời điểm cũ nếu chưa có run-time hash |
 
 ### 8.2. Ưu tiên cải thiện theo tiêu chí đóng vấn đề

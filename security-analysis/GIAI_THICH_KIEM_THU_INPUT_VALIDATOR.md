@@ -116,7 +116,8 @@ Oracle của fuzz: input xấu phải bị `ArgumentException` (không phải cr
 tốt phải qua, và invariant aggregate phải giữ. Seed được in khi fail để tái lập.
 
 Giới hạn: đây là generation-based fuzzing ở mức hàm/state machine, không phải
-coverage-guided, không phải HTTP fuzz. "25.000 vòng" không phải 25.000 request.
+coverage-guided. HTTP fuzz là harness riêng `http_fuzz.py` (black-box, semantic
+feedback), không phải campaign .NET này. "25.000 vòng" không phải 25.000 request.
 
 ## 7. Coverage
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_at_utc": "2026-10-22T01:11:43.770555+00:00",
-  "finished_at_utc": "2026-10-22T01:11:58.274081+00:00",
+  "run_at_utc": "2026-10-22T01:55:52.593865+00:00",
+  "finished_at_utc": "2026-10-22T01:56:54.251612+00:00",
   "root": "/home/phamhoang/OrderPaymentMicroservice",
   "passed": true,
   "steps": [
@@ -10,7 +10,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_teacher_spec.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.067,
+      "duration_s": 0.059,
       "passed": true,
       "tail": [
         "Teacher spec compatibility: PASS (10 sheets, 18 states, 10 CTL properties, 50 test cases)",
@@ -23,7 +23,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_recovery_model.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.041,
+      "duration_s": 0.033,
       "passed": true,
       "tail": [
         "[P12] PASS - A terminal state can only reject/no-op and remain in the same terminal state.",
@@ -45,7 +45,7 @@
       "command": "/usr/bin/python3 security-analysis/audit_liveness.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.041,
+      "duration_s": 0.03,
       "passed": true,
       "tail": [
         "Liveness audit: PASS",
@@ -58,7 +58,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_payment_smt.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.058,
+      "duration_s": 0.05,
       "passed": true,
       "tail": [
         "SMT verification: 7/7 PASS",
@@ -77,7 +77,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_inventory_smt.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.06,
+      "duration_s": 0.057,
       "passed": true,
       "tail": [
         "Inventory SMT: 3/3 PASS"
@@ -88,7 +88,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_checkout.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 1.091,
+      "duration_s": 0.761,
       "passed": true,
       "tail": [
         "PASS: checkout key persistence; transient retry; stable payload/key; bounded jitter and attempts; no business/503 retry; cancellation; JSON/text API errors"
@@ -99,7 +99,7 @@
       "command": "/usr/bin/python3 security-analysis/verify_threat_model.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.036,
+      "duration_s": 0.028,
       "passed": true,
       "tail": [
         "Threat model: PASS (6 assets, 4 boundaries, 9 threats, 6/6 STRIDE)"
@@ -110,7 +110,7 @@
       "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_static.py --output security-analysis/c-memory/evidence/static-analysis.json",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.423,
+      "duration_s": 0.282,
       "passed": true,
       "tail": [
         "PASS static analysis: security-analysis/c-memory/evidence/static-analysis.json"
@@ -121,7 +121,7 @@
       "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_memory.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 1.072,
+      "duration_s": 0.838,
       "passed": true,
       "tail": [
         "PASS product_fixed_length_0",
@@ -143,7 +143,7 @@
       "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_bmc.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 2.611,
+      "duration_s": 2.391,
       "passed": true,
       "tail": [
         "PASS user_buggy",
@@ -164,7 +164,7 @@
       "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_valgrind.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 5.135,
+      "duration_s": 5.284,
       "passed": true,
       "tail": [
         "PASS user_buggy",
@@ -181,24 +181,38 @@
       ]
     },
     {
-      "name": "c_sat",
-      "command": "/usr/bin/python3 security-analysis/c-memory/tests/check_sat_pipeline.py",
+      "name": "http_fuzz",
+      "command": "/usr/bin/python3 security-analysis/http_fuzz.py --iterations 500 --no-build",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 2.933,
+      "duration_s": 36.229,
       "passed": true,
       "tail": [
-        "PASS order_buggy sat",
-        "PASS order_fixed unsat",
-        "PASS payment_buggy sat",
-        "PASS payment_fixed unsat",
-        "PASS cart_buggy sat",
-        "PASS cart_fixed unsat",
-        "PASS product_buggy sat",
-        "PASS product_fixed unsat",
-        "PASS user_buggy sat",
-        "PASS user_fixed unsat",
-        "SAT/CNF/DIMACS: PASS (10 cases)"
+        "{",
+        "  \"passed\": true,",
+        "  \"requests\": 601,",
+        "  \"features\": 108,",
+        "  \"edges\": 500,",
+        "  \"5xx\": 0,",
+        "  \"failures\": 0,",
+        "  \"evidence\": \"security-analysis/results/http_fuzz.results.json\"",
+        "}"
+      ]
+    },
+    {
+      "name": "browser_network_fuzz",
+      "command": "/usr/bin/python3 security-analysis/browser/network_fuzz.py",
+      "exit_code": 0,
+      "timed_out": false,
+      "duration_s": 14.782,
+      "passed": true,
+      "tail": [
+        "{",
+        "  \"passed\": true,",
+        "  \"scenarios\": 8,",
+        "  \"js_errors\": 0,",
+        "  \"evidence\": \"security-analysis/results/browser_network_fuzz.results.json\"",
+        "}"
       ]
     },
     {
@@ -206,7 +220,7 @@
       "command": "/usr/bin/python3 security-analysis/package_evidence.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.46,
+      "duration_s": 0.389,
       "passed": true,
       "tail": [
         "unit: 149/149 passed, 0 skipped",
@@ -219,7 +233,7 @@
       "command": "/usr/bin/python3 security-analysis/build_report.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.061,
+      "duration_s": 0.046,
       "passed": true,
       "tail": [
         "/home/phamhoang/OrderPaymentMicroservice/security-analysis/report/BAO_CAO.md",
@@ -231,7 +245,7 @@
       "command": "/usr/bin/python3 security-analysis/package_evidence.py",
       "exit_code": 0,
       "timed_out": false,
-      "duration_s": 0.412,
+      "duration_s": 0.398,
       "passed": true,
       "tail": [
         "unit: 149/149 passed, 0 skipped",
@@ -307,6 +321,16 @@
       "reason": "passed=True"
     },
     {
+      "path": "results/http_fuzz.results.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
+      "path": "results/browser_network_fuzz.results.json",
+      "passed": true,
+      "reason": "passed=True"
+    },
+    {
       "path": "results/model_projection.results.json",
       "passed": true,
       "reason": "passed=True"
@@ -331,7 +355,8 @@
     "dotnet build/unit tests (use --with-dotnet-tests)",
     "PostgreSQL integration tests (use --with-integration)",
     "deterministic .NET fuzz campaign (use --with-fuzz)",
-    "TLC (use --with-tlc with TLA2TOOLS_JAR)"
+    "TLC (use --with-tlc with TLA2TOOLS_JAR)",
+    "CNF/DIMACS + DRAT proof (use --with-sat with cadical and drat-trim)"
   ],
   "atpm_gui": "BLOCKED: SpecVerificationLab.exe is a Windows GUI (PyInstaller/Python 3.14/Tkinter) and was not executed here; run the manual checklist in KICH_BAN_THUYET_TRINH_VA_DEMO.md.",
   "limitations": [
@@ -339,6 +364,8 @@
     "Default mode validates stored .NET evidence; it does not rerun the 184 unit/integration tests unless --with-dotnet-tests/--with-integration is used.",
     "CBMC results are bounded by the harness and unwind limit.",
     "DRAT certificates prove UNSAT of the bounded CBMC CNF, not the ASP.NET service or unbounded executions.",
-    "Artifact predicates check stored JSON flags, not a second independent implementation."
+    "Artifact predicates check stored JSON flags, not a second independent implementation.",
+    "HTTP fuzzing is black-box and uses semantic feedback; it is not code-coverage-guided and covers only the bounded local API/DB surface.",
+    "Browser network fuzzing uses Chrome CDP response interception, not an external proxy or WAN; only the products fetch path is faulted."
   ]
 }

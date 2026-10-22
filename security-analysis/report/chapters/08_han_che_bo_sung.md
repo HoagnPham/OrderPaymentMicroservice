@@ -8,7 +8,7 @@
 | Audit scope | COMMIT nguyên tử với Orders/Payments; BEGIN/RESULT vẫn riêng; DBA có thể disable trigger | Retention/least-privilege và outbox nếu thêm external sink |
 | Tool capability | Scanner syntax-specific; cppcheck false negative | Kết hợp review và dynamic, không lấy zero finding làm proof |
 | Test coverage | Đã kill/restart sau charge; đã có refund crash sau journal; chưa network/commit fault đa dạng | PASS hiện tại không bao phủ crash windows ngoài kịch bản |
-| Fuzz scope | Structured in-process, fixed seed, oracle + line/branch; chưa coverage-guided, HTTP black-box, path/edge hay frontend network fuzz | 25.000 iteration/97,50% branch không là proof cho API/DB/UI hoặc mọi path |
+| Fuzz scope | Đã có structured in-process + black-box HTTP/PostgreSQL + Chrome CDP network fault opt-in; chưa code-coverage-guided, path/edge code coverage hay proxy/WAN | 25.000 iteration/601 HTTP request/8 browser scenario/97,50% branch không là proof cho API/DB/UI hoặc mọi path |
 | Provenance | Hash đóng gói của evidence lịch sử | Không biết source tại thời điểm cũ nếu chưa có run-time hash |
 
 ### 8.2. Ưu tiên cải thiện theo tiêu chí đóng vấn đề
