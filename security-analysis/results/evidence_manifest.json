@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "packaged_at_utc": "2026-10-22T01:21:14.988931+00:00",
-  "git_base_commit": "42d5dc53bef8aef9167302d6a6f9a880d1039a38",
+  "packaged_at_utc": "2026-10-22T01:57:37.505467+00:00",
+  "git_base_commit": "3931bd20c32e8d34afc0c390cfce5918d1178863",
   "working_tree_dirty": false,
   "dotnet_version": "10.0.112",
   "fresh_checks": [
@@ -15,6 +15,8 @@
     "order_retry_load.results.json",
     "application_smoke.results.json",
     "application_fuzzing.results.json",
+    "http_fuzz.results.json",
+    "browser_network_fuzz.results.json",
     "coverage_summary.json",
     "model_projection.results.json",
     "inventory_verification.results.json",
@@ -717,8 +719,8 @@
     },
     {
       "path": "security-analysis/GIAI_THICH_KIEM_THU_INPUT_VALIDATOR.md",
-      "sha256": "66c61ac9bc2244556539c3212e2b07d35d2762fce12a784b0d292ef04fc3298c",
-      "bytes": 7989
+      "sha256": "03e9d8c33be9c7959c6b1ee4897c09d6e50fb91e7c38eb8bd36942158c7879a6",
+      "bytes": 8074
     },
     {
       "path": "security-analysis/IMPLEMENTATION_CONTRACTS.md",
@@ -727,8 +729,8 @@
     },
     {
       "path": "security-analysis/KICH_BAN_THUYET_TRINH_VA_DEMO.md",
-      "sha256": "e55893fe7e4d256e8678e2a0c4dc8b37f6193fe8bd3cb0096b4664f3f21f2cd3",
-      "bytes": 60172
+      "sha256": "e6fa7b03890d5ec155b1cf086fb5248ce2e660be16fc24e36b70c604cb10f9f7",
+      "bytes": 61233
     },
     {
       "path": "security-analysis/OPERATIONS.md",
@@ -737,13 +739,13 @@
     },
     {
       "path": "security-analysis/PHAM_VI_KIEM_CHUNG.md",
-      "sha256": "4d3843f5bd85136442e8b589fede2dc3c80d5fad47a401e909b7363d037be11a",
-      "bytes": 10416
+      "sha256": "67e84da4123b718265b3d3a3b3478db80714785213c253efe3062616bd071cfc",
+      "bytes": 10811
     },
     {
       "path": "security-analysis/README.md",
-      "sha256": "04faee31997b1036643048327baa444aeb31192f0c5ddee5266c770006990eab",
-      "bytes": 5458
+      "sha256": "c29a396879007dac70ce0d825b3e9c1afae0453f94f4b19399b4453b45354be6",
+      "bytes": 6027
     },
     {
       "path": "security-analysis/audit_liveness.py",
@@ -764,6 +766,11 @@
       "path": "security-analysis/browser/live_smoke.py",
       "sha256": "ceb76a81f99900ff31953306fd9467946f7e7f37dd6f615990eec68b302d0c9d",
       "bytes": 8240
+    },
+    {
+      "path": "security-analysis/browser/network_fuzz.py",
+      "sha256": "52d7c1ca75251a62036e7fff86bb0f5190d016256d56425d2dd837253c497f7f",
+      "bytes": 13660
     },
     {
       "path": "security-analysis/build_report.py",
@@ -817,8 +824,8 @@
     },
     {
       "path": "security-analysis/c-memory/evidence/valgrind-analysis.json",
-      "sha256": "d1bd81ac95bab31aeb43479643d627b4bd97a4d7980b20ed5a69495e594b7dc3",
-      "bytes": 4913
+      "sha256": "e23884eb41add5cc99b0ab89f587d74874576b8dbc55ea820f5fefd1a5f4a713",
+      "bytes": 4917
     },
     {
       "path": "security-analysis/c-memory/modules/cart.c",
@@ -852,58 +859,58 @@
     },
     {
       "path": "security-analysis/c-memory/results/bmc_cart_buggy.log",
-      "sha256": "4ef219d07cb4388d5237c067623dab2d8d5b877b8f719df566eb90231120c497",
-      "bytes": 5423
+      "sha256": "6941beb9f97faf57e5d8eb5b0a71b3dc8079bacfd4d8b04cd1f405cf8518f98f",
+      "bytes": 5422
     },
     {
       "path": "security-analysis/c-memory/results/bmc_cart_fixed.log",
-      "sha256": "8e2916ee6d5ddecc484fedfb0bdff17786f8faa53f8e10d57fff119178ed2b5e",
-      "bytes": 5221
+      "sha256": "f99f8743f74e3ef3e3edc9a3ce869b15b61d8d9a861eab8c11ff56ef7dd0d73e",
+      "bytes": 5220
     },
     {
       "path": "security-analysis/c-memory/results/bmc_order_buggy.log",
-      "sha256": "149d0b3505cac1c5110e0f1f0e3ba2da3e03d97c5992afb05d462ad64faa6d15",
+      "sha256": "99f92019bb42194e4b5597488fa5431ea25d49f7efbbe2c2e559f5062c6a9866",
       "bytes": 13473
     },
     {
       "path": "security-analysis/c-memory/results/bmc_order_fixed.log",
-      "sha256": "24d49f4ccb6e027178d858c5fb39bf13067dd76c4d91d5443aac92d05cb00b89",
-      "bytes": 17172
+      "sha256": "844beb0d4a15be0118460c383cb0aba9b4426e4352a0acb006631cccf88c52dc",
+      "bytes": 17170
     },
     {
       "path": "security-analysis/c-memory/results/bmc_payment_buggy.log",
-      "sha256": "03e6afd0fcbc81f79cdcbdf4a453fe2470b9b09b6cd2fb944a9447174b097b4d",
-      "bytes": 4008
+      "sha256": "0cf501b1bb97f67c20cbea00243732fd282d8a53c0f174e2ff2338182ce25c9b",
+      "bytes": 4004
     },
     {
       "path": "security-analysis/c-memory/results/bmc_payment_fixed.log",
-      "sha256": "4bd7a03d1b122df9de146a4435ea3e6e33e19ea202bc875b858673ba3673be7e",
-      "bytes": 3801
+      "sha256": "fbca77e91da9b087bda93faf47cbc6c89b8f117b82136ae1f273cd0e35db7c95",
+      "bytes": 3803
     },
     {
       "path": "security-analysis/c-memory/results/bmc_product_buggy.log",
-      "sha256": "6d5ac0a9a1b2db77607889e90fa69780cd755ac2e9f1f2149ee459c53820afba",
-      "bytes": 12360
+      "sha256": "30816a438d1635782589762ce6e322f3a5d60d9170b52074655a0e5ed279e1e4",
+      "bytes": 12359
     },
     {
       "path": "security-analysis/c-memory/results/bmc_product_fixed.log",
-      "sha256": "caa6e65904c0cb222169a88c527a449c5c7a6fed5cbf8f4996c7cef14de329a6",
+      "sha256": "39a4283926854d03f89dab56fe571911bc73ac8debd576970a83983d037b4e13",
       "bytes": 19875
     },
     {
       "path": "security-analysis/c-memory/results/bmc_user_buggy.log",
-      "sha256": "258bc0a28a3f92abcbbd32e1f4b3e82f799d44f1aec4a6b7a052999f30c23b75",
+      "sha256": "2a0a008eccf3af82aa58c1e94763b1215478a5d7a23ce93bb1e505976dbfaac1",
       "bytes": 10595
     },
     {
       "path": "security-analysis/c-memory/results/bmc_user_fixed.log",
-      "sha256": "220147af4bcb1bf16264a29a2f93b1da141d386dcd0711260cc83f6e34ef2f22",
-      "bytes": 17586
+      "sha256": "e253874192b1a48707e73f03908333621c3fc49282699c2a68313b4f6d57bb29",
+      "bytes": 17585
     },
     {
       "path": "security-analysis/c-memory/results/cart_buggy.log",
-      "sha256": "925ff7e7a0fe273d46d35c7cedb444f5302aee8327e0579a6356b87d802fa93e",
-      "bytes": 3243
+      "sha256": "079970be8af294c612b745492d18f7a7300ab5309b6554667729c9e369edd439",
+      "bytes": 3245
     },
     {
       "path": "security-analysis/c-memory/results/cart_fixed.log",
@@ -912,8 +919,8 @@
     },
     {
       "path": "security-analysis/c-memory/results/order_buggy.log",
-      "sha256": "56a592763928685313b55127fe8fdbd13618566b8df9ff445aa83222c11b4371",
-      "bytes": 813
+      "sha256": "8b0c836424a14440b35befb348f447886391f674c1afbda4c012af6be46a85e5",
+      "bytes": 814
     },
     {
       "path": "security-analysis/c-memory/results/order_fixed.log",
@@ -922,8 +929,8 @@
     },
     {
       "path": "security-analysis/c-memory/results/payment_buggy.log",
-      "sha256": "f61fc05f2d2d3f74f17dc4186247e22658d8bcfece2babe51dda29f46eb04234",
-      "bytes": 1902
+      "sha256": "2884385f16a8005f0e8c0ba2b3e2629e59b4c299ceff33c7f5f85cdb20a9e93b",
+      "bytes": 1904
     },
     {
       "path": "security-analysis/c-memory/results/payment_fixed.log",
@@ -932,8 +939,8 @@
     },
     {
       "path": "security-analysis/c-memory/results/product_buggy.log",
-      "sha256": "8df21097792e0674095c69f89885e639b4dcfc49c0e2bccc4543c7f8e33e3408",
-      "bytes": 2887
+      "sha256": "26daf47de7ba77e29ede44c7ca0e36c7425eb1ff93b023a1f19b403d7c3094e5",
+      "bytes": 2889
     },
     {
       "path": "security-analysis/c-memory/results/product_buggy_valid.log",
@@ -1102,8 +1109,8 @@
     },
     {
       "path": "security-analysis/c-memory/results/user_buggy.log",
-      "sha256": "f308c2b0f55e53dfd341ddd442ea73804f7b90d85887b8052b4fd35e8d30662e",
-      "bytes": 2706
+      "sha256": "0587f8b11e00521f11da946d3c4cfaba373e2cba7c30539e75faff1d31761a34",
+      "bytes": 2708
     },
     {
       "path": "security-analysis/c-memory/results/user_buggy_valid.log",
@@ -1142,8 +1149,8 @@
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_cart_buggy.log",
-      "sha256": "5a4be6d80011812f8f262a1b8babd6d99f7f678591264b55eb1d202ee3f74621",
-      "bytes": 531
+      "sha256": "b03e1dd84a51d852fa761e40161297e73c9082387c3ce8c25f23ec1ad28e1e7a",
+      "bytes": 541
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_cart_fixed.log",
@@ -1152,8 +1159,8 @@
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_order_buggy.log",
-      "sha256": "ed8da2fc47eaf66ff76ba34cfa1b84d58e4af366c26a8fcb32a5e81ac1759606",
-      "bytes": 442
+      "sha256": "2deeb32f35041291b1961103e7db620f17b6690a1b4bee74f3d2e937dab26a7b",
+      "bytes": 448
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_order_fixed.log",
@@ -1162,8 +1169,8 @@
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_payment_buggy.log",
-      "sha256": "afb344cc659ca562606cc118cc862da6eb1eb11523f9ada6976ffa108f5eb5b6",
-      "bytes": 678
+      "sha256": "a0a500970c73d4c4fdd04557c0c11bbf3fdb2eb92135e57d17dca8a212d548c4",
+      "bytes": 689
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_payment_fixed.log",
@@ -1172,8 +1179,8 @@
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_product_buggy.log",
-      "sha256": "8ec43c8c4f2cffb64ab4c5dba50359528337313a19f751752272e0836e4be5ee",
-      "bytes": 2475
+      "sha256": "2bebe0b77829104d9620d71c41de2ef01bb1ffdedd0031db59d0a08a4bccb920",
+      "bytes": 2496
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_product_fixed.log",
@@ -1182,8 +1189,8 @@
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_user_buggy.log",
-      "sha256": "5fbd5ff0b0329aaa9fefdab1eaa68cf7570f19c786f903b633e1b7ed0e68c470",
-      "bytes": 742
+      "sha256": "dbdd68b44f218e2ce80570d1e66bdeb004b845b53520121856c3fd48af736517",
+      "bytes": 758
     },
     {
       "path": "security-analysis/c-memory/results/valgrind_user_fixed.log",
@@ -1266,6 +1273,11 @@
       "bytes": 7927
     },
     {
+      "path": "security-analysis/http_fuzz.py",
+      "sha256": "961eb3806188245b1c46d29966447c56522d35aeaac34d9a6949049f4c62d79a",
+      "bytes": 42604
+    },
+    {
       "path": "security-analysis/order_payment_pipeline_spec.json",
       "sha256": "a3025c6ec8a3e20c6e78f14c2927fa71fa5865c4f0f7c2c40e76d69919517d60",
       "bytes": 17434
@@ -1287,18 +1299,18 @@
     },
     {
       "path": "security-analysis/package_evidence.py",
-      "sha256": "9242b20a890a946d88c1a22bc3fa8c37f010f9416208cf299bc61a7a2571adba",
-      "bytes": 20681
+      "sha256": "fbf9a14a4c3c5d2e55f0ed156407cce8c1f0805ddebcdefb43fe8470621622ac",
+      "bytes": 21041
     },
     {
       "path": "security-analysis/report/BAO_CAO.md",
-      "sha256": "1757b8eb7b4e517637202a7c5fedfcb20bf71c6e6a0bbf4bbf81bcb32c684727",
-      "bytes": 89575
+      "sha256": "c230f02b6212a9b89385d80d21ed14dc1668f7c5e38d0effbb72c1bb0b3b3274",
+      "bytes": 90332
     },
     {
       "path": "security-analysis/report/PHU_LUC_A_G.md",
-      "sha256": "6826041f445682fb3690e8f1a39d501c6dee6fcd7fba53f354e831ba69172443",
-      "bytes": 77214
+      "sha256": "78b2fffbc8b0b58ce5cf9adc3f503b2de981acc17f8bd288446d7810b3183022",
+      "bytes": 77223
     },
     {
       "path": "security-analysis/report/chapters/01_muc_tieu.md",
@@ -1327,8 +1339,8 @@
     },
     {
       "path": "security-analysis/report/chapters/06_kiem_thu_bo_sung.md",
-      "sha256": "9172344aeea370bf1427dab539378a7c9c29b6ff86668d45462947ddb00c3a91",
-      "bytes": 17164
+      "sha256": "1c74bfd5d4a9413529f12b70867465feab5e3f5534b2956d87293b6e63add82c",
+      "bytes": 17857
     },
     {
       "path": "security-analysis/report/chapters/07_evidence_bo_sung.md",
@@ -1337,8 +1349,8 @@
     },
     {
       "path": "security-analysis/report/chapters/08_han_che_bo_sung.md",
-      "sha256": "63dc5362b5533367d7ac1f551af15b8c48f403020ed998c3161981a059503870",
-      "bytes": 6574
+      "sha256": "26c989f1458e113111b79ef351f1e43757045195ab13e7ac954d898505aa0cd0",
+      "bytes": 6638
     },
     {
       "path": "security-analysis/report/chapters/09_ket_luan_bo_sung.md",
@@ -1371,13 +1383,18 @@
       "bytes": 3170
     },
     {
+      "path": "security-analysis/results/browser_network_fuzz.results.json",
+      "sha256": "77d04c42e71d9eeea3dd63076a75ef51a89d457158d4e9ffa74750c0fbe67d12",
+      "bytes": 3798
+    },
+    {
       "path": "security-analysis/results/chapter4_run.results.json",
       "sha256": "b7c9e1f190c562e224465b56cc685b76cceecbdb1107ee45a6176758f520f1b0",
       "bytes": 4454
     },
     {
       "path": "security-analysis/results/checkout_retry.results.json",
-      "sha256": "a11e66d325fc5546f7136eb138d4b718563ddd2ac6eb920995aeeb0191978124",
+      "sha256": "7ae444c887789189c52b94364dc27447e1f7d130bc3840fcea59253da2714f49",
       "bytes": 827
     },
     {
@@ -1386,18 +1403,23 @@
       "bytes": 929
     },
     {
+      "path": "security-analysis/results/http_fuzz.results.json",
+      "sha256": "8651c40e57fe98d35994a4a67c503d603f2b3d9145ce665f7923c10eca030093",
+      "bytes": 10386
+    },
+    {
       "path": "security-analysis/results/input-validator.cobertura.xml",
       "sha256": "7d49e0f07d41d7ccc79639e7dbaee93c3b938d96a98daf8e5806b4d06ffae795",
       "bytes": 16215
     },
     {
       "path": "security-analysis/results/inventory_verification.results.json",
-      "sha256": "4dbf3960e8a310999f803556c10570620af152f9bfcea220a4378fcd39c3be38",
+      "sha256": "31af8084bdc588a3522d8aa174a7d1e0c05d0d77c09eb28d428d0d4df6b50924",
       "bytes": 1028
     },
     {
       "path": "security-analysis/results/liveness_audit.results.json",
-      "sha256": "9bce5622ca31e72a6a8a2c0c8f1adbc5aad15ed6b44953f58c0e65c69d929b43",
+      "sha256": "7cf8327e3452892401171f3fbd022e7885fc949e6e8ad0ba3d5f6308f0d2d5ed",
       "bytes": 4310
     },
     {
@@ -1487,13 +1509,13 @@
     },
     {
       "path": "security-analysis/results/traceability_matrix.csv",
-      "sha256": "40b9c33a18f47b5e29882e6e32b76971cc9b8e874ebe76f312e1537501f00300",
-      "bytes": 10893
+      "sha256": "0fe9c7ede7903368dc5440bbef18dd0fba90c0082ba1d342fdf8edd5158501ec",
+      "bytes": 11192
     },
     {
       "path": "security-analysis/run_all_checks.py",
-      "sha256": "ecb499b9b4119ea683e1a05dc3e7397d5b80958ccb201b4c5bfc64944e4c90d3",
-      "bytes": 9946
+      "sha256": "86b1efcffe849d5b177596c9a33c11892878ae0b5f1b4df4c23be52e2a9001ab",
+      "bytes": 11216
     },
     {
       "path": "security-analysis/run_analysis.py",
