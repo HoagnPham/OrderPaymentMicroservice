@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "packaged_at_utc": "2026-10-21T18:17:23.069662+00:00",
-  "git_base_commit": "d4fb4f788beff5925691b6709501c9ed4db2c6f3",
+  "packaged_at_utc": "2026-10-22T00:40:20.724833+00:00",
+  "git_base_commit": "833eafcb9adfa39e4813eaefb0efcb10d1441258",
   "working_tree_dirty": false,
   "dotnet_version": "10.0.112",
   "fresh_checks": [
@@ -26,7 +26,9 @@
     "threat_model_results.json",
     "chapter4_run.results.json",
     "c-memory/evidence/static-analysis.json",
-    "c-memory/evidence/dynamic-analysis.json"
+    "c-memory/evidence/dynamic-analysis.json",
+    "c-memory/evidence/bmc-analysis.json",
+    "c-memory/evidence/valgrind-analysis.json"
   ],
   "historical_checks_not_rerun": [
     "tlc/OrderPayment.tlc.results.json"
@@ -724,8 +726,8 @@
     },
     {
       "path": "security-analysis/KICH_BAN_THUYET_TRINH_VA_DEMO.md",
-      "sha256": "d1162e5d6ce18685460e5ae681153c93dc5b0fe83c1652a3c92e85a0b0ca689f",
-      "bytes": 55251
+      "sha256": "b2d9998f60039dff6d60f4373a41f0b883a2bc0d37c18ea39ed0f73f38cf229c",
+      "bytes": 58409
     },
     {
       "path": "security-analysis/OPERATIONS.md",
@@ -734,13 +736,13 @@
     },
     {
       "path": "security-analysis/PHAM_VI_KIEM_CHUNG.md",
-      "sha256": "3b6baa2c5848ef11d02a0b0feb4b2de5642ef342f9ada2890e752b63d94beb2f",
-      "bytes": 8373
+      "sha256": "1ad6a16c2d8fd5cb378e33a370ed164ae45409718feb0a023d50a85bfc180c33",
+      "bytes": 9272
     },
     {
       "path": "security-analysis/README.md",
-      "sha256": "76bbfe031d464c269f0636ed9ff1e6eafdd8a7954d4d7d14cf5cce4914c90c2b",
-      "bytes": 4633
+      "sha256": "9840656484647e53e9c5cc61a3302135bdb55090671aca834959a33e2d35ff8a",
+      "bytes": 5279
     },
     {
       "path": "security-analysis/audit_liveness.py",
@@ -764,13 +766,18 @@
     },
     {
       "path": "security-analysis/build_report.py",
-      "sha256": "b013add9804f7f283cec3c1218ebbf20f1d35e73acb7c94de668b42fcf2e1ec3",
-      "bytes": 37300
+      "sha256": "43bdf92b247d9b8490a64f23522546b3e17303c1b3232c0b385001a688eb1d16",
+      "bytes": 40022
     },
     {
       "path": "security-analysis/c-memory/README.md",
-      "sha256": "9452366a2ecfb7971c50034f219ddb88bb5904577c97691b797b9d58e76ac1ab",
-      "bytes": 10573
+      "sha256": "570e872253bf2e473a37e5b57af1dd79d579eaf49e63fab9c03663f667463938",
+      "bytes": 12709
+    },
+    {
+      "path": "security-analysis/c-memory/evidence/bmc-analysis.json",
+      "sha256": "d5760d376b44c2017c097d5d02027c366f50a529811a9f1ac2634037283d2421",
+      "bytes": 5645
     },
     {
       "path": "security-analysis/c-memory/evidence/dynamic-analysis.json",
@@ -781,6 +788,11 @@
       "path": "security-analysis/c-memory/evidence/static-analysis.json",
       "sha256": "16088d28691fb2a6c01096b101748a8100de7194c9f4593de7eb3fc6eaad47e9",
       "bytes": 5049
+    },
+    {
+      "path": "security-analysis/c-memory/evidence/valgrind-analysis.json",
+      "sha256": "e90da5e1aff5807cf2dcb2eb386818672054a51a0ab0a95eebe39ab8a0f02341",
+      "bytes": 4913
     },
     {
       "path": "security-analysis/c-memory/modules/cart.c",
@@ -813,8 +825,58 @@
       "bytes": 617
     },
     {
+      "path": "security-analysis/c-memory/results/bmc_cart_buggy.log",
+      "sha256": "a530b5b4f145648aca25bd9264bdf87893e94d15a0d2e98aa979f90582346f5c",
+      "bytes": 5421
+    },
+    {
+      "path": "security-analysis/c-memory/results/bmc_cart_fixed.log",
+      "sha256": "a1e8aa2a6abe3627a5202ddaaf45abc64b25e608699625fd8a76d07eef83c52c",
+      "bytes": 5218
+    },
+    {
+      "path": "security-analysis/c-memory/results/bmc_order_buggy.log",
+      "sha256": "d812a127dc110dbca2e18da744d75da03489080bd3da920a463298400c47aec2",
+      "bytes": 13475
+    },
+    {
+      "path": "security-analysis/c-memory/results/bmc_order_fixed.log",
+      "sha256": "4330a03cbb60462dd5104087951006476de6eefcf251100c1a520a84af097f40",
+      "bytes": 17171
+    },
+    {
+      "path": "security-analysis/c-memory/results/bmc_payment_buggy.log",
+      "sha256": "aee77e3a86cd53e534f5305dd7948af5aef7d2e3dd3d46a280357bbaef16ae9c",
+      "bytes": 4000
+    },
+    {
+      "path": "security-analysis/c-memory/results/bmc_payment_fixed.log",
+      "sha256": "a0dc035ff0e2fe0d99beff4d4b3b63d79335abe752deba9f77e64741ce7b4743",
+      "bytes": 3803
+    },
+    {
+      "path": "security-analysis/c-memory/results/bmc_product_buggy.log",
+      "sha256": "38f8eafe07216121445d65cd07ef267298e12d7b5ff475c265ec02e1e2e8756b",
+      "bytes": 12360
+    },
+    {
+      "path": "security-analysis/c-memory/results/bmc_product_fixed.log",
+      "sha256": "7e00b29915c931bc3182b6fbd85271016b9514e65f207aebba93c3bb2c3dfe82",
+      "bytes": 19876
+    },
+    {
+      "path": "security-analysis/c-memory/results/bmc_user_buggy.log",
+      "sha256": "ccc365dc25692f451f9de2ae287744ad9f5a80fb9e4a9beb32a6acfebd6369a9",
+      "bytes": 10596
+    },
+    {
+      "path": "security-analysis/c-memory/results/bmc_user_fixed.log",
+      "sha256": "40043a6bd1dd767674fc52a5879a61221506dad04f12ab7553ad7c38e98209c2",
+      "bytes": 17585
+    },
+    {
       "path": "security-analysis/c-memory/results/cart_buggy.log",
-      "sha256": "f1ab51936ecc8d4f0e072934e02ca165a5797f7e83e68c6bfec1e8a5e9068d2c",
+      "sha256": "2013cb3e20e8ade565a43b42c45e3bfe60551a662e0098d7a95631ef433f4720",
       "bytes": 3243
     },
     {
@@ -824,7 +886,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/order_buggy.log",
-      "sha256": "2911bdb57ef3e287935c189bc66b923cdd9ad784f6a18b26b855a99c16b629a7",
+      "sha256": "a5cb43c3bd428ef65dd8ab115a5ddcc9474c38729ade8f9ca9581a7cd5422708",
       "bytes": 813
     },
     {
@@ -834,7 +896,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/payment_buggy.log",
-      "sha256": "b267ab341ca85b8c6d72cc0990076af0d929b3ddaf396eb552295333240a4833",
+      "sha256": "5d4d63bbaaa3cbf3bc92350c6ef9f3b81fe58090fa6c62a8c3717697d8281219",
       "bytes": 1902
     },
     {
@@ -844,7 +906,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/product_buggy.log",
-      "sha256": "27fe567748172d10250b01b5f0f24798ea2c3ee048c7c5e183b2910a8a9dd872",
+      "sha256": "a064b19bf6e5a0f4d34321e80014933741b2c88a8fbdb5d8d05f7aa0eefc76da",
       "bytes": 2887
     },
     {
@@ -889,7 +951,7 @@
     },
     {
       "path": "security-analysis/c-memory/results/user_buggy.log",
-      "sha256": "b0a4467bbb6d0c75e770974e48656c78a0fd641031334ce6e2dd954806558f9d",
+      "sha256": "df095e8e4913bc79367abc10ad3822d6b3968920b3e8d70f81a9efa948e80c2f",
       "bytes": 2706
     },
     {
@@ -928,6 +990,86 @@
       "bytes": 25
     },
     {
+      "path": "security-analysis/c-memory/results/valgrind_cart_buggy.log",
+      "sha256": "ba43c34693c842044e89e3fb29483982769895184085c1a7ca47a826fb69f1e4",
+      "bytes": 531
+    },
+    {
+      "path": "security-analysis/c-memory/results/valgrind_cart_fixed.log",
+      "sha256": "bbeeaa1e985ceb90092499fd39f97ecf307f6167cb7c4c1ce1cd0b2f99616d5b",
+      "bytes": 20
+    },
+    {
+      "path": "security-analysis/c-memory/results/valgrind_order_buggy.log",
+      "sha256": "e5d909161467e733c0ec8d914cd97918bd6c69345759a6fcbf364ec8a811b5da",
+      "bytes": 442
+    },
+    {
+      "path": "security-analysis/c-memory/results/valgrind_order_fixed.log",
+      "sha256": "9ec458dbdd1ec622c38b9ec3ac63287d871938985e828b6dfbad0ebf755156fa",
+      "bytes": 120
+    },
+    {
+      "path": "security-analysis/c-memory/results/valgrind_payment_buggy.log",
+      "sha256": "073a39e2b420615edac06ce2815e25bab30cf3f9a18ed1666ec161ed3ed81a07",
+      "bytes": 678
+    },
+    {
+      "path": "security-analysis/c-memory/results/valgrind_payment_fixed.log",
+      "sha256": "8866a9dae4fa587b9bc21eaa101553ee78022775577c1f6c4044feda95a3295f",
+      "bytes": 42
+    },
+    {
+      "path": "security-analysis/c-memory/results/valgrind_product_buggy.log",
+      "sha256": "55a7ea9caee4bfcb10696aafea37296acd1f24fa91f158e44f1b36ae62736cb4",
+      "bytes": 2475
+    },
+    {
+      "path": "security-analysis/c-memory/results/valgrind_product_fixed.log",
+      "sha256": "79c708cc59ce69ef9bd60d804f30d50a33b1d2e77adc7db94e42db583693f135",
+      "bytes": 32
+    },
+    {
+      "path": "security-analysis/c-memory/results/valgrind_user_buggy.log",
+      "sha256": "862817936735f189dcaa894e07f7a298bd3d0f3dab07f6b7ca241192d7e035b8",
+      "bytes": 742
+    },
+    {
+      "path": "security-analysis/c-memory/results/valgrind_user_fixed.log",
+      "sha256": "94e36d096b249e5751587fe0f35b7654c4e8d14e29445af580ca9a2541f01bdc",
+      "bytes": 25
+    },
+    {
+      "path": "security-analysis/c-memory/tests/bmc_harnesses/cart_harness.c",
+      "sha256": "5e1b11723106d04de19aae2987d1b8b377790b91bf502576f8c00e2a04001088",
+      "bytes": 175
+    },
+    {
+      "path": "security-analysis/c-memory/tests/bmc_harnesses/order_harness.c",
+      "sha256": "610c09cadcca2c7772810555ca71985a8743d4ed61111cf48dcaff5193e25303",
+      "bytes": 177
+    },
+    {
+      "path": "security-analysis/c-memory/tests/bmc_harnesses/payment_harness.c",
+      "sha256": "6b61288cea00c61c64872f13575f9d11e2f704817b30e40743cc85b07f01496f",
+      "bytes": 181
+    },
+    {
+      "path": "security-analysis/c-memory/tests/bmc_harnesses/product_harness.c",
+      "sha256": "ff264dec21a91fbe2ad7e7b6b1d89ac19a05462c0b4e2f56167771d75b7f3d7d",
+      "bytes": 379
+    },
+    {
+      "path": "security-analysis/c-memory/tests/bmc_harnesses/user_harness.c",
+      "sha256": "f74c3a071d8501f2e58447c6ec40b35b96a3e6ad84372ae42f46237948561b68",
+      "bytes": 458
+    },
+    {
+      "path": "security-analysis/c-memory/tests/check_bmc.py",
+      "sha256": "19777ad59b459e36444b373fc390bb2d2adc098b21a7e483175ff167cbb4fa19",
+      "bytes": 3904
+    },
+    {
       "path": "security-analysis/c-memory/tests/check_memory.py",
       "sha256": "c34b0d2f1d79fcea690e0907909bc5b2cc0c263c5371381377a9f25ba1f3fe7d",
       "bytes": 2857
@@ -936,6 +1078,11 @@
       "path": "security-analysis/c-memory/tests/check_static.py",
       "sha256": "e5e530cce9ddddad02cd9d760cce05c09157a0737c8a4875dcda54c498cbfebb",
       "bytes": 10073
+    },
+    {
+      "path": "security-analysis/c-memory/tests/check_valgrind.py",
+      "sha256": "53e3f4872d1c16a7b1258baabd22485905e7b1820a80e403c7b96e90e1ddfd67",
+      "bytes": 4219
     },
     {
       "path": "security-analysis/c-memory/tests/layout_probe.c",
@@ -984,18 +1131,18 @@
     },
     {
       "path": "security-analysis/package_evidence.py",
-      "sha256": "41d774d72d2519faba10a92bdb069c3396c5a1634bf4d8bd6dc31752d2cda7e9",
-      "bytes": 20142
+      "sha256": "835dd835406cd057532f11629a6548695e2744b09e936cef5aea38bfb149e24f",
+      "bytes": 20392
     },
     {
       "path": "security-analysis/report/BAO_CAO.md",
-      "sha256": "81d5f62e31d4c72b438727747d7ef0fe4ea8a360206def9292b74c0be3a3f606",
-      "bytes": 82836
+      "sha256": "c4a9f5dd6e32926a6a7db3d1c971e5776f5a9b0cf295b648ed0ec77c40c1bebe",
+      "bytes": 84921
     },
     {
       "path": "security-analysis/report/PHU_LUC_A_G.md",
-      "sha256": "95493a7fd3e344da2e72975026b054ddff150a696efafe88737e444073a9beae",
-      "bytes": 72916
+      "sha256": "533945693ede4fe3ec5411438b2c358b62c98eb1463cee5e4fd8adf7edbd89f0",
+      "bytes": 75497
     },
     {
       "path": "security-analysis/report/chapters/01_muc_tieu.md",
@@ -1009,13 +1156,13 @@
     },
     {
       "path": "security-analysis/report/chapters/03_mo_hinh.md",
-      "sha256": "148b01f3d428f3b19414cc1222924d06ce2622ce4325c4b24c7d2688c33f452d",
-      "bytes": 11396
+      "sha256": "10794287bf3d09c63e755398d9515bc696d99abb9262a2f465b6d8953e4231a1",
+      "bytes": 11549
     },
     {
       "path": "security-analysis/report/chapters/04_bo_nho.md",
-      "sha256": "70b1be7ad794f4a770b0f1ab6e5a3bebdf001fdea067ac8f160c5ff493eaf28e",
-      "bytes": 9114
+      "sha256": "895df09be256ca9f73276a1a8e26a11d84ad1846a814326d8b3245f50b254ead",
+      "bytes": 10191
     },
     {
       "path": "security-analysis/report/chapters/05_so_hoc_bo_sung.md",
@@ -1024,18 +1171,18 @@
     },
     {
       "path": "security-analysis/report/chapters/06_kiem_thu_bo_sung.md",
-      "sha256": "01ee14bf948a0c2546002136b27e6bbd5f14bf121ece099185b04ec50f6ec411",
-      "bytes": 13925
+      "sha256": "20f396a40a00d39d515935ffd6d2ab3c338a2f215aba6b5ff0dd57dfb1379d19",
+      "bytes": 14069
     },
     {
       "path": "security-analysis/report/chapters/07_evidence_bo_sung.md",
-      "sha256": "1508d1c868ddad2c69855b8ebbf8a756749698244df5fc6b955c68310ff1c741",
-      "bytes": 2410
+      "sha256": "f9f929ec45acaa485088df1b768f5f9ff0cafd181fbee691b0d270ba668a0661",
+      "bytes": 2635
     },
     {
       "path": "security-analysis/report/chapters/08_han_che_bo_sung.md",
-      "sha256": "cf8e7d7b88c57a2fb91f9743eadc7da883fc0f6dd9f58363d5e83fd747f434ce",
-      "bytes": 6191
+      "sha256": "94e9e685eb739d75e0ba3b9713b3143398e79fcb88ea41154b520273f58d8e05",
+      "bytes": 6270
     },
     {
       "path": "security-analysis/report/chapters/09_ket_luan_bo_sung.md",
@@ -1074,7 +1221,7 @@
     },
     {
       "path": "security-analysis/results/checkout_retry.results.json",
-      "sha256": "1fc90afc2072fa9f049e10193a5e63e2505e1f73605fb79dbee47f203787a18f",
+      "sha256": "872d0ece3aa72313f6a59ba6d6e6ad85d7ebac050773739b949220aaf2a6953a",
       "bytes": 827
     },
     {
@@ -1089,12 +1236,12 @@
     },
     {
       "path": "security-analysis/results/inventory_verification.results.json",
-      "sha256": "4131cafc2b88da43d7b999837f9721c05baadc0e8e8d0a5f6759234fa7f3b517",
+      "sha256": "c1274b61399756eaf56e5d036c734cc7037cf8d3940188796cd9b55d7e9dfde1",
       "bytes": 1028
     },
     {
       "path": "security-analysis/results/liveness_audit.results.json",
-      "sha256": "1b9a8c0f341e0b3f93601d4da1a3eabd5fd25aa26fe867b23d585072e306cfab",
+      "sha256": "bd60ca14c5697d291f59416ac26ccea77cb628d4eb4ef0295adf847ed046fdf1",
       "bytes": 4310
     },
     {
@@ -1184,8 +1331,13 @@
     },
     {
       "path": "security-analysis/results/traceability_matrix.csv",
-      "sha256": "adc594d72b5d13d9a3b77b4d5ddb09e29805e37f7297dd93802c2ccf4e99f4b2",
-      "bytes": 10626
+      "sha256": "83ef686b590c7f8f8463e0bf08f980940fb7d8f75235875abb01adbee72131af",
+      "bytes": 10766
+    },
+    {
+      "path": "security-analysis/run_all_checks.py",
+      "sha256": "200e8a310bb6b9f82df9dd9fd0719d3d2e03ce66e2b423db0fe3780fb711b9df",
+      "bytes": 9300
     },
     {
       "path": "security-analysis/run_analysis.py",
