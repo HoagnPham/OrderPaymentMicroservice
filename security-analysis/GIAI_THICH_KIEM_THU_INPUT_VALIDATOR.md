@@ -117,7 +117,9 @@ tốt phải qua, và invariant aggregate phải giữ. Seed được in khi fai
 
 Giới hạn: đây là generation-based fuzzing ở mức hàm/state machine, không phải
 coverage-guided. HTTP fuzz là harness riêng `http_fuzz.py` (black-box, semantic
-feedback), không phải campaign .NET này. "25.000 vòng" không phải 25.000 request.
+feedback), không phải campaign .NET này. Coverage-guided trace-pc là harness
+C fixture riêng `run_c_coverage_fuzz.py`, cũng không phải campaign .NET này.
+"25.000 vòng" không phải 25.000 request.
 
 ## 7. Coverage
 

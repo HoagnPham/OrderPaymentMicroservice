@@ -214,20 +214,33 @@ browser hoặc model khác **không tự thay thế** một hạng mục còn th
 | Hạng mục | Trạng thái | Bằng chứng / cách đọc | Việc còn thiếu |
 | --- | --- | --- | --- |
 | Fixed-seed | **Có** | `.NET`: `seed=20261009`, 25.000/campaign, 2.000 chuỗi stateful. HTTP: `seed=20261022`, 10 setup + 40 seed + 9 business flow (51 request) + 500 mutation = 601 request. Seed chỉ tái lập khi cùng source/runtime. | Không có; đây là fuzz sinh dữ liệu có cấu trúc, không phải random byte stream. |
-| Coverage-guided | **Chưa** | Coverlet đo line/branch **sau** khi chạy; `http_fuzz.py` dùng semantic feedback (route/status/error/DB delta), không đọc code coverage để chọn mutation. | Edge/feature map ở mức mã, queue corpus, mutation/minimization và tiêu chí “new code coverage”. |
+| Coverage-guided | **Có cho C fixture; chưa cho ASP.NET** | `run_c_coverage_fuzz.py` dùng GCC `-fsanitize-coverage=trace-pc`, shared edge map 64 KiB, fork/input và queue theo coverage mới; seed `20261022`, 20.000 mutation, 10 seed, 81 → 148 map entry, 46 input trong queue, 0 crash. Target là `c-memory/fuzz/fixture_target.c`, **không phải** service ASP.NET. Coverlet và HTTP harness vẫn không phải code-coverage-guided. | Instrumentation cho C#/ASP.NET hoặc HTTP thật; source-level edge/path report; mutation/minimization nâng cao. |
 | Model-level end-to-end | **Không** | Campaign stateful .NET chạy aggregate Order–Payment–Inventory trong process; trường `scope` ghi rõ không fuzz HTTP/PostgreSQL concurrency/gateway. `http_fuzz.py` là harness riêng, không biến campaign model thành end-to-end. | Harness model gọi service/API thật, kiểm DB và transaction sau từng bước. |
 | Đập vào DB + HTTP service thật | **Có trong HTTP fuzz opt-in** | `http_fuzz.results.json`: 601 request qua executable thật, PostgreSQL local thật; 0 HTTP 5xx, 0 vi phạm invariant DB; snapshot cuối có order PAYMENT_PENDING/COMPLETED/CANCELLED/REFUNDED và payment SUCCESS/REFUNDED. Integration/load/reconnect tests vẫn là lớp riêng. | Chưa phải production/TLS/proxy/network partition; chưa chứng minh concurrency toàn cục. |
 | Black-box HTTP fuzz | **Có (opt-in)** | `security-analysis/http_fuzz.py`; 10 setup + 40 seed + 9 business flow (51 request) + 500 mutation; auth, corpus, oracle response/DB, replay trace; evidence `http_fuzz.results.json`. | Chưa coverage-guided, chưa RESTler/Schemathesis; mutation set còn bounded. |
-| Path/edge coverage chuyên sâu | **Chưa code path/edge** | Chỉ có line 91,05%/branch 97,50% cho 5 target .NET. HTTP harness có 108 semantic feature và 500 semantic edge, **không phải** code path/edge. | Instrumentation basic-block/edge, đo path bounded và lưu coverage map. |
+| Path/edge coverage chuyên sâu | **Có edge map cho C fixture; chưa code path/edge cho app** | C fixture có transition map từ `trace-pc` (148 map entry), không phải source-level gcov/LLVM edge. App .NET vẫn chỉ có line 91,05%/branch 97,50% cho 5 target; HTTP harness có 108 semantic feature/500 semantic edge, **không phải** code path/edge. | Instrumentation basic-block/edge cho app, đo path bounded và lưu coverage map. |
 | Frontend fuzz qua mạng | **Có một phần (CDP opt-in)** | `browser/network_fuzz.py`: 8 scenario (control, malformed JSON, wrong shape, empty, truncated, 500, 503, network error) trên Chrome + API/PostgreSQL thật; 0 uncaught JS. Vẫn là interception, không phải proxy/WAN. | Mở rộng sang login/cart/payment network faults, proxy thật, mobile/browser matrix. |
 | Taint analysis tự động | **Chưa** | Luồng source→sink được review thủ công; sanitizer/ASan không gắn nhãn taint. | DFSan/Semgrep/CodeQL rule và báo cáo source→sink. |
 
-Cách nói chính xác khi bảo vệ: **“Fuzz hiện tại gồm ba lớp: structured fixed-seed
-in-process cho 5 target .NET, black-box HTTP fixed-seed với PostgreSQL thật, và
-Chrome CDP network fault fuzzing cho products fetch. HTTP harness dùng semantic
-feedback, chưa phải code-coverage-guided; chưa có code path/edge coverage; browser
-fuzz là interception, không phải proxy/WAN.”** Các test HTTP/PostgreSQL, load và
-browser smoke là bằng chứng riêng cho tầng tương ứng; HTTP fuzz không nâng campaign
-model thành end-to-end. Vì vậy 25.000 iteration, 601 HTTP request hoặc 97,50%
-branch không được dùng để kết luận toàn API, database, frontend hay mọi path đã
-được kiểm.
+**Coverage-guided C fixture (opt-in).** `run_c_coverage_fuzz.py` biên dịch target
+`c-memory/fuzz/fixture_target.c` bằng GCC `-fsanitize-coverage=trace-pc`, dùng
+shared map 64 KiB, chạy mỗi input trong process con và chỉ giữ input khi thêm map
+entry mới. Lần chạy seed `20261022`, 20.000 mutation, 10 seed: 81 → 148 map entry,
+queue 46, 0 crash; baseline random cùng seed/mutation không giữ coverage đạt 146
+map entry. Đây là bằng chứng cho feedback loop của engine, **không phải** code
+coverage của ASP.NET; map entry là transition basic-block đã băm, không phải báo
+cáo source-level edge. Xem
+[`c_coverage_fuzz.results.json`](../results/c_coverage_fuzz.results.json) và
+[`run_c_coverage_fuzz.py`](../run_c_coverage_fuzz.py).
+
+Cách nói chính xác khi bảo vệ: **“Fuzz hiện tại gồm bốn lớp: structured fixed-seed
+in-process cho 5 target .NET, black-box HTTP fixed-seed với PostgreSQL thật,
+Chrome CDP network fault fuzzing cho products fetch, và coverage-guided trace-pc
+trên một C fixture tổng hợp. Lớp C fixture chứng minh feedback loop/queue theo
+edge map hoạt động, nhưng không phải code coverage của ASP.NET. HTTP harness dùng
+semantic feedback, chưa phải code-coverage-guided; app chưa có code path/edge
+coverage; browser fuzz là interception, không phải proxy/WAN.”** Các test
+HTTP/PostgreSQL, load và browser smoke là bằng chứng riêng cho tầng tương ứng;
+HTTP fuzz không nâng campaign model thành end-to-end. Vì vậy 25.000 iteration,
+601 HTTP request, 148 map entry của C fixture hoặc 97,50% branch không được dùng
+để kết luận toàn API, database, frontend hay mọi path đã được kiểm.

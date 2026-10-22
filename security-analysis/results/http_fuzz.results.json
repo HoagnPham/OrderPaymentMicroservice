@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "passed": true,
-  "run_at_utc": "2026-10-22T01:56:38.156165+00:00",
+  "run_at_utc": "2026-10-22T02:21:19.600326+00:00",
   "seed": 20261022,
   "iterations_requested": 500,
   "requests_executed": 601,
@@ -105,9 +105,9 @@
     "alive_at_end": true,
     "unhandled_exception_in_log": false,
     "logs": {
-      "stdout_sha256": "ba3b127fca42018605852625f01dc2901aa9179457ea1ccbef1aa7bd81b0c7ef",
+      "stdout_sha256": "304a5a47044f768d1bee375507b30f0fcf9f4f3dad07db573e131908f08ca541",
       "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-      "stdout_bytes": 679256,
+      "stdout_bytes": 679254,
       "stderr_bytes": 0
     }
   },
@@ -116,280 +116,280 @@
       "method": "POST",
       "path": "/api/cart/user/1/add",
       "status": 400,
-      "elapsed_ms": 1.345,
+      "elapsed_ms": 2.836,
       "body_bytes": 399
     },
     {
       "method": "PUT",
       "path": "/api/cart/0/item/-1",
       "status": 400,
-      "elapsed_ms": 1.511,
+      "elapsed_ms": 1.549,
       "body_bytes": 404
     },
     {
       "method": "GET",
       "path": "/api/cart/user/1",
       "status": 401,
-      "elapsed_ms": 2.699,
+      "elapsed_ms": 1.988,
       "body_bytes": 0
     },
     {
       "method": "POST",
       "path": "/api/orders/-1/confirm",
       "status": 403,
-      "elapsed_ms": 16.282,
+      "elapsed_ms": 14.519,
       "body_bytes": 0
     },
     {
       "method": "GET",
       "path": "/api/products/category/%2e%2e",
       "status": 200,
-      "elapsed_ms": 11.84,
+      "elapsed_ms": 5.026,
       "body_bytes": 1939
     },
     {
       "method": "POST",
       "path": "/api/orders/2147483647/complete",
       "status": 409,
-      "elapsed_ms": 26.065,
+      "elapsed_ms": 28.494,
       "body_bytes": 26
     },
     {
       "method": "GET",
       "path": "/api/null",
       "status": 200,
-      "elapsed_ms": 2.616,
+      "elapsed_ms": 1.179,
       "body_bytes": 10788
     },
     {
       "method": "GET",
       "path": "/api/products/1",
       "status": 200,
-      "elapsed_ms": 6.807,
+      "elapsed_ms": 11.775,
       "body_bytes": 253
     },
     {
       "method": "POST",
       "path": "/api/orders/0/confirm",
       "status": 409,
-      "elapsed_ms": 29.804,
+      "elapsed_ms": 34.432,
       "body_bytes": 17
     },
     {
       "method": "POST",
       "path": "/api/orders/-1/complete",
       "status": 409,
-      "elapsed_ms": 23.215,
+      "elapsed_ms": 24.444,
       "body_bytes": 18
     },
     {
       "method": "POST",
       "path": "/api/orders",
       "status": 400,
-      "elapsed_ms": 17.685,
+      "elapsed_ms": 14.792,
       "body_bytes": 60
     },
     {
       "method": "POST",
       "path": "/api/orders",
       "status": 400,
-      "elapsed_ms": 17.997,
+      "elapsed_ms": 15.882,
       "body_bytes": 60
     },
     {
       "method": "GET",
       "path": "/api/payments/0",
       "status": 404,
-      "elapsed_ms": 5.049,
+      "elapsed_ms": 6.119,
       "body_bytes": 19
     },
     {
       "method": "GET",
       "path": "/api/products/2147483647",
       "status": 404,
-      "elapsed_ms": 6.334,
+      "elapsed_ms": 11.229,
       "body_bytes": 28
     },
     {
       "method": "GET",
       "path": "/api/orders/2",
       "status": 200,
-      "elapsed_ms": 8.788,
+      "elapsed_ms": 10.752,
       "body_bytes": 354
     },
     {
       "method": "GET",
       "path": "/api/payments/0",
       "status": 404,
-      "elapsed_ms": 5.812,
+      "elapsed_ms": 9.825,
       "body_bytes": 19
     },
     {
       "method": "POST",
       "path": "/api/orders/1/complete",
       "status": 409,
-      "elapsed_ms": 33.819,
+      "elapsed_ms": 17.629,
       "body_bytes": 54
     },
     {
       "method": "GET",
       "path": "/api/products/2147483647",
       "status": 404,
-      "elapsed_ms": 7.852,
+      "elapsed_ms": 4.011,
       "body_bytes": 28
     },
     {
       "method": "GET",
       "path": "/api/cart/user/1",
       "status": 200,
-      "elapsed_ms": 5.331,
+      "elapsed_ms": 7.84,
       "body_bytes": 210
     },
     {
       "method": "POST",
       "path": "/api/cart/user/-1/add",
       "status": 403,
-      "elapsed_ms": 2.169,
+      "elapsed_ms": 0.977,
       "body_bytes": 0
     },
     {
       "method": "GET",
       "path": "/api/orders/2",
       "status": 200,
-      "elapsed_ms": 7.051,
+      "elapsed_ms": 9.39,
       "body_bytes": 354
     },
     {
       "method": "PUT",
       "path": "/api/cart/1/item/1",
       "status": 400,
-      "elapsed_ms": 12.281,
+      "elapsed_ms": 8.131,
       "body_bytes": 59
     },
     {
       "method": "GET",
       "path": "/api/operations/%2e%2e",
       "status": 200,
-      "elapsed_ms": 2.144,
+      "elapsed_ms": 3.207,
       "body_bytes": 10788
     },
     {
       "method": "GET",
       "path": "/api/operations/status",
       "status": 200,
-      "elapsed_ms": 22.779,
-      "body_bytes": 344
+      "elapsed_ms": 28.563,
+      "body_bytes": 342
     },
     {
       "method": "GET",
       "path": "/api/products/category/null",
       "status": 200,
-      "elapsed_ms": 12.151,
+      "elapsed_ms": 5.116,
       "body_bytes": 2
     },
     {
       "method": "POST",
       "path": "/api/0",
       "status": 405,
-      "elapsed_ms": 1.704,
+      "elapsed_ms": 1.136,
       "body_bytes": 0
     },
     {
       "method": "GET",
       "path": "/api/products/category/0",
       "status": 200,
-      "elapsed_ms": 6.517,
+      "elapsed_ms": 9.338,
       "body_bytes": 2
     },
     {
       "method": "POST",
       "path": "/api/orders/0/confirm",
       "status": 409,
-      "elapsed_ms": 25.287,
+      "elapsed_ms": 24.546,
       "body_bytes": 17
     },
     {
       "method": "POST",
       "path": "/api/users/register",
       "status": 400,
-      "elapsed_ms": 1.55,
+      "elapsed_ms": 1.342,
       "body_bytes": 344
     },
     {
       "method": "POST",
       "path": "/api/orders/2/confirm",
       "status": 403,
-      "elapsed_ms": 18.106,
+      "elapsed_ms": 14.56,
       "body_bytes": 0
     },
     {
       "method": "POST",
       "path": "/api/orders",
       "status": 400,
-      "elapsed_ms": 15.208,
+      "elapsed_ms": 24.447,
       "body_bytes": 60
     },
     {
       "method": "PUT",
       "path": "/api/cart/0/item/0",
       "status": 400,
-      "elapsed_ms": 3.782,
+      "elapsed_ms": 1.527,
       "body_bytes": 424
     },
     {
       "method": "GET",
       "path": "/api/orders/1",
       "status": 200,
-      "elapsed_ms": 6.35,
-      "body_bytes": 351
+      "elapsed_ms": 9.981,
+      "body_bytes": 352
     },
     {
       "method": "PUT",
       "path": "/api/cart/1/item/1",
       "status": 400,
-      "elapsed_ms": 3.393,
+      "elapsed_ms": 1.943,
       "body_bytes": 379
     },
     {
       "method": "GET",
       "path": "/api/operations/%2e%2e",
       "status": 200,
-      "elapsed_ms": 1.434,
+      "elapsed_ms": 3.939,
       "body_bytes": 10788
     },
     {
       "method": "GET",
       "path": "/api/operations/null",
       "status": 200,
-      "elapsed_ms": 5.971,
+      "elapsed_ms": 1.242,
       "body_bytes": 10788
     },
     {
       "method": "GET",
       "path": "/api/products/category/Food",
       "status": 200,
-      "elapsed_ms": 8.303,
+      "elapsed_ms": 9.59,
       "body_bytes": 748
     },
     {
       "method": "GET",
       "path": "/api/%2e%2e",
       "status": 200,
-      "elapsed_ms": 1.349,
+      "elapsed_ms": 1.697,
       "body_bytes": 10788
     },
     {
       "method": "POST",
       "path": "/api/%2e%2e",
       "status": 405,
-      "elapsed_ms": 1.112,
+      "elapsed_ms": 1.617,
       "body_bytes": 0
     },
     {
       "method": "GET",
       "path": "/api/operations/null",
       "status": 200,
-      "elapsed_ms": 2.114,
+      "elapsed_ms": 1.81,
       "body_bytes": 10788
     }
   ],
@@ -408,5 +408,5 @@
     "DB checks are invariant queries after mutating requests, not a complete concurrency or transaction proof.",
     "The corpus and mutation set are bounded and deterministic; PASS is only for this seed/budget/API surface."
   ],
-  "duration_seconds": 35.685
+  "duration_seconds": 35.425
 }

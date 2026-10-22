@@ -1,0 +1,72 @@
+{
+  "schema_version": 1,
+  "passed": true,
+  "run_at_utc": "2026-10-22T02:21:50.434554+00:00",
+  "seed": 20261022,
+  "iterations": 20000,
+  "duration_seconds": 15.427,
+  "engine": {
+    "kind": "coverage-guided",
+    "instrumentation": "GCC -fsanitize-coverage=trace-pc callbacks",
+    "feedback": "hashed basic-block PC transitions in a shared 64 KiB map",
+    "isolation": "fork per input",
+    "retention": "keep input when it adds at least one unseen edge",
+    "baseline": "same mutations without coverage retention",
+    "not_claimed": "source-level edge coverage, LLVM libFuzzer, ASP.NET code coverage, or production service"
+  },
+  "target": {
+    "path": "security-analysis/c-memory/fuzz/fixture_target.c",
+    "scope": "synthetic C validator fixture; not the ASP.NET application",
+    "seed_inputs": 10
+  },
+  "guided": {
+    "mode": "guided",
+    "seed": 20261022,
+    "iterations": 20000,
+    "mutations": 20000,
+    "executed": 20010,
+    "seed_inputs": 10,
+    "seed_new_coverage": 10,
+    "new_coverage_inputs": 36,
+    "queue_size": 46,
+    "initial_edges": 81,
+    "final_edges": 148,
+    "new_edges": 67,
+    "crashes": 0,
+    "max_input_length": 14
+  },
+  "random": {
+    "mode": "random",
+    "seed": 20261022,
+    "iterations": 20000,
+    "mutations": 20000,
+    "executed": 20010,
+    "seed_inputs": 10,
+    "seed_new_coverage": 10,
+    "new_coverage_inputs": 0,
+    "queue_size": 0,
+    "initial_edges": 81,
+    "final_edges": 146,
+    "new_edges": 65,
+    "crashes": 0,
+    "max_input_length": 12
+  },
+  "comparison": {
+    "guided_minus_random_final_edges": 2,
+    "note": "The comparison is diagnostic only; coverage guidance does not guarantee winning every short campaign."
+  },
+  "limitations": [
+    "The instrumented target is a synthetic C fixture, not the ASP.NET service.",
+    "trace-pc transitions are a compact proxy for code edges, not a source-level gcov/LLVM edge report.",
+    "The random baseline uses the same mutations and seed but no coverage retention; it is not a proof of optimality.",
+    "No memory-safety claim is made for the fixture or the service; ASan/CBMC/Valgrind evidence is separate."
+  ],
+  "source_sha256": {
+    "security-analysis/run_c_coverage_fuzz.py": "139defbfab9cbbdf40acfb1740812276f8a644cebed9c25fb4638886238287da",
+    "security-analysis/c-memory/fuzz/fixture_target.c": "a565ecc8a0bfe5f47eeefbf6f88c799499930f037742226bfe28eb750b428ec5",
+    "security-analysis/c-memory/fuzz/fixture_target.h": "8f62902d892716a0050da4054d7f32ea9314ffa74d48a1519bac7aeba8beef16",
+    "security-analysis/c-memory/fuzz/coverage_fuzz.c": "2abf5a3a3b07b5119cd1089af5c517f485858d45c0cb01107a81635960177ad7",
+    "security-analysis/c-memory/fuzz/cov_runtime.c": "02ba6240e94314aa044fc47e237d040621cda26542a9df489e6d1dfe6d3ae9af",
+    "security-analysis/c-memory/fuzz/cov_runtime.h": "01e087d450cf05271c5aa0259832671fb1744b90baf4d92bb3022485bf07c688"
+  }
+}

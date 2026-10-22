@@ -42,6 +42,7 @@ make static-check
 make bmc-check
 make valgrind-check
 make sat-check   # cần cadical và drat-trim trên PATH
+make coverage-fuzz
 ```
 
 Build dùng AddressSanitizer, UndefinedBehaviorSanitizer, debug symbols và `-O0`. LeakSanitizer bật qua `ASAN_OPTIONS=detect_leaks=1`. `-fno-pie -no-pie` dùng cho môi trường GCC/Linux của bài lab.
@@ -183,6 +184,26 @@ valgrind --error-exitcode=99 --leak-check=full \
 ```
 
 Mục đích là kiểm tra độc lập với ASan/UBSan: BUGGY phải có lỗi bộ nhớ đúng loại (`Invalid write`, `Invalid read`, `definitely lost`, `Invalid free`, hoặc invalid jump do stack corruption), FIXED phải sạch. Kết quả lần chạy: **10/10 case PASS**. Với User, chuỗi dài làm hỏng return address nên Valgrind báo invalid jump thay vì `Invalid write`; CBMC ở trên chỉ ra chính xác ghi ngoài buffer. Evidence: [evidence/valgrind-analysis.json](evidence/valgrind-analysis.json). Chạy lại bằng `make valgrind-check`.
+
+## Coverage-guided trace-pc cho C fixture
+
+Ngoài các module lỗi cố ý ở trên, thư mục [fuzz/](fuzz/) chứa một target tổng hợp
+để kiểm chứng feedback loop coverage-guided. Đây **không phải** module dịch vụ và
+không thay đổi kết luận memory-safety của 5 module:
+
+```bash
+cd ../..
+python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000
+```
+
+Engine dùng GCC `-fsanitize-coverage=trace-pc`, callback băm transition basic-block
+vào shared map 64 KiB, chạy mỗi input trong process con `fork()`, giữ input nếu nó
+thêm map entry mới và lưu queue. Evidence ở
+[../results/c_coverage_fuzz.results.json](../results/c_coverage_fuzz.results.json):
+seed `20261022`, 20.000 mutation, 81 → 148 map entry, queue 46, 0 crash; baseline
+random dùng cùng seed/mutation nhưng không giữ coverage. Map entry là proxy của
+edge, **không phải** source-level gcov/LLVM edge report và **không phải** coverage
+của ASP.NET.
 
 ## Gợi ý trình bày báo cáo
 

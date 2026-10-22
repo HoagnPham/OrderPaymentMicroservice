@@ -55,7 +55,7 @@ JSON/TRX làm chuẩn và sửa bản sao.
 | --- | --- | --- | --- |
 | T1 | BMC/CBMC trên C | Đã thực hiện cho 5 module C (B17); mở rộng sang C# vẫn ngoài scope | CBMC + bound + unwinding assertion |
 | T2 | SAT/CNF/DIMACS độc lập | Đã thực hiện cho 5 module C (B20); vẫn là bounded CNF, không phải proof vô hạn/C# | CBMC DIMACS + CaDiCaL + drat-trim + core |
-| T3 | Coverage-guided fuzz | **Chưa làm**; .NET dùng structured fixed-seed, coverage đo sau khi chạy; HTTP dùng semantic feedback chứ không dùng code coverage để chọn mutation | libFuzzer/AFL++/SharpFuzz + corpus + edge map |
+| T3 | Coverage-guided fuzz | **Đã có bản opt-in cho C fixture**: `run_c_coverage_fuzz.py` dùng GCC `trace-pc`, shared edge map, fork/input và queue theo coverage mới; seed `20261022`, 20.000 mutation, 81 → 148 map entry. **Chưa cho ASP.NET**; .NET vẫn structured fixed-seed, HTTP dùng semantic feedback | Instrumentation C#/HTTP, source-level edge/path, corpus/minimization nâng cao |
 | T4 | HTTP black-box fuzz | **Đã có bản opt-in**: `http_fuzz.py` chạy executable thật + PostgreSQL local, seed `20261022`, 500 mutation/601 request; không phải coverage-guided | RESTler/Schemathesis hoặc mở rộng mutation/oracle/replay |
 | T5 | Valgrind/clang-tidy/clang analyzer | Valgrind đã thực hiện (B18); clang-tidy/analyzer chưa có trên PATH | log từng công cụ, gồm cả false negative |
 | T6 | Taint analysis tự động | Hiện lập luận thủ công theo luồng dữ liệu | Semgrep/CodeQL rule |
@@ -80,7 +80,7 @@ JSON/TRX làm chuẩn và sửa bản sao.
 | 1 | Kripke, CTL/LTL, model checking | Model + checker duyệt toàn bộ 14 state; workbook thêm cụm khóa 4 state; TLA+ có fairness | Chưa có fair-CTL đầy đủ; một số state là trừu tượng |
 | 2 | C memory safety, static analysis | 5 module, ASan/UBSan 22/22; CBMC 10/10; Valgrind 10/10; CNF/DRAT 10/10 | Cppcheck false negative 4/5; chưa clang-tidy; CBMC/DRAT có bound 64/48 |
 | 3 | SAT/SMT/BMC | 10 query Z3 đúng verdict; CBMC bounded; CNF DIMACS + 5 DRAT proof + 5 UNSAT core | Chưa BMC cho C#; proof chỉ cho CNF bounded |
-| 4 | Fuzzing, coverage | 4 campaign seed `20261009`; 5 target; line 91,05%/branch 97,50%; HTTP black-box seed `20261022`, 601 request, 0 5xx/0 invariant violation; browser CDP 8 scenario, 0 uncaught JS | Chưa code-coverage-guided, path/edge code coverage; browser mới fault products fetch, chưa proxy/WAN; HTTP fuzz chỉ local và bounded |
+| 4 | Fuzzing, coverage | 4 campaign seed `20261009`; 5 target; line 91,05%/branch 97,50%; HTTP black-box seed `20261022`, 601 request, 0 5xx/0 invariant violation; browser CDP 8 scenario, 0 uncaught JS; C fixture coverage-guided seed `20261022`, 81→148 trace-pc map entry | App chưa code-coverage-guided/path-edge; C fixture không phải ASP.NET; browser mới fault products fetch, chưa proxy/WAN; HTTP fuzz chỉ local và bounded |
 
 ## 6. Cách xác nhận nhanh
 

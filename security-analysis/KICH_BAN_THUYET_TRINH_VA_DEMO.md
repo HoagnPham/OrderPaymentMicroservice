@@ -23,7 +23,7 @@ Tên project là OrderPaymentMicroservice nhưng hiện thực hiện tại là 
 | C Valgrind                  | **10/10 case PASS**                                   | Memcheck trên build không sanitizer; BUGGY có lỗi đúng loại, FIXED sạch          |
 | C SAT/CNF/DRAT              | **10/10 case PASS; 5 proof `VERIFIED`; 5 core UNSAT** | CBMC xuất DIMACS; BUGGY SAT có model, FIXED UNSAT có DRAT proof và core; vẫn bound 64 |
 | End-to-end runner            | **PASS**                                              | `run_all_checks.py` chạy chuỗi nhanh + kiểm artifact; `--with-sat` cho proof; GUI Windows vẫn BLOCKED   |
-| Fuzz ứng dụng             | Xem evidence lượt chạy mới                             | .NET: seed 20261009, structured in-process, 25.000/campaign; HTTP: seed 20261022, executable + PostgreSQL thật, 601 request, 0 5xx/0 invariant violation; browser: 8 CDP network scenario, 0 uncaught JS; **chưa** code-coverage-guided/path-edge/proxy-WAN |
+| Fuzz ứng dụng             | Xem evidence lượt chạy mới                             | .NET: seed 20261009, structured in-process, 25.000/campaign; HTTP: seed 20261022, executable + PostgreSQL thật, 601 request, 0 5xx/0 invariant; browser: 8 CDP network scenario, 0 uncaught JS; C fixture: trace-pc coverage-guided, 81→148 map entry; **app vẫn chưa** code-coverage-guided/path-edge/proxy-WAN |
 | Threat model consistency    | **PASS**                                              | 6 tài sản, 4 trust boundary, 9 threat, đủ 6 nhóm STRIDE; vẫn có threat mở                |
 
 Lệnh toàn suite dùng để đánh giá:
@@ -458,11 +458,12 @@ Config hiện đặt `MaxAttempts = 2`, kiểm 5 invariant và `Termination`. N�
 python3 security-analysis/run_fuzzing.py
 python3 security-analysis/http_fuzz.py --iterations 500 --no-build
 python3 security-analysis/browser/network_fuzz.py
+python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000
 ```
 
 > “Em fuzz năm target: InputValidator, PaymentValidator, OrderStateMachine, PaymentStateMachine và MoneyAmounts. Có corpus ca biên riêng và các campaign sinh dữ liệu với seed cố định để tái lập. Oracle phân biệt input bị từ chối đúng bằng ArgumentException với lỗi ngoài dự kiến hoặc vi phạm invariant.
 >
-> Campaign gồm corpus, validator random, state-pair random và chuỗi stateful Order–Payment–Inventory. Campaign stateful kiểm invariant sau từng thao tác và in seed/trace nếu fail. Đây là generation-based fuzzing kết hợp oracle và đo coverage; chưa phải engine coverage-guided, symbolic hay concolic fuzzing trên toàn API.”
+> Campaign gồm corpus, validator random, state-pair random và chuỗi stateful Order–Payment–Inventory. Campaign stateful kiểm invariant sau từng thao tác và in seed/trace nếu fail. Đây là generation-based fuzzing .NET kết hợp oracle và đo coverage; chưa phải engine coverage-guided, symbolic hay concolic fuzzing trên toàn API.”
 
 Mở `OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs`, `FuzzCorpus/order_requests.json`, `results/application_fuzzing.results.json`. Không nói 25.000 vòng là 25.000 HTTP request; target ở mức hàm/state machine. Cũng không dùng con số coverage này để đại diện toàn controller/service/UI/database.
 
@@ -470,7 +471,9 @@ Lớp thứ hai là `security-analysis/http_fuzz.py`: khởi động executable 
 
 Lớp thứ ba là `security-analysis/browser/network_fuzz.py`: Chrome CDP chặn response `api/products` và thay bằng malformed JSON, wrong shape, empty/truncated body, HTTP 500/503 hoặc network error. Evidence `results/browser_network_fuzz.results.json` có 8 scenario, 0 uncaught JavaScript error; đây là **interception ở browser network layer**, không phải proxy/WAN và chưa phủ login/cart/payment.
 
-Nếu bị hỏi sâu, nói đúng các khoảng trống còn lại: campaign .NET **không phải end-to-end** vì stateful chỉ chạy aggregate trong process; HTTP fuzz đã đập vào DB+HTTP thật nhưng chỉ local/bounded; **chưa code-coverage-guided** (chỉ semantic feedback/line-branch); **chưa path/edge code coverage**; browser fuzz mới fault products fetch, chưa proxy/WAN/mobile. Đây là các giới hạn, không được chuyển thành PASS nhờ test khác.
+Lớp thứ tư là `security-analysis/run_c_coverage_fuzz.py`: GCC `-fsanitize-coverage=trace-pc` trên một **C fixture tổng hợp**, shared edge map, fork/input, queue theo coverage mới; seed `20261022`, 20.000 mutation, 81 → 148 map entry, queue 46, 0 crash. Đây là coverage-guided thật ở mức engine, nhưng **không phải** code coverage của ASP.NET và không thay thế line/branch evidence hiện có.
+
+Nếu bị hỏi sâu, nói đúng các khoảng trống còn lại: campaign .NET **không phải end-to-end** vì stateful chỉ chạy aggregate trong process; HTTP fuzz đã đập vào DB+HTTP thật nhưng chỉ local/bounded; coverage-guided hiện chỉ cho **C fixture**, **chưa code-coverage-guided cho app**; app **chưa path/edge code coverage**; browser fuzz mới fault products fetch, chưa proxy/WAN/mobile. Đây là các giới hạn, không được chuyển thành PASS nhờ test khác.
 
 Muốn đo lại coverage unit của validator, chạy riêng sau fuzz:
 

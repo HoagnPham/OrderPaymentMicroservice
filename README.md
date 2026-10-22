@@ -108,10 +108,11 @@ SMT, threat model, C static, sanitizer, **CBMC**, **Valgrind**, rồi package + 
 Kết quả từng bước và artifact check nằm ở
 [`security-analysis/results/end_to_end.results.json`](security-analysis/results/end_to_end.results.json).
 Các nhóm nặng là opt-in: `--with-dotnet-tests`, `--with-integration`, `--with-fuzz`,
-`--with-http-fuzz`, `--with-browser-network-fuzz`, `--with-tlc`, `--with-sat`;
-`--no-package` chỉ chạy check. `--with-sat` cần `cadical` và `drat-trim` trên `PATH`;
-mặc định runner vẫn kiểm evidence SAT đã lưu. HTTP fuzz dùng executable +
-PostgreSQL local, browser fuzz dùng Chrome CDP.
+`--with-http-fuzz`, `--with-browser-network-fuzz`, `--with-c-coverage-fuzz`,
+`--with-tlc`, `--with-sat`; `--no-package` chỉ chạy check. `--with-sat` cần
+`cadical` và `drat-trim` trên `PATH`; mặc định runner vẫn kiểm evidence SAT đã lưu.
+HTTP fuzz dùng executable + PostgreSQL local, browser fuzz dùng Chrome CDP,
+coverage-guided fuzz dùng GCC `trace-pc` trên C fixture tổng hợp.
 Mặc định runner không rerun 184 test .NET; nó kiểm evidence
 `application_tests.results.json` đã lưu. Runner không chạy GUI Windows của thầy;
 mục `atpm_gui` ghi BLOCKED và trỏ về checklist thủ công trong kịch bản demo.
@@ -122,12 +123,14 @@ Chạy riêng các lớp C chuyên sâu:
 make -C security-analysis/c-memory bmc-check
 make -C security-analysis/c-memory valgrind-check
 make -C security-analysis/c-memory sat-check   # cần cadical + drat-trim
+python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000
 ```
 
 CBMC dùng bound `unwind=64`, input tượng trưng 48 byte; kết quả chỉ có giá trị
 trong bound/harness đó. Valgrind chạy trên build không sanitizer. DRAT proof chỉ
 chứng minh CNF do CBMC sinh tại bound đó là UNSAT, không chứng minh source C# hay
-thực thi vô hạn.
+thực thi vô hạn. Coverage-guided `trace-pc` chỉ chạy trên C fixture tổng hợp; nó
+không phải code coverage của app ASP.NET.
 
 ## Chạy shop thủ công trên database demo riêng
 

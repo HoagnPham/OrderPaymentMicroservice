@@ -7,8 +7,10 @@ retry needs Chrome/Chromium; C checks need gcc, cppcheck, cbmc and valgrind. The
 CNF/DIMACS/DRAT certificate pipeline is opt-in with --with-sat because it also
 needs CaDiCaL and drat-trim. The .NET suites and TLC are opt-in because they need
 extra services or a jar. Black-box HTTP and browser network fault fuzzing are
-opt-in with --with-http-fuzz/--with-browser-network-fuzz. The default chain does
-not read the read-only ATPM reference tree.
+opt-in with --with-http-fuzz/--with-browser-network-fuzz. A coverage-guided
+trace-pc harness for a synthetic C fixture is opt-in with
+--with-c-coverage-fuzz. The default chain does not read the read-only ATPM
+reference tree.
 
 This script does not replace the Windows-only ATPM GUI. It records exactly what
 was executed and which artifacts were checked.
@@ -70,6 +72,7 @@ ARTIFACTS = [
     ("results/application_tests.results.json", "passed"),
     ("results/http_fuzz.results.json", "passed"),
     ("results/browser_network_fuzz.results.json", "passed"),
+    ("results/c_coverage_fuzz.results.json", "passed"),
 ]
 
 PACKAGE_ARTIFACTS = [
@@ -148,6 +151,7 @@ def main() -> None:
     parser.add_argument("--with-fuzz", action="store_true", help="run the deterministic .NET fuzz campaign")
     parser.add_argument("--with-http-fuzz", action="store_true", help="run black-box HTTP fuzz against real local API/PostgreSQL")
     parser.add_argument("--with-browser-network-fuzz", action="store_true", help="run Chrome CDP network fault fuzzing")
+    parser.add_argument("--with-c-coverage-fuzz", action="store_true", help="run coverage-guided trace-pc fuzz on the synthetic C fixture")
     parser.add_argument("--with-tlc", action="store_true", help="run TLC (requires TLA2TOOLS_JAR)")
     parser.add_argument("--with-sat", action="store_true", help="run CNF/DIMACS + DRAT proof checks (requires cadical and drat-trim)")
     parser.add_argument("--no-package", action="store_true", help="skip package_evidence and build_report")
@@ -184,6 +188,10 @@ def main() -> None:
         steps.append(("browser_network_fuzz", command("security-analysis/browser/network_fuzz.py")))
     else:
         skipped.append("Chrome CDP network fault fuzz (use --with-browser-network-fuzz)")
+    if args.with_c_coverage_fuzz:
+        steps.append(("c_coverage_fuzz", command("security-analysis/run_c_coverage_fuzz.py", "--iterations", "20000")))
+    else:
+        skipped.append("coverage-guided trace-pc C fixture fuzz (use --with-c-coverage-fuzz)")
     if args.with_tlc:
         steps.append(("tlc", command("security-analysis/run_tlc.py")))
     else:
@@ -229,6 +237,7 @@ def main() -> None:
             "Artifact predicates check stored JSON flags, not a second independent implementation.",
             "HTTP fuzzing is black-box and uses semantic feedback; it is not code-coverage-guided and covers only the bounded local API/DB surface.",
             "Browser network fuzzing uses Chrome CDP response interception, not an external proxy or WAN; only the products fetch path is faulted.",
+            "The coverage-guided trace-pc harness instruments a synthetic C fixture, not the ASP.NET service; its edge map is not an app coverage report.",
         ],
     }
     OUT.parent.mkdir(parents=True, exist_ok=True)

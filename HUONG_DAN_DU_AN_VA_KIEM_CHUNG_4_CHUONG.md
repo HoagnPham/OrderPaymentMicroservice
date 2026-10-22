@@ -288,6 +288,7 @@ EF InMemory hỗ trợ unit test nhanh, không tái hiện toàn bộ transactio
 | `run_fuzzing.py` | Chạy 3 fuzz tests với timeout 120s và Coverlet; lưu seed, target, coverage, source hashes và outcome. |
 | `http_fuzz.py` | Black-box HTTP fuzz: executable + PostgreSQL tạm, auth/corpus/semantic feedback/DB oracle; không phải code-coverage-guided. |
 | `browser/network_fuzz.py` | Chrome CDP network fault fuzz cho `api/products`: malformed/empty/wrong-shape/500/503/network error; không phải proxy/WAN. |
+| `run_c_coverage_fuzz.py` | Build và chạy coverage-guided GCC `trace-pc` trên C fixture tổng hợp; shared edge map, fork/input, queue; không phải coverage của ASP.NET. |
 | `collect_validator_coverage.py` | Đọc XML Coverlet có sẵn, lấy coverage InputValidator/MoneyAmounts và gate branch≥90%; không tự chạy test. |
 | `run_recovery_demo.py` | Chạy riêng 2 reconnect tests, bắt thiếu/stale evidence và source hash không khớp; không ghi TRX subset vào thư mục full-suite. |
 | `verify_checkout.py` | Dùng Chrome/Chromium chạy checkout functions thật với mocked fetch/sessionStorage, kiểm retry/key/abort. |
@@ -734,9 +735,9 @@ Generator random **không đọc rồi mutate 8 JSON seed**. Corpus là campaign
 | Black-box fuzzing | Chọn input theo interface/output mà không dùng nội bộ hoặc coverage để dẫn đường. | Đã có `http_fuzz.py` (HTTP black-box, semantic feedback/DB oracle) và `browser/network_fuzz.py` (Chrome CDP); chưa proxy/WAN. |
 | White-box theo nghĩa test biết source | Xây dữ liệu/oracle từ guard và code bên trong. | Harness .NET hiện tại biết DTO, bounds và state machine nên là source-aware, có thể mô tả là white-box testing. |
 | White-box fuzzing theo nghĩa symbolic/concolic | Dùng path constraints/solver để chủ động tìm input qua nhánh. | Chưa hiện thực. Z3 kiểm số học riêng không được nối vào generator fuzz. |
-| Grey-box coverage-guided | Dùng runtime feedback như edge map để giữ/chọn/mutate input mở đường mới. | Chưa hiện thực feedback loop code coverage. HTTP harness dùng semantic feature/edge, không phải basic-block/edge map; Coverlet chỉ đo sau khi chạy. |
+| Grey-box coverage-guided | Dùng runtime feedback như edge map để giữ/chọn/mutate input mở đường mới. | **Có cho C fixture tổng hợp**: `run_c_coverage_fuzz.py` dùng GCC `trace-pc`, shared edge map, queue; seed `20261022`, 20.000 mutation, 81 → 148 map entry. **Chưa cho ASP.NET**: HTTP harness dùng semantic feature/edge, không phải basic-block/edge map; Coverlet chỉ đo sau khi chạy. |
 
-Cách giới thiệu ngắn, chính xác: **“Fuzz có cấu trúc, seed cố định, gọi trực tiếp validators/state machines, có oracle và đo line/branch coverage; thêm black-box HTTP semantic feedback và browser CDP network fault; chưa code-coverage-guided, path/edge code coverage hoặc symbolic fuzzing.”**
+Cách giới thiệu ngắn, chính xác: **“Fuzz có cấu trúc, seed cố định, gọi trực tiếp validators/state machines, có oracle và đo line/branch coverage; thêm black-box HTTP semantic feedback, browser CDP network fault và coverage-guided trace-pc trên C fixture tổng hợp; app ASP.NET vẫn chưa code-coverage-guided/path-edge, chưa symbolic fuzzing.”**
 
 ### E.4. Statement, line, branch, path và edge coverage
 
@@ -787,9 +788,18 @@ corpus queue → chọn seed/mutate → target + instrumentation → edge/featur
      └──────────────────── giữ input mở coverage mới ──────────┘
 ```
 
+Vòng này **đã được hiện thực cho một C fixture tổng hợp** trong
+`security-analysis/c-memory/fuzz/` và chạy bằng `run_c_coverage_fuzz.py`:
+GCC chèn callback `trace-pc`, callback băm transition của basic-block vào shared
+map 64 KiB, mỗi input chạy trong process con `fork()`, input nào thêm map entry
+mới được giữ trong queue. Evidence `c_coverage_fuzz.results.json` dùng seed
+`20261022`, 20.000 mutation, 10 seed, đi từ 81 lên 148 map entry, queue 46, 0 crash.
+Đây là feedback loop thật ở mức engine nhưng target là **fixture tổng hợp**, không
+phải ASP.NET; map entry cũng không phải báo cáo source-level edge của gcov/LLVM.
+
 LibFuzzer là ví dụ engine coverage-guided in-process; instrumentation của LLVM có thể theo dõi basic block/edge để cung cấp feedback. Đây là cơ chế khác với chỉ xuất báo cáo coverage sau test. Xem [LibFuzzer](https://llvm.org/docs/LibFuzzer.html) và [SanitizerCoverage](https://clang.llvm.org/docs/SanitizerCoverage.html).
 
-Muốn mở rộng project cần thêm adapter/harness thích hợp cho target/runtime, input encoding, queue mutation, persistence/replay/minimization và metric new edges/execs/crashes. Không chỉ thêm `CollectCoverage=true` là hoàn thành coverage-guided fuzzing. Tài liệu không đưa một lệnh AFL/libFuzzer giả định chạy được trực tiếp trên assembly C# hiện tại.
+Muốn mở rộng coverage-guided sang **app ASP.NET/HTTP thật**, project cần thêm adapter/harness thích hợp cho target/runtime, input encoding, queue mutation, persistence/replay/minimization và metric new edges/execs/crashes. Không chỉ thêm `CollectCoverage=true` là hoàn thành coverage-guided fuzzing cho app. Tài liệu không đưa một lệnh AFL/libFuzzer giả định chạy được trực tiếp trên assembly C# hiện tại.
 
 ### E.7. Execution, tốc độ và khả năng tái lập
 
@@ -818,13 +828,14 @@ DFSan là framework dynamic data-flow gắn/lan truyền nhãn và để client 
 - Generator có nhiều input bị reject sớm; coverage tổng không chứng minh đã đi sâu mọi tổ hợp guard.
 - Corpus/generator hiện không phủ mọi service-boundary rule; item-count 100/101 được kiểm riêng bởi admission/unit tests, không xuất hiện trong generator 0–4 items.
 - Bảng transition tham chiếu là oracle viết tay, vẫn có thể sai cùng specification; cần model/negative tests và review bổ sung.
-- Chưa code-coverage-guided mutation, symbolic path solving, automatic crash saving/minimization hoặc path/edge/taint coverage report.
+- App .NET/HTTP **chưa code-coverage-guided mutation**, chưa symbolic path solving, automatic crash saving/minimization hoặc path/edge/taint coverage report cho app.
 - Campaign stateful .NET chỉ kiểm aggregate trong process; **không phải end-to-end** qua HTTP + PostgreSQL + gateway thật.
 - Đã có black-box HTTP fuzz opt-in (`http_fuzz.py`): executable + PostgreSQL local thật, seed `20261022`, 500 mutation/601 request, oracle response + DB invariant; đây là semantic feedback, **không phải** code-coverage-guided.
-- HTTP fuzz vẫn local/bounded, chưa có TLS/proxy/network partition hoặc RESTler/Schemathesis; chưa code path/edge coverage; Coverlet chỉ cho line/branch trên 5 target.
+- HTTP fuzz vẫn local/bounded, chưa có TLS/proxy/network partition hoặc RESTler/Schemathesis; chưa code path/edge coverage cho app; Coverlet chỉ cho line/branch trên 5 target.
 - Đã có browser network fault fuzz opt-in (`browser/network_fuzz.py`): Chrome CDP chặn response `api/products`, 8 scenario, 0 uncaught JS; đây là interception, **không phải** proxy/WAN, và chỉ fault products fetch.
+- Đã có coverage-guided trace-pc opt-in (`run_c_coverage_fuzz.py`): C fixture tổng hợp, seed `20261022`, 20.000 mutation, 81 → 148 map entry, queue 46, 0 crash; **không phải** coverage của ASP.NET.
 - Frontend vẫn có Chrome smoke một flow thật và checkout helper với mocked fetch; chưa phủ login/cart/payment network faults hay nhiều browser.
-- PASS của .NET campaign/HTTP campaign chỉ là không có failure theo oracle trong budget đã chạy; không là chứng minh mọi input, path hay toàn API an toàn.
+- PASS của .NET campaign/HTTP campaign/C fixture chỉ là không có failure theo oracle trong budget đã chạy; không là chứng minh mọi input, path hay toàn API an toàn.
 
 <a id="lenh-chay"></a>
 
@@ -1017,6 +1028,7 @@ Chạy fuzz và lưu cả coverage/evidence (wrapper chứa đủ include/filter
 python3 security-analysis/run_fuzzing.py
 python3 security-analysis/http_fuzz.py --iterations 500 --no-build
 python3 security-analysis/browser/network_fuzz.py
+python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000
 python3 -m json.tool security-analysis/results/application_fuzzing.results.json
 ```
 
@@ -1132,7 +1144,7 @@ for module in user product cart order payment; do
 done
 ```
 
-Flag sau `--` là compilation arguments, xem [clang-tidy documentation](https://clang.llvm.org/extra/clang-tidy/). Taint analysis và coverage-guided fuzzing vẫn cần instrumentation/harness riêng trước khi có lệnh end-to-end cho project; hiện chưa có để nhận là đã hoàn thành. BMC thì đã có cho 5 module C, không mở rộng thành “BMC cho C#”.
+Flag sau `--` là compilation arguments, xem [clang-tidy documentation](https://clang.llvm.org/extra/clang-tidy/). Taint analysis và coverage-guided fuzzing cho **app ASP.NET/HTTP** vẫn cần instrumentation/harness riêng; C fixture trace-pc đã có nhưng không thay thế coverage của app. BMC thì đã có cho 5 module C, không mở rộng thành “BMC cho C#”.
 
 ### F.9. Chạy toàn suite và đóng gói báo cáo
 
@@ -1162,7 +1174,7 @@ Chuỗi nhanh, không cần .NET/PostgreSQL, tự kiểm artifact và sinh lại
 python3 security-analysis/run_all_checks.py
 ```
 
-Mặc định chạy workbook/ATPM checker, recovery model, liveness, payment/inventory SMT, threat model, C static, sanitizer, CBMC, Valgrind, rồi `package_evidence.py` + `build_report.py`. Kết quả tổng hợp ở `security-analysis/results/end_to_end.results.json`. Các nhóm nặng là opt-in: `--with-dotnet-tests`, `--with-integration`, `--with-fuzz`, `--with-http-fuzz`, `--with-browser-network-fuzz`, `--with-tlc`, `--with-sat`; `--no-package` để chỉ chạy check. `--with-http-fuzz` cần executable đã build + PostgreSQL local; `--with-browser-network-fuzz` cần Chrome/Chromium. HTTP fuzz là semantic feedback, không phải code-coverage-guided; browser fuzz là CDP interception, không phải proxy/WAN. `--with-sat` cần CaDiCaL và `drat-trim` trên `PATH`; default vẫn kiểm evidence SAT đã lưu nhưng không tái sinh proof. Runner **không** rerun 184 test .NET mặc định; nó kiểm `application_tests.results.json` ở trạng thái evidence đã lưu. Runner cũng **không** chạy GUI Windows của thầy; mục `atpm_gui` trong JSON ghi BLOCKED và trỏ về checklist thủ công.
+Mặc định chạy workbook/ATPM checker, recovery model, liveness, payment/inventory SMT, threat model, C static, sanitizer, CBMC, Valgrind, rồi `package_evidence.py` + `build_report.py`. Kết quả tổng hợp ở `security-analysis/results/end_to_end.results.json`. Các nhóm nặng là opt-in: `--with-dotnet-tests`, `--with-integration`, `--with-fuzz`, `--with-http-fuzz`, `--with-browser-network-fuzz`, `--with-c-coverage-fuzz`, `--with-tlc`, `--with-sat`; `--no-package` để chỉ chạy check. `--with-http-fuzz` cần executable đã build + PostgreSQL local; `--with-browser-network-fuzz` cần Chrome/Chromium; `--with-c-coverage-fuzz` dùng GCC `trace-pc` trên C fixture tổng hợp. HTTP fuzz là semantic feedback, không phải code-coverage-guided; browser fuzz là CDP interception, không phải proxy/WAN; coverage-guided C fixture không phải coverage của app. `--with-sat` cần CaDiCaL và `drat-trim` trên `PATH`; default vẫn kiểm evidence SAT đã lưu nhưng không tái sinh proof. Runner **không** rerun 184 test .NET mặc định; nó kiểm `application_tests.results.json` ở trạng thái evidence đã lưu. Runner cũng **không** chạy GUI Windows của thầy; mục `atpm_gui` trong JSON ghi BLOCKED và trỏ về checklist thủ công.
 
 Lệnh in số liệu toàn suite và fuzz để đưa vào thuyết trình:
 
@@ -1208,6 +1220,6 @@ pwsh -File ./test-api.ps1 -BaseUrl http://localhost:5246/api
 | 1 | Đã đặc tả threat/contracts, dựng Kripke/recovery model, kiểm property/mutation và validation bằng kịch bản thật. | Recovery JSON, state-response CSV, liveness audit và browser/reconnect evidence. |
 | 2 | Đã mô phỏng 5 lỗi memory C và so BUGGY/FIXED; dùng GCC/Cppcheck/scanner/ASan/UBSan/LSan, 22 ca đúng oracle; thêm CBMC 10/10 và Valgrind 10/10. | Static findings riêng từng tool, sanitizer log, CBMC/Valgrind evidence và layout. |
 | 3 | Đã dùng Z3 cho số học payment/inventory, SAT/UNSAT/witness; kiểm graph/TLA+; CBMC có bound và CNF/DIMACS + DRAT proof/UNSAT core cho 5 module C; chưa BMC/proof cho C#. | Hai file .z3, 7+3 verdict, stock witness 10−6−6, `bmc-analysis.json`, `sat-pipeline.json`. |
-| 4 | Đã fuzz structured input/state pairs bằng fixed seed, oracle và Coverlet; thêm black-box HTTP semantic feedback + DB oracle và Chrome CDP network fault; chưa code-coverage-guided/path-edge/taint analysis tự động. | Corpus, SecurityFuzzingTests.cs, fuzz JSON, HTTP/browser network evidence và class coverage XML. |
+| 4 | Đã fuzz structured input/state pairs bằng fixed seed, oracle và Coverlet; thêm black-box HTTP semantic feedback + DB oracle, Chrome CDP network fault và coverage-guided trace-pc trên C fixture; app ASP.NET chưa code-coverage-guided/path-edge/taint tự động. | Corpus, SecurityFuzzingTests.cs, fuzz JSON, HTTP/browser network evidence, C fixture evidence và class coverage XML. |
 
 Các link tài liệu công cụ trong bài chỉ giải thích cơ chế công cụ. Chứng cứ dự án vẫn là source/model/test/log hiện có; tài liệu của tool không thay kết quả đã chạy của project.

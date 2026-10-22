@@ -27,6 +27,7 @@ kỹ thuật chính; không giữ thêm một báo cáo tiến độ với số 
 | Số học | Security/PaymentVerification.z3 và InventoryVerification.z3 trong source app | [Payment SMT](results/payment_verification.results.json), [inventory SMT](results/inventory_verification.results.json) |
 | Unit/integration | Các project Tests/IntegrationTests | [Toàn suite](results/application_tests.results.json) |
 | Coverage/fuzz | Coverlet, SecurityFuzzingTests, HTTP fuzzer | [Coverage](results/coverage_summary.json), [.NET fuzz](results/application_fuzzing.results.json), [HTTP black-box](results/http_fuzz.results.json) |
+| Coverage-guided C fixture | run_c_coverage_fuzz.py (GCC trace-pc) | [Edge map 81→148](results/c_coverage_fuzz.results.json) |
 | Browser network fault | browser/network_fuzz.py (Chrome CDP) | [8 scenarios](results/browser_network_fuzz.results.json) |
 | Crash/reconnect | CrashProbe, OperationalProbe, PostgresReconnectTests | [Charge](results/postgres_reconnect_charge.results.json), [refund](results/postgres_reconnect_refund.results.json) |
 | Giao diện thật | ApplicationSmokeTests và browser/live_smoke.py | [Live smoke](results/application_smoke.results.json) |
@@ -40,6 +41,7 @@ Chạy từ gốc repository, sau khi restore .NET dependencies:
 python3 security-analysis/run_all_checks.py
 python3 security-analysis/http_fuzz.py --iterations 500 --no-build
 python3 security-analysis/browser/network_fuzz.py
+python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000
 python3 security-analysis/run_recovery_demo.py
 python3 security-analysis/verify_recovery_model.py
 python3 security-analysis/audit_liveness.py
@@ -48,7 +50,7 @@ python3 security-analysis/verify_inventory_smt.py
 python3 security-analysis/verify_payment_smt.py
 ```
 
-`run_all_checks.py` là chuỗi nhanh mặc định: workbook/ATPM checker, recovery, liveness, SMT, threat, C static/sanitizer/CBMC/Valgrind, package và report. Nó ghi `results/end_to_end.results.json`; các nhóm .NET/PostgreSQL/TLC/fuzz/SAT là opt-in. `--with-http-fuzz` cần executable đã build và PostgreSQL local; `--with-browser-network-fuzz` cần Chrome/Chromium. HTTP fuzz là black-box + semantic feedback, không phải code-coverage-guided; browser fuzz là CDP interception, không phải proxy/WAN. `--with-sat` cần CaDiCaL và `drat-trim` trên `PATH`; mặc định vẫn kiểm evidence SAT đã lưu. Chuỗi mặc định không đọc `ATPM/`; `run_analysis.py`/`create_datasets.py` là script legacy có thể phụ thuộc toolkit học phần và không nằm trong chuỗi này. Hai lệnh SMT cần Z3. Demo reconnect cần PostgreSQL binaries local. Cần công cụ C (`gcc`, `cppcheck`, `cbmc`, `valgrind`) chỉ khi chạy các check C tương ứng; cần Chrome/Chromium chỉ khi chạy browser tests. Lệnh toàn suite/coverage/fuzz và cách cập nhật report nằm trong README gốc, tutorial validator và tài liệu demo. Không chạy đồng thời dotnet/coverage/fuzz.
+`run_all_checks.py` là chuỗi nhanh mặc định: workbook/ATPM checker, recovery, liveness, SMT, threat, C static/sanitizer/CBMC/Valgrind, package và report. Nó ghi `results/end_to_end.results.json`; các nhóm .NET/PostgreSQL/TLC/fuzz/SAT là opt-in. `--with-http-fuzz` cần executable đã build và PostgreSQL local; `--with-browser-network-fuzz` cần Chrome/Chromium; `--with-c-coverage-fuzz` dùng GCC `trace-pc` trên C fixture tổng hợp. HTTP fuzz là black-box + semantic feedback, không phải code-coverage-guided; browser fuzz là CDP interception, không phải proxy/WAN; coverage-guided C fixture không phải code coverage của app. `--with-sat` cần CaDiCaL và `drat-trim` trên `PATH`; mặc định vẫn kiểm evidence SAT đã lưu. Chuỗi mặc định không đọc `ATPM/`; `run_analysis.py`/`create_datasets.py` là script legacy có thể phụ thuộc toolkit học phần và không nằm trong chuỗi này. Hai lệnh SMT cần Z3. Demo reconnect cần PostgreSQL binaries local. Cần công cụ C (`gcc`, `cppcheck`, `cbmc`, `valgrind`) chỉ khi chạy các check C tương ứng; cần Chrome/Chromium chỉ khi chạy browser tests. Lệnh toàn suite/coverage/fuzz và cách cập nhật report nằm trong README gốc, tutorial validator và tài liệu demo. Không chạy đồng thời dotnet/coverage/fuzz.
 
 TLC có evidence lịch sử trong results/tlc, không được đổi nhãn thành lượt mới
 chỉ vì package. Các scripts legacy run_analysis.py/create_datasets.py có thể
