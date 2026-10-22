@@ -55,8 +55,8 @@ JSON/TRX làm chuẩn và sửa bản sao.
 | --- | --- | --- | --- |
 | T1 | BMC/CBMC trên C | Đã thực hiện cho 5 module C (B17); mở rộng sang C# vẫn ngoài scope | CBMC + bound + unwinding assertion |
 | T2 | SAT/CNF/DIMACS độc lập | Đã thực hiện cho 5 module C (B20); vẫn là bounded CNF, không phải proof vô hạn/C# | CBMC DIMACS + CaDiCaL + drat-trim + core |
-| T3 | Coverage-guided fuzz | Fixed-seed đã đủ cho demo oracle | libFuzzer/AFL++/SharpFuzz + corpus |
-| T4 | HTTP black-box fuzz | Test hiện ở mức hàm/aggregate | RESTler/Schemathesis |
+| T3 | Coverage-guided fuzz | **Chưa làm**; hiện chỉ có structured fuzz fixed-seed, coverage đo sau khi chạy, không dùng feedback để chọn mutation | libFuzzer/AFL++/SharpFuzz + corpus + edge map |
+| T4 | HTTP black-box fuzz | **Chưa làm**; integration/load/browser tests là kịch bản viết sẵn, không phải fuzz qua mạng | RESTler/Schemathesis hoặc HTTP fuzzer có auth/oracle/replay |
 | T5 | Valgrind/clang-tidy/clang analyzer | Valgrind đã thực hiện (B18); clang-tidy/analyzer chưa có trên PATH | log từng công cụ, gồm cả false negative |
 | T6 | Taint analysis tự động | Hiện lập luận thủ công theo luồng dữ liệu | Semgrep/CodeQL rule |
 | T7 | So sánh Cppcheck với sanitizer | Đã ghi nhận Cppcheck bỏ sót 4/5 | bảng đối chiếu theo từng bug |
@@ -79,7 +79,7 @@ JSON/TRX làm chuẩn và sửa bản sao.
 | 1 | Kripke, CTL/LTL, model checking | Model + checker duyệt toàn bộ 14 state; workbook thêm cụm khóa 4 state; TLA+ có fairness | Chưa có fair-CTL đầy đủ; một số state là trừu tượng |
 | 2 | C memory safety, static analysis | 5 module, ASan/UBSan 22/22; CBMC 10/10; Valgrind 10/10; CNF/DRAT 10/10 | Cppcheck false negative 4/5; chưa clang-tidy; CBMC/DRAT có bound 64/48 |
 | 3 | SAT/SMT/BMC | 10 query Z3 đúng verdict; CBMC bounded; CNF DIMACS + 5 DRAT proof + 5 UNSAT core | Chưa BMC cho C#; proof chỉ cho CNF bounded |
-| 4 | Fuzzing, coverage | 4 campaign seed cố định; coverage theo target | Chưa coverage-guided; chưa HTTP fuzz |
+| 4 | Fuzzing, coverage | 4 campaign seed `20261009`; 5 target; line 91,05%/branch 97,50% | Chưa coverage-guided, black-box HTTP, path/edge; frontend mới mock/browser, chưa fuzz qua mạng; fuzz không end-to-end DB/HTTP |
 
 ## 6. Cách xác nhận nhanh
 

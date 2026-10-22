@@ -817,7 +817,10 @@ DFSan là framework dynamic data-flow gắn/lan truyền nhãn và để client 
 - Corpus/generator hiện không phủ mọi service-boundary rule; item-count 100/101 được kiểm riêng bởi admission/unit tests, không xuất hiện trong generator 0–4 items.
 - Bảng transition tham chiếu là oracle viết tay, vẫn có thể sai cùng specification; cần model/negative tests và review bổ sung.
 - Chưa feedback-guided mutation, symbolic path solving, automatic crash saving/minimization hoặc path/edge/taint coverage report.
-- Ba campaign PASS là không có failure theo oracle trong budget đã chạy; không là chứng minh mọi input đều an toàn.
+- Campaign stateful chỉ kiểm aggregate trong process; **không phải end-to-end** qua HTTP + PostgreSQL + gateway thật. Các integration/load/smoke test dùng dịch vụ local thật ở lớp riêng, không biến fuzz model thành black-box HTTP fuzz.
+- Chưa có black-box HTTP fuzz, chưa path/edge coverage; Coverlet chỉ cho line/branch trên 5 target.
+- Frontend có Chrome smoke một flow thật và checkout helper với mocked fetch; chưa fuzz request/response qua mạng, proxy hay nhiều browser.
+- Bốn campaign PASS là không có failure theo oracle trong budget đã chạy; không là chứng minh mọi input, path hay toàn API an toàn.
 
 <a id="lenh-chay"></a>
 

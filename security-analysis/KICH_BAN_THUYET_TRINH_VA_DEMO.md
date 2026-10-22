@@ -23,7 +23,7 @@ Tên project là OrderPaymentMicroservice nhưng hiện thực hiện tại là 
 | C Valgrind                  | **10/10 case PASS**                                   | Memcheck trên build không sanitizer; BUGGY có lỗi đúng loại, FIXED sạch          |
 | C SAT/CNF/DRAT              | **10/10 case PASS; 5 proof `VERIFIED`; 5 core UNSAT** | CBMC xuất DIMACS; BUGGY SAT có model, FIXED UNSAT có DRAT proof và core; vẫn bound 64 |
 | End-to-end runner            | **PASS**                                              | `run_all_checks.py` chạy chuỗi nhanh + kiểm artifact; `--with-sat` cho proof; GUI Windows vẫn BLOCKED   |
-| Fuzz ứng dụng             | Xem evidence lượt chạy mới                             | Seed 20261009; hai campaign random 25.000 vòng và một campaign stateful 2.000 chuỗi × tối đa 20 bước; coverage chỉ trên 5 target     |
+| Fuzz ứng dụng             | Xem evidence lượt chạy mới                             | Seed 20261009; structured in-process; 25.000 vòng/campaign và 2.000 chuỗi stateful; line/branch coverage 5 target; **chưa** coverage-guided/HTTP black-box/path-edge |
 | Threat model consistency    | **PASS**                                              | 6 tài sản, 4 trust boundary, 9 threat, đủ 6 nhóm STRIDE; vẫn có threat mở                |
 
 Lệnh toàn suite dùng để đánh giá:
@@ -463,6 +463,8 @@ python3 security-analysis/run_fuzzing.py
 > Campaign gồm corpus, validator random, state-pair random và chuỗi stateful Order–Payment–Inventory. Campaign stateful kiểm invariant sau từng thao tác và in seed/trace nếu fail. Đây là generation-based fuzzing kết hợp oracle và đo coverage; chưa phải engine coverage-guided, symbolic hay concolic fuzzing trên toàn API.”
 
 Mở `OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs`, `FuzzCorpus/order_requests.json`, `results/application_fuzzing.results.json`. Không nói 25.000 vòng là 25.000 HTTP request; target ở mức hàm/state machine. Cũng không dùng con số coverage này để đại diện toàn controller/service/UI/database.
+
+Nếu bị hỏi sâu, nói đúng các khoảng trống: fuzz hiện tại **không phải end-to-end** vì stateful campaign chỉ chạy aggregate trong process; **không đập vào DB+HTTP service thật** (các integration/load test làm việc đó ở lớp riêng, không phải fuzz); **chưa black-box HTTP fuzz**; **chưa path/edge coverage**, chỉ line/branch; **frontend** mới có Chrome smoke một flow và checkout helper dùng mocked fetch, chưa fuzz qua mạng. Đây là các mục `CHƯA CÓ`, không được chuyển thành PASS nhờ test khác.
 
 Muốn đo lại coverage unit của validator, chạy riêng sau fuzz:
 

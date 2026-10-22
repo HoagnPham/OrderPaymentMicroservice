@@ -16,12 +16,12 @@ foreign-key error bất kỳ như bằng chứng chặn quantity.
 
 ### 6.2. Corpus, budget và mức độ đa dạng
 
-Seed xác định giúp tái lập failure; corpus bao gồm trường hợp biên và payload
-lỗi. Budget 25.000 iteration cho từng random campaign là số lần thử, không phải
-số input khác nhau hay phần trăm miền input. State transition fuzz có oracle từ
-bảng chuyển và invariant; chưa chứng minh vượt qua mọi chuỗi gateway/database.
-Không gọi campaign này là coverage-guided fuzzing nếu thuật toán không dùng
-coverage để chọn mutation tiếp theo.
+Seed PRNG cố định `20261009` giúp tái lập failure; corpus bao gồm trường hợp biên
+và payload lỗi. Budget 25.000 iteration cho từng random campaign là số lần thử,
+không phải số input khác nhau hay phần trăm miền input. State transition fuzz có
+oracle từ bảng chuyển và invariant; chưa chứng minh vượt qua mọi chuỗi
+gateway/database. Không gọi campaign này là coverage-guided fuzzing nếu thuật toán
+không dùng coverage để chọn mutation tiếp theo.
 
 ### 6.3. Phạm vi test authorization sau mở rộng
 
@@ -205,3 +205,26 @@ provider mô phỏng, không là provider/browser matrix hoặc production deplo
 External fonts bị block để không phụ thuộc mạng; dữ liệu/process test được cleanup.
 Nguồn: [kịch bản thuyết trình và demo](../KICH_BAN_THUYET_TRINH_VA_DEMO.md),
 [application_smoke.results.json](../results/application_smoke.results.json).
+
+### 6.13. Khoảng trống của Chương 4 — không claim quá mức
+
+Bảng dưới đây chốt đúng trạng thái từng hạng mục. Các lớp test HTTP/PostgreSQL,
+browser hoặc model khác **không tự thay thế** một hạng mục còn thiếu.
+
+| Hạng mục | Trạng thái | Bằng chứng / cách đọc | Việc còn thiếu |
+| --- | --- | --- | --- |
+| Fixed-seed | **Có** | `seed=20261009` trong `application_fuzzing.results.json`; budget 25.000/campaign và 2.000 chuỗi stateful. Seed chỉ tái lập khi cùng source/runtime. | Không có; đây là fuzz sinh dữ liệu có cấu trúc, không phải random byte stream. |
+| Coverage-guided | **Chưa** | Coverlet đo line/branch **sau** khi chạy; generator không đọc coverage để chọn mutation. | Edge/feature map, queue corpus, mutation/minimization và tiêu chí “new coverage”. |
+| Model-level end-to-end | **Không** | Campaign stateful chạy aggregate Order–Payment–Inventory trong process; trường `scope` ghi rõ không fuzz HTTP/PostgreSQL concurrency/gateway. | Harness gọi service/API thật, kiểm DB và transaction sau từng bước. |
+| Đập vào DB + HTTP service thật | **Có ở lớp integration/load, không trong fuzz** | `application_tests.results.json`, `load_probe.results.json`, `postgres_reconnect_*.results.json` dùng PostgreSQL/HTTP local thật; fuzz target chỉ là validator/state machine. | Fuzz request qua API thật, assert DB/transaction sau mỗi request; không gọi test tĩnh/unit là fuzz. |
+| Black-box HTTP fuzz | **Chưa** | `run_fuzzing.py` chạy xUnit in-process; HTTP/browser tests là kịch bản viết sẵn, không phải chiến dịch fuzz qua mạng. | RESTler/Schemathesis hoặc HTTP client fuzzer có auth, corpus, oracle và replay. |
+| Path/edge coverage chuyên sâu | **Chưa** | Chỉ có line 91,05% và branch 97,50% cho 5 target; không có path/edge report. | Instrumentation basic-block/edge, đo path bounded và lưu coverage map. |
+| Frontend fuzz qua mạng | **Chưa** | `checkout_retry.results.json` dùng mocked fetch/sessionStorage; `application_smoke.results.json` chỉ là một flow Chrome thật qua localhost. | Fuzz request/response qua proxy hoặc Playwright với backend thật; kiểm network loss, malformed body, retry và double-submit. |
+| Taint analysis tự động | **Chưa** | Luồng source→sink được review thủ công; sanitizer/ASan không gắn nhãn taint. | DFSan/Semgrep/CodeQL rule và báo cáo source→sink. |
+
+Cách nói chính xác khi bảo vệ: **“Fuzz hiện tại là structured, fixed-seed,
+in-process, có oracle và đo line/branch coverage; chưa coverage-guided, chưa
+black-box HTTP fuzz và chưa phải end-to-end DB/HTTP.”** Các test HTTP/PostgreSQL,
+load và browser là bằng chứng riêng cho tầng tương ứng, không nâng campaign model
+thành end-to-end. Vì vậy 25.000 iteration hoặc 97,50% branch không được dùng để
+kết luận toàn API, database, frontend hay mọi path đã được kiểm.
