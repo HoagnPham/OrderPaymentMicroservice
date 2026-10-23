@@ -6,10 +6,9 @@
 %  Khối iftex bên dưới tự chọn cấu hình pdfLaTeX (T5) hoặc Xe/LuaLaTeX (fontspec);
 %  pdfLaTeX cần bộ font T5/vntex đầy đủ.
 %
-%  HÌNH ẢNH: các khung [CHÈN ẢNH CHỤP MÀN HÌNH] là placeholder.
-%  Xem Phụ lục F (danh sách hình cần bổ sung) để biết chính xác
-%  cần chạy lệnh nào và chụp màn hình nào. Thay khung bằng:
-%      \includegraphics[width=0.95\textwidth]{ten-anh.png}
+%  HÌNH ẢNH: đặt các tệp anh-01..anh-10 (.png) cùng thư mục với file .tex.
+%  Macro \anh{ten-tep}{caption} tự chèn ảnh khi tệp tồn tại; nếu chưa có,
+%  in khung nhắc để báo cáo vẫn biên dịch được.
 %
 %  ĐIỀN TRƯỚC KHI NỘP: mã lớp; bổ sung thành viên nếu nhóm có nhiều người.
 % =====================================================================
@@ -141,17 +140,21 @@
 \newcommand{\cwe}[1]{CWE-#1}
 \newcommand{\mustfill}[1]{\textcolor{secondary}{\textbf{[#1]}}}
 
-% Khung placeholder cho ảnh chụp màn hình.
-% #1: mô tả lệnh / nội dung cần chụp; #2: caption.
-\newcommand{\screenshot}[2]{%
+% Ảnh minh chứng. Cú pháp: \anh[độ rộng]{tên-tệp.png}{caption}
+% Nếu tệp chưa có, in khung nhắc để báo cáo vẫn biên dịch được.
+\newcommand{\anh}[3][0.95]{%
 \begin{figure}[H]
 \centering
-\fbox{\begin{minipage}[c][5.6cm][c]{0.93\textwidth}
-\centering
-{\color{codegray}\small\textbf{[CHÈN ẢNH CHỤP MÀN HÌNH]}}\\[6pt]
-{\small #1}
-\end{minipage}}
-\caption{#2}
+\IfFileExists{#2}{%
+  \includegraphics[width=#1\textwidth]{#2}%
+}{%
+  \fbox{\begin{minipage}[c][4.2cm][c]{0.9\textwidth}
+  \centering
+  {\color{codegray}\small\textbf{[CHƯA CÓ ẢNH]}}\\[4pt]
+  {\small Đặt tệp \texttt{#2} cùng thư mục với \texttt{.tex}}
+  \end{minipage}}%
+}
+\caption{#3}
 \end{figure}}
 
 \begin{document}
@@ -1121,113 +1124,35 @@ product/user, tất cả exit 0 và sạch sanitizer.}
 \label{tab:sanitizer}
 \end{table}
 
-\screenshot{\textbf{Lệnh:} \cmd{make -C security-analysis/c-memory test}.
-\textbf{Vùng chụp:} 22 dòng \texttt{PASS <case>} do \texttt{tests/check\_memory.py}
-in ra (mỗi ca một dòng; không có dòng tổng kết dạng ``22/22''). \textbf{Cắt:} bỏ
-phần build/compile phía trên. \textbf{Khoanh đậm:} các dòng của 5 cặp
-\texttt{order/payment/cart/product/user}. \textbf{Tệp gợi ý:}
-\texttt{anh-01-sanitizer.png}}{Bộ 22 ca sanitizer PASS; mỗi ca BUGGY có đúng
+\anh{anh-01-sanitizer.png}{Bộ 22 ca sanitizer PASS; mỗi ca BUGGY có đúng
 diagnostic, mỗi ca FIXED sạch.}
 
-\screenshot{\textbf{Lệnh:} \cmd{ASAN_OPTIONS=detect_leaks=1:halt_on_error=1
-security-analysis/c-memory/build/order_buggy} và \cmd{...build/order_fixed}.
-\textbf{Vùng chụp:} hai terminal cạnh nhau. \textbf{Khoanh đậm:}
-\texttt{LeakSanitizer: detected memory leaks} bên BUGGY; dòng exit 0 không
-diagnostic bên FIXED. \textbf{Tệp gợi ý:} \texttt{anh-02-cwe401-truoc-sau.png}}
-{Trước/sau CWE-401: bản BUGGY rò rỉ, bản FIXED sạch.}
+\anh{anh-02-cwe401-truoc-sau.png}{Trước/sau CWE-401: bản BUGGY rò rỉ, bản FIXED sạch.}
 
-\screenshot{\textbf{Lệnh:} \cmd{make -C security-analysis/c-memory bmc-check} rồi
-\cmd{valgrind-check}. \textbf{Vùng chụp:} dòng tổng kết \texttt{10/10} của mỗi
-công cụ (mỗi công cụ in đúng một dòng \texttt{PASS}/\texttt{FAIL}). \textbf{Khoanh
-đậm:} \texttt{VERIFICATION SUCCESSFUL} (CBMC) và \texttt{clean Memcheck run}
-(Valgrind). \textbf{Tệp gợi ý:} \texttt{anh-03-cbmc-valgrind.png}}{CBMC
+\anh{anh-03-cbmc-valgrind.png}{CBMC
 (bound 64) và Valgrind Memcheck đều 10/10.}
 
 \subsection{Bằng chứng mô hình, SMT và TLC}
-\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/verify_payment_smt.py} và
-\cmd{python3 security-analysis/run_tlc.py --jar tmp/tools/tla2tools.jar}.
-\textbf{Vùng chụp:} dòng \texttt{7/7 PASS} của SMT và dòng \texttt{35 states
-generated} của TLC. \textbf{Khoanh đậm:} \texttt{TEST6 ... sat} và \texttt{TEST7
-... unsat}. \textbf{Tệp gợi ý:} \texttt{anh-04-smt-tlc.png}}{SMT payment 7/7 và TLC
+\anh{anh-04-smt-tlc.png}{SMT payment 7/7 và TLC
 35 trạng thái, depth 9.}
 
-\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/verify_recovery_model.py}.
-\textbf{Vùng chụp:} dòng \texttt{P1 holds=false} và witness
-\texttt{CREATED -> CANCELLED -> PAID\_AFTER\_CANCELLED} của model v0.
-\textbf{Tệp gợi ý:} \texttt{anh-10-model-witness.png}}{Mô hình v0 để lộ chuyển
+\anh{anh-10-model-witness.png}{Mô hình v0 để lộ chuyển
 tiếp bất hợp lệ (đối chiếu Hình~\ref{fig:order-state}); bản v1 chặn tại chỗ.}
 
-\screenshot{\textbf{Lệnh:} \cmd{make -C security-analysis/c-memory sat-check}.
-\textbf{Vùng chụp:} dòng tổng kết \texttt{10/10} và một dòng \texttt{s VERIFIED}
-của \texttt{drat-trim}. \textbf{Tệp gợi ý:} \texttt{anh-05-sat-drat.png}}{Pipeline
+\anh{anh-05-sat-drat.png}{Pipeline
 CNF/DIMACS + CaDiCaL + DRAT + UNSAT core đạt 10/10.}
 
 \subsection{Bằng chứng fuzzing và coverage}
-\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/run_fuzzing.py}.
-\textbf{Vùng chụp:} dòng \texttt{Passed: 4}, \texttt{branch 97.50\%} và dòng
-\texttt{Fuzzing evidence:}. \textbf{Khoanh đậm:} \texttt{Passed: 4}. \textbf{Tệp
-gợi ý:} \texttt{anh-06-fuzz-coverage.png}}{Bộ 4 test fuzz .NET 4/4 và coverage
+\anh{anh-06-fuzz-coverage.png}{Bộ 4 test fuzz .NET 4/4 và coverage
 dòng/nhánh của 5 target.}
 
-\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/http_fuzz.py --iterations 500 --no-build}.
-\textbf{Vùng chụp:} JSON tổng kết. \textbf{Khoanh đậm:} \texttt{requests: 601},
-\texttt{5xx: 0}, \texttt{failures: 0}. \textbf{Tệp gợi ý:}
-\texttt{anh-07-http-fuzz.png}}{Fuzz HTTP black-box trên API + PostgreSQL thật.}
+\anh{anh-07-http-fuzz.png}{Fuzz HTTP black-box trên API + PostgreSQL thật.}
 
-\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/browser/network_fuzz.py}.
-\textbf{Vùng chụp:} dòng kết quả và bảng 8 scenario của Chrome thật.
-\textbf{Khoanh đậm:} 7 dòng fault hiện trạng thái error + nút retry (ví dụ ô
-\texttt{products-state-error}). \textbf{Tệp gợi ý:} \texttt{anh-09-browser-cdp.png}}
-{Chrome thật bị chặn response \texttt{/api/products}; 7/7 fault hiện error state + retry.}
+\anh{anh-09-browser-cdp.png}{Chrome thật bị chặn response \texttt{/api/products}; 7/7 fault hiện error state + retry.}
 
 \subsection{Bằng chứng phục hồi}
-\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/run_recovery_demo.py}.
-\textbf{Vùng chụp:} hai dòng \texttt{charge: PASS} và \texttt{refund: PASS} cùng
-chuỗi \texttt{200 -> 503 -> 200}. \textbf{Tệp gợi ý:}
-\texttt{anh-08-recovery.png}}{Charge/refund phục hồi sau PostgreSQL stop/start,
+\anh{anh-08-recovery.png}{Charge/refund phục hồi sau PostgreSQL stop/start,
 cùng process API, không gọi lại gateway.}
-
-\subsection{Hướng dẫn chụp ảnh chi tiết}
-Mỗi ảnh chỉ nên chứa một vùng nhỏ, đọc được ở cỡ in; caption phải nêu rõ ảnh chứng
-minh CWE nào hoặc bản vá nào. Quy tắc chung: (i) terminal cỡ chữ $\ge$ 12pt;
-(ii) cắt bỏ phần build/compile; (iii) khoanh đỏ dòng quyết định (diagnostic hoặc
-\texttt{PASS}/\texttt{FAIL}); (iv) không chụp dữ liệu nhạy cảm (connection string,
-token, khóa JWT); (v) lưu PNG tên \texttt{anh-NN-mo-ta.png} cùng thư mục với file
-\texttt{.tex}; (vi) thay khung \texttt{[CHÈN ẢNH...]} bằng
-\verb|\includegraphics[width=0.95\textwidth]{anh-NN-mo-ta.png}|.
-
-\begin{table}[H]
-\centering
-\footnotesize
-\renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\textwidth}{@{}L{0.9cm} L{3.5cm} L{4.0cm} L{4.3cm}@{}}
-\toprule
-\textbf{Ảnh} & \textbf{Vùng chụp} & \textbf{Khoanh đậm / cắt} & \textbf{Tệp gợi ý} \\
-\midrule
-anh-01 & 22 dòng \texttt{PASS} của sanitizer & cắt build; khoanh 5 cặp buggy/fixed & \texttt{anh-01-sanitizer.png} \\
-\addlinespace
-anh-02 & \texttt{order\_buggy} vs \texttt{order\_fixed} & khoanh \texttt{LeakSanitizer} và exit 0 & \texttt{anh-02-cwe401-truoc-sau.png} \\
-\addlinespace
-anh-03 & CBMC + Valgrind 10/10 & khoanh \texttt{VERIFICATION SUCCESSFUL} & \texttt{anh-03-cbmc-valgrind.png} \\
-\addlinespace
-anh-04 & SMT 7/7 + TLC 35 states & khoanh TEST6 \texttt{sat}/TEST7 \texttt{unsat} & \texttt{anh-04-smt-tlc.png} \\
-\addlinespace
-anh-05 & SAT/DRAT 10/10 & khoanh \texttt{s VERIFIED} & \texttt{anh-05-sat-drat.png} \\
-\addlinespace
-anh-06 & Fuzz .NET 4/4 + coverage & khoanh \texttt{Passed: 4} & \texttt{anh-06-fuzz-coverage.png} \\
-\addlinespace
-anh-07 & HTTP fuzz 601 request & khoanh \texttt{5xx: 0}, \texttt{failures: 0} & \texttt{anh-07-http-fuzz.png} \\
-\addlinespace
-anh-08 & Recovery 200$\to$503$\to$200 & khoanh \texttt{charge/refund: PASS} & \texttt{anh-08-recovery.png} \\
-\addlinespace
-anh-09 & Browser CDP 8 scenario & khoanh 7 fault hiện error + retry & \texttt{anh-09-browser-cdp.png} \\
-\addlinespace
-anh-10 & Witness của model v0 & khoanh \texttt{P1 holds=false} & \texttt{anh-10-model-witness.png} \\
-\bottomrule
-\end{tabularx}
-\caption{Checklist chụp ảnh: vùng chụp, phần cần khoanh/cắt và tên tệp gợi ý.}
-\label{tab:screenshot-guide}
-\end{table}
 
 \subsection{Bảng seed và số lần chạy}
 \begin{table}[H]
@@ -1406,31 +1331,6 @@ Repo không tách \texttt{*\_v0.c}/\texttt{*\_v1.c} mà dùng tiền xử lý:
 \texttt{order\_state\_model.json} và \texttt{order\_state\_model\_buggy.json} tương
 ứng v1/v0 ở tầng thiết kế. Khi nộp kèm mã nguồn, cần giữ nguyên cả hai biến thể và
 ghi rõ dòng nào thuộc biến thể nào; không sửa file gốc sau khi đã sinh evidence.
-
-\subsection*{F. Danh sách hình cần bổ sung}
-\begin{table}[H]
-\centering
-\footnotesize
-\renewcommand{\arraystretch}{1.2}
-\begin{tabularx}{\textwidth}{@{}L{1.2cm} L{4.2cm} Y@{}}
-\toprule
-\textbf{Hình} & \textbf{Chụp gì} & \textbf{Lệnh / vị trí} \\
-\midrule
-Ảnh 1 & 22 ca sanitizer & \cmd{make -C security-analysis/c-memory test} \\
-Ảnh 2 & order\_buggy vs order\_fixed & chạy hai binary, chụp cạnh nhau \\
-Ảnh 3 & CBMC + Valgrind 10/10 & \cmd{make ... bmc-check}, \cmd{valgrind-check} \\
-Ảnh 4 & SMT 7/7 + TLC & \cmd{verify_payment_smt.py}, \cmd{run_tlc.py} \\
-Ảnh 5 & SAT/DRAT 10/10 & \cmd{make ... sat-check} \\
-Ảnh 6 & Fuzz 4/4 + coverage & \cmd{run_fuzzing.py} \\
-Ảnh 7 & HTTP fuzz 601 request & \cmd{http_fuzz.py --iterations 500 --no-build} \\
-Ảnh 8 & Recovery 200$\rightarrow$503$\rightarrow$200 & \cmd{run_recovery_demo.py} \\
-Ảnh 9 & Browser CDP 8 scenario & \cmd{browser/network_fuzz.py} \\
-Ảnh 10 & Witness model v0 & \cmd{verify_recovery_model.py} \\
-\bottomrule
-\end{tabularx}
-\caption{Danh sách 10 ảnh cần chụp (chi tiết vùng chụp ở Bảng~\ref{tab:screenshot-guide}). Thay mỗi khung \texttt{[CHÈN ẢNH...]} bằng lệnh
-chèn ảnh của LaTeX với tệp \texttt{ten-anh.png} đặt cùng thư mục với file .tex.}
-\end{table}
 
 % =====================================================================
 %  TÀI LIỆU THAM KHẢO
