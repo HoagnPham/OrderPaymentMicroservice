@@ -1309,20 +1309,67 @@ Phạm Văn Hoàng & 23010245 & Toàn bộ: đặc tả, threat model, API Order
 \end{table}
 
 \subsection*{D. Mẫu commit message theo từng CWE}
-\begin{lstlisting}[language=bash,caption={Commit mẫu (theo quy ước của hướng dẫn)}]
+Mỗi message nêu nguyên nhân, cách vá và bằng chứng đã chạy lại. Đây là mẫu tham
+khảo bám theo thay đổi v1 trong repo, không phải log commit thật.
+
+\subsubsection*{D.1. Năm lỗi bộ nhớ trong module C}
+\begin{lstlisting}[language=bash,caption={Commit mẫu cho CWE-401/415/416/122/121.}]
 fix(CWE-401): free owned items before parent in cancel_order
 - Free order->items before free(order); no ownership transfer
 - Add LeakSanitizer regression case order_fixed
-Verified: ASan/LSan clean (0 leaks, was: 5 leaked allocations)
+Verified: ASan/LSan clean (0 leaks; was 240 bytes in 5 allocations)
 
 fix(CWE-415): null transaction_code after first free
 - Set pointer to NULL so common cleanup free(NULL) is a no-op
 Verified: ASan clean (was: attempting double-free)
 
+fix(CWE-416): read product_id before freeing removed cart item
+- Copy product_id, then free(removed) and set removed = NULL
+- Log from the copy instead of the freed pointer
+Verified: ASan clean (was: heap-use-after-free)
+
+fix(CWE-122): reject product name of 32 bytes or more
+- Check strlen(input) >= NAME_CAPACITY before strcpy
+- Add boundary cases 0/1/31/32/128
+Verified: ASan clean (was: heap-buffer-overflow)
+
 fix(CWE-121): reject oversized email before strcpy
 - Check strlen(input) >= sizeof(email); reject instead of truncate
 - Add boundary cases 0/1/31/32/128
-Verified: ASan/CBMC/Valgrind clean
+Verified: ASan/CBMC/Valgrind clean (was: stack-buffer-overflow)
+\end{lstlisting}
+
+\subsubsection*{D.2. Lỗi thiết kế và nghiệp vụ trong API .NET}
+\begin{lstlisting}[language=bash,caption={Commit mẫu cho CWE-190/841/306/602/20/639.}]
+fix(CWE-190): validate cents and use checked arithmetic for totals
+- Require two-decimal money values via MoneyAmounts.RequireCents
+- Compute subtotal and total with checked(); reject overflow
+Verified: SMT payment 7/7 PASS; arithmetic unit tests PASS
+
+fix(CWE-841): enforce order state whitelist in Transition
+- Replace free-form status writes with CanTransition(from, to)
+- Reject CANCELLED -> PAID and every other illegal edge
+Verified: TLC 35 states/depth 9; state-machine tests PASS
+
+fix(CWE-306): require authentication on order and cart endpoints
+- Add [Authorize]; admin-only for confirm, complete and list-all
+- Derive customer id from User.GetRequiredUserId(), not from body
+Verified: 401/403 integration test PASS; HTTP fuzz: 601 requests, no 5xx
+
+fix(CWE-602): compute order total server-side from product prices
+- Ignore client TotalAmount; reload Product.Price and recompute
+- Reject mismatch above 0.01; never trust client unit price
+Verified: ClientCannotCreateOrderUsingTamperedPrice PASS
+
+fix(CWE-20): validate order bounds, quantities and totals
+- Bound item count, quantity 1..10000, price/total 0.01..999999.99
+- Check item subtotal and total consistency before persistence
+Verified: MismatchOrBelowMinimumPriceIsRejected PASS; boundary cases PASS
+
+fix(CWE-639): enforce ownership before cart/order access
+- Call User.CanAccessUser(ownerId) on every by-id read and write
+- Return 403 instead of exposing another user's resource
+Verified: Authentication_and_resource_ownership_are_enforced PASS
 \end{lstlisting}
 
 \subsection*{E. Quy ước phiên bản và ánh xạ}
