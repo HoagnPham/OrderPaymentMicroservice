@@ -119,6 +119,13 @@
     morecomment=[l]{\#},
     morestring=[b]"
 }
+\lstdefinelanguage{CSharp}{
+    keywords={abstract,as,async,await,base,bool,break,byte,case,catch,char,checked,class,const,continue,decimal,default,delegate,do,double,else,enum,event,explicit,extern,false,finally,fixed,float,for,foreach,goto,if,implicit,in,int,interface,internal,is,lock,long,namespace,new,null,object,operator,out,override,params,private,protected,public,readonly,record,ref,return,sbyte,sealed,short,sizeof,stackalloc,static,string,struct,switch,this,throw,true,try,typeof,uint,ulong,unchecked,unsafe,ushort,using,var,virtual,void,volatile,when,while,nameof},
+    sensitive=true,
+    morecomment=[l]{//},
+    morecomment=[s]{/*}{*/},
+    morestring=[b]"
+}
 
 \hypersetup{
     colorlinks=true,
@@ -196,7 +203,7 @@ nghiệp vụ không thể hoàn tác: khách bị trừ tiền hai lần, kho b
 không được tạo, đơn ở trạng thái ``đã hủy'' nhưng vẫn thanh toán được, hoặc sau
 khi tiến trình API chết thì hệ thống không biết giao dịch trước đó đã thành công
 hay chưa. Báo cáo này trình bày một hệ thống đơn hàng -- thanh toán viết bằng
-ASP.NET Core, dùng chung PostgreSQL, và quan trọng hơn là \textbf{cách kiểm chứng}
+ASP.NET Core, dùng chung PostgreSQL, và quan trọng hơn là \emph{cách kiểm chứng}
 các bất biến an toàn của nó bằng mô hình, SMT, phân tích bộ nhớ, fuzzing và kiểm
 thử phục hồi. Nội dung tương ứng các tuần của học phần về mô hình hóa và kiểm
 chứng, an toàn bộ nhớ, phân tích tĩnh/SMT và fuzzing.
@@ -290,7 +297,7 @@ Chưa thử provider thật, TLS/proxy, đa vùng hoặc Kubernetes \\
 \textbf{Thành phần} & \textbf{Công nghệ / phiên bản} \\
 \midrule
 Ứng dụng & .NET 10, ASP.NET Core, EF Core 8, Npgsql \\
-Cơ sở dữ liệu & PostgreSQL 18, migration + unique/CHECK constraints \\
+Cơ sở dữ liệu & PostgreSQL 16.x (Testcontainers.PostgreSql 4.15.0), migration + unique/CHECK constraints \\
 Kiểm thử & xUnit, Coverlet, WebApplicationFactory, Testcontainers/PostgreSQL local \\
 Mô hình & Python 3, JSON state model, TLA+ 1.7.4 (TLC) \\
 SMT/BMC & Z3, CBMC (unwind 64), CaDiCaL + drat-trim \\
@@ -351,8 +358,8 @@ Chrome CDP & headless, chặn response & Fuzz lỗi mạng phía UI \\
 \end{table}
 
 \subsection{Sinh dữ liệu và chính sách seed}
-Mọi campaign đều dùng seed cố định để tái lập: \textbf{20261009} cho fuzz .NET,
-\textbf{20261022} cho fuzz HTTP và C coverage-guided. Fuzz .NET chạy 25.000
+Mọi campaign đều dùng seed cố định để tái lập: 20261009 cho fuzz .NET,
+20261022 cho fuzz HTTP và C coverage-guided. Fuzz .NET chạy 25.000
 iteration cho campaign validator (order + payment) và 2.000 chuỗi trạng thái,
 mỗi chuỗi 20 bước. Fuzz HTTP
 gửi 500 mutation (tổng 601 request) lên API thật với PostgreSQL tạm; fuzz C chạy
@@ -369,9 +376,9 @@ chạy API thật và kiểm bất biến DB sau mỗi request; (iv) kịch bả
 PostgreSQL/API rồi khởi động lại, đối chiếu journal và số lần gọi gateway.
 
 \subsection{Ánh xạ v0/v1 trong repository}
-Repo dùng hai biến thể \textbf{BUGGY} và \textbf{FIXED} trên cùng một file C, chọn
+Repo dùng hai biến thể BUGGY và FIXED trên cùng một file C, chọn
 bằng \cmd{-UFIXED} và \cmd{-DFIXED}, thay vì hai file \texttt{*\_v0.c}/\texttt{*\_v1.c}.
-Trong báo cáo, \textbf{v0} tương ứng BUGGY và \textbf{v1} tương ứng FIXED; mọi
+Trong báo cáo, \texttt{v0} tương ứng BUGGY và \texttt{v1} tương ứng FIXED; mọi
 trích đoạn đều ghi rõ dòng gốc. Với hai lỗi ở tầng thiết kế (CWE-190, CWE-841),
 v0 là model ``buggy'' còn v1 là mã hiện tại đã có guard/validator tương ứng.
 
@@ -425,10 +432,8 @@ Giải phóng mảng con trước khi giải phóng cha. Bản v1 thêm dòng \c
 ngay trước \cmd{free(order)}; đây là sửa nguyên nhân gốc rễ chứ không chỉ làm im
 triệu chứng.
 
-\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{order.c}, dòng 14--17 (FIXED, \texttt{-DFIXED})},firstnumber=14]
-#ifdef FIXED
+\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{order.c}, dòng 14--17 (FIXED)},firstnumber=14]
     free(order->items);   /* v1: giai phong mang con truoc */
-#endif
     free(order);          /* ca v0 va v1 */
 \end{lstlisting}
 
@@ -454,15 +459,12 @@ CERT MEM31-C.
 ASan báo \cmd{AddressSanitizer: attempting double-free} và tiến trình dừng với mã
 khác 0. Log đầy đủ ở \path{security-analysis/c-memory/results/payment_buggy.log}.
 
-\begin{lstlisting}[language=C,numbers=none,caption={v0 -- trích \texttt{payment.c}, dòng 6--13},firstnumber=6]
+\begin{lstlisting}[language=C,numbers=none,caption={v0 -- trích \texttt{payment.c}, dòng 6--13 (BUGGY)},firstnumber=6]
 Payment payment = {1, allocate(32)};
 snprintf(payment.transaction_code, 32, "%s", "TX-DEMO-001");
 puts("Gateway failure: release transaction code");
 free(payment.transaction_code);      /* lan 1 */
-#ifdef FIXED
-    payment.transaction_code = NULL; /* v1 them dong nay */
-#endif
-free(payment.transaction_code);      /* BUG: lan 2 */
+free(payment.transaction_code);      /* BUG: lan 2, cung dia chi */
 \end{lstlisting}
 
 \paragraph{Cách vá.}
@@ -470,11 +472,10 @@ Sau khi giải phóng, gán con trỏ về \cmd{NULL}. Lần \cmd{free(NULL)} ti
 hợp lệ và không giải phóng lần hai; cách này loại bỏ trạng thái ``con trỏ treo''
 chứ không chỉ che lỗi.
 
-\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{payment.c}, dòng 10--13},firstnumber=10]
-#ifdef FIXED
-    payment.transaction_code = NULL; /* v1: khong con tro treo */
-#endif
-    free(payment.transaction_code);  /* free(NULL) an toan */
+\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{payment.c}, dòng 9--13 (FIXED)},firstnumber=9]
+free(payment.transaction_code);      /* lan 1 */
+payment.transaction_code = NULL;     /* v1: khong con tro treo */
+free(payment.transaction_code);      /* free(NULL) an toan */
 \end{lstlisting}
 
 \paragraph{Bằng chứng đã vá.}
@@ -498,11 +499,9 @@ không xác định. Đây là \cwe{416} (Use After Free), CERT MEM30-C.
 ASan báo \cmd{AddressSanitizer: heap-use-after-free}; exit code khác 0. Log đầy đủ
 ở \path{security-analysis/c-memory/results/cart_buggy.log}.
 
-\begin{lstlisting}[language=C,numbers=none,caption={v0 -- trích \texttt{cart.c}, dòng 15--18},firstnumber=15]
-#else
-    free(removed);
-    printf("Removed product %d\n", removed->product_id); /* BUG */
-#endif
+\begin{lstlisting}[language=C,numbers=none,caption={v0 -- trích \texttt{cart.c}, dòng 16--17 (BUGGY)},firstnumber=16]
+free(removed);
+printf("Removed product %d\n", removed->product_id); /* BUG: doc sau free */
 \end{lstlisting}
 
 \paragraph{Cách vá.}
@@ -510,13 +509,11 @@ Sao chép dữ liệu cần thiết (\cmd{product_id}) ra biến cục bộ \emp
 giải phóng, rồi log từ bản sao; sau đó đặt con trỏ về \cmd{NULL}. Cách này loại bỏ
 việc truy cập vùng nhớ đã free.
 
-\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{cart.c}, dòng 10--14},firstnumber=10]
-#ifdef FIXED
-    int product_id = removed->product_id; /* copy truoc khi free */
-    free(removed);
-    removed = NULL;
-    printf("Removed product %d\n", product_id);
-#endif
+\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{cart.c}, dòng 10--14 (FIXED)},firstnumber=10]
+int product_id = removed->product_id; /* copy truoc khi free */
+free(removed);
+removed = NULL;
+printf("Removed product %d\n", product_id);
 \end{lstlisting}
 
 \paragraph{Bằng chứng đã vá.}
@@ -551,15 +548,13 @@ Kiểm tra \cmd{strlen(input) >= NAME_CAPACITY} trước khi copy; nếu vượt
 input và giải phóng buffer. Bản vá chọn \emph{từ chối} thay vì cắt bớt âm thầm,
 để không tạo dữ liệu sai lệch.
 
-\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{product.c}, dòng 10--17},firstnumber=10]
-#ifdef FIXED
-    if (strlen(input) >= NAME_CAPACITY) {
-        puts("REJECTED: product name too long");
-        free(product.name);
-        return 0;
-    }
-#endif
-    strcpy(product.name, input);  /* an toan sau khi kiem tra */
+\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{product.c}, dòng 10--17 (FIXED)},firstnumber=10]
+if (strlen(input) >= NAME_CAPACITY) {
+    puts("REJECTED: product name too long");
+    free(product.name);
+    return 0;
+}
+strcpy(product.name, input);  /* an toan sau khi kiem tra */
 \end{lstlisting}
 
 \paragraph{Bằng chứng đã vá.}
@@ -595,14 +590,12 @@ Kiểm tra độ dài trước khi copy và từ chối input quá dài. Bản v
 \cmd{strlen(input) >= sizeof(email)}; cách khác tương đương là \cmd{snprintf} với
 kích thước đích.
 
-\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{user.c}, dòng 7--13},firstnumber=7]
-#ifdef FIXED
-    if (strlen(input) >= sizeof(email)) {
-        puts("REJECTED: email too long");
-        return;
-    }
-#endif
-    strcpy(email, input);   /* an toan sau khi kiem tra */
+\begin{lstlisting}[language=C,numbers=none,caption={v1 -- trích \texttt{user.c}, dòng 7--13 (FIXED)},firstnumber=7]
+if (strlen(input) >= sizeof(email)) {
+    puts("REJECTED: email too long");
+    return;
+}
+strcpy(email, input);   /* an toan sau khi kiem tra */
 \end{lstlisting}
 
 \paragraph{Bằng chứng đã vá.}
@@ -647,7 +640,7 @@ Ba lớp bảo vệ: (i) dùng \cmd{decimal} thay vì \cmd{int} cho tiền; (ii)
 của 0,01 thay vì làm tròn âm thầm. Với các ràng buộc này, TEST7 là \texttt{unsat}:
 không thể có subtotal vượt biên trong một đơn hợp lệ.
 
-\begin{lstlisting}[language=C,numbers=none,caption={v1 -- ràng buộc trong \texttt{PaymentValidator.cs}, dòng 37--40},firstnumber=37]
+\begin{lstlisting}[language=CSharp,numbers=none,caption={v1 -- ràng buộc trong \texttt{PaymentValidator.cs}, dòng 37--40},firstnumber=37]
 if (request.Amount > MAX_PAYMENT_AMOUNT)
     throw new ArgumentException($"Amount cannot exceed {MAX_PAYMENT_AMOUNT}", nameof(request.Amount));
 
@@ -673,7 +666,50 @@ Thiếu kiểm tra trạng thái đơn trước khi tạo thanh toán. Nếu ch�
 \cmd{OrderId}, một request đến sau khi đơn đã hủy vẫn tạo được payment; đây là
 \cwe{841} (Improper Enforcement of Behavioral Workflow), không phải lỗi bộ nhớ.
 Lỗi tương tự cũng có thể xuất hiện dưới dạng double charge nếu hai request đồng
-thời cùng vượt qua bước kiểm tra.
+thời cùng vượt qua bước kiểm tra. Hình~\ref{fig:order-state} trực quan hóa bảng
+chuyển tiếp và chuyển tiếp bất hợp lệ.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+  font=\scriptsize,
+  st/.style={draw, rounded corners=2pt, align=center, inner sep=3pt, minimum height=7mm},
+  term/.style={st, double},
+  ar/.style={-{Latex[length=1.8mm]}, thick},
+  bad/.style={-{Latex[length=1.8mm]}, thick, dashed, draw=red!80!black}
+]
+\node[st] (c)  at (0,0)       {CREATED};
+\node[st] (v)  at (2.4,0)     {VALIDATED};
+\node[st] (pp) at (5.2,0)     {PAYMENT\_PENDING};
+\node[st] (p)  at (8.0,0)     {PAID};
+\node[st] (cf) at (10.1,0)    {CONFIRMED};
+\node[term] (cp) at (12.6,0)  {COMPLETED};
+\node[term] (cx) at (0,-2.0)  {CANCELLED};
+\node[term] (fl) at (5.2,-2.0){FAILED};
+\node[st] (rp) at (8.0,-2.0)  {REFUND\_PENDING};
+\node[term] (rf) at (10.8,-2.0){REFUNDED};
+
+\draw[ar] (c) -- (v);
+\draw[ar] (v) -- (pp);
+\draw[ar] (pp) -- (p);
+\draw[ar] (p) -- (cf);
+\draw[ar] (cf) -- (cp);
+\draw[ar] (pp) -- (fl) node[midway,right,font=\tiny]{fail};
+\draw[ar] (p) -- (rp);
+\draw[ar] (cf) -- (rp);
+\draw[ar] (rp) -- (rf);
+\draw[ar] (c.south) -- (cx.north);
+\draw[ar] (pp.south west) to[bend right=30] (cx.east);
+\draw[bad] (cx.south) to[bend right=35]
+  node[below,font=\tiny,text=red!80!black,align=center]
+  {v0: thiếu guard\\ \texttt{CANCELLED -> PAID}} (p.south);
+\end{tikzpicture}
+\caption{Trừu tượng hóa máy trạng thái Order (rút từ \texttt{OrderStateMachine.cs}).
+Nét liền là chuyển tiếp hợp lệ; nét đứt đỏ là chuyển tiếp bất hợp lệ
+\texttt{CANCELLED -> PAID} mà mô hình v0 cho phép và bản v1 chặn bằng guard trạng
+thái nguồn. Ô nét đôi là trạng thái kết thúc.}
+\label{fig:order-state}
+\end{figure}
 
 \paragraph{Bằng chứng lỗi tồn tại.}
 Checker trả \cmd{P1 holds=false} với witness states/events ghi rõ
@@ -693,7 +729,7 @@ Checker trả \cmd{P1 holds=false} với witness states/events ghi rõ
 tiếp để mọi đường đi đều phải qua \cmd{OrderStateMachine}. Thêm khóa idempotency,
 unique constraint và transaction \cmd{Serializable} để chặn hai request đồng thời.
 
-\begin{lstlisting}[language=C,numbers=left,caption={v1 -- guard trong \texttt{PaymentService.cs}, dòng 44--60},firstnumber=44]
+\begin{lstlisting}[language=CSharp,numbers=left,caption={v1 -- guard trong \texttt{PaymentService.cs}, dòng 44--60},firstnumber=44]
 var previousAttempt = order.Payments.FirstOrDefault(candidate =>
     candidate.IdempotencyKey == request.IdempotencyKey);
 if (previousAttempt != null)
@@ -723,14 +759,25 @@ tử, kill API) đều PASS. Phần 5 trình bày thêm kịch bản recovery.
 \clearpage
 \section{Bảng tổng hợp before/after}
 
-\scriptsize
-\renewcommand{\arraystretch}{1.2}
-\begin{longtable}{@{}L{1.3cm} L{3.2cm} L{3.7cm} L{3.7cm} L{2.2cm}@{}}
+\footnotesize
+\renewcommand{\arraystretch}{1.25}
+\begin{longtable}{@{}L{1.3cm} L{3.2cm} L{3.5cm} L{3.5cm} L{2.4cm}@{}}
+\caption{Bảng before/after bắt buộc. Mỗi dòng tương ứng đúng một mục ở Phần 4;
+``v0/v1'' của C được chọn bằng \texttt{-UFIXED}/\texttt{-DFIXED}.}
+\label{tab:beforeafter}\\
+\toprule
+\textbf{CWE} & \textbf{Vị trí} & \textbf{Trạng thái v0 (BUGGY)} &
+\textbf{Trạng thái v1 (FIXED)} & \textbf{Công cụ xác minh} \\
+\midrule
+\endfirsthead
+\multicolumn{5}{@{}l}{\small\itshape (tiếp theo Bảng~\ref{tab:beforeafter})}\\
 \toprule
 \textbf{CWE} & \textbf{Vị trí} & \textbf{Trạng thái v0 (BUGGY)} &
 \textbf{Trạng thái v1 (FIXED)} & \textbf{Công cụ xác minh} \\
 \midrule
 \endhead
+\bottomrule
+\endlastfoot
 CWE-401 & \path{order.c:6--18} &
 LeakSanitizer: \texttt{detected memory leaks}, exit 1 &
 Sạch leak, exit 0 &
@@ -765,10 +812,6 @@ CWE-841 & \texttt{model BUGGY (JSON)} &
 P1 false: PAID\_AFTER\_CANCELLED &
 15/15 property; guard + transition + idempotency &
 Model; TLC; 35 integration \\
-\bottomrule
-\caption{Bảng before/after bắt buộc. Mỗi dòng tương ứng đúng một mục ở Phần 4;
-``v0/v1'' của C được chọn bằng \texttt{-UFIXED}/\texttt{-DFIXED}.}
-\label{tab:beforeafter}\\
 \end{longtable}
 
 % =====================================================================
@@ -864,44 +907,113 @@ product/user, tất cả exit 0 và sạch sanitizer.}
 \label{tab:sanitizer}
 \end{table}
 
-\screenshot{Chạy \cmd{make -C security-analysis/c-memory test} và chụp 10 dòng cuối
-(danh sách 22 case, dòng tổng kết \texttt{22/22 PASS}). Cắt bớt phần build để ảnh
-đọc được ở cỡ in.}{Bộ 22 ca sanitizer PASS; mỗi ca BUGGY có đúng
+\screenshot{\textbf{Lệnh:} \cmd{make -C security-analysis/c-memory test}.
+\textbf{Vùng chụp:} 22 dòng \texttt{PASS <case>} do \texttt{tests/check\_memory.py}
+in ra (mỗi ca một dòng; không có dòng tổng kết dạng ``22/22''). \textbf{Cắt:} bỏ
+phần build/compile phía trên. \textbf{Khoanh đậm:} các dòng của 5 cặp
+\texttt{order/payment/cart/product/user}. \textbf{Tệp gợi ý:}
+\texttt{anh-01-sanitizer.png}}{Bộ 22 ca sanitizer PASS; mỗi ca BUGGY có đúng
 diagnostic, mỗi ca FIXED sạch.}
 
-\screenshot{Chạy riêng \cmd{ASAN_OPTIONS=detect_leaks=1:halt_on_error=1
-security-analysis/c-memory/build/order_buggy} và bản \cmd{order_fixed}; chụp hai
-terminal cạnh nhau, tô đậm dòng \texttt{LeakSanitizer} và \texttt{exit=0}.}
+\screenshot{\textbf{Lệnh:} \cmd{ASAN_OPTIONS=detect_leaks=1:halt_on_error=1
+security-analysis/c-memory/build/order_buggy} và \cmd{...build/order_fixed}.
+\textbf{Vùng chụp:} hai terminal cạnh nhau. \textbf{Khoanh đậm:}
+\texttt{LeakSanitizer: detected memory leaks} bên BUGGY; dòng exit 0 không
+diagnostic bên FIXED. \textbf{Tệp gợi ý:} \texttt{anh-02-cwe401-truoc-sau.png}}
 {Trước/sau CWE-401: bản BUGGY rò rỉ, bản FIXED sạch.}
 
-\screenshot{Chạy \cmd{make -C security-analysis/c-memory bmc-check} và
-\cmd{valgrind-check}; chụp phần tổng kết 10/10 của mỗi công cụ.}{CBMC
+\screenshot{\textbf{Lệnh:} \cmd{make -C security-analysis/c-memory bmc-check} rồi
+\cmd{valgrind-check}. \textbf{Vùng chụp:} dòng tổng kết \texttt{10/10} của mỗi
+công cụ (mỗi công cụ in đúng một dòng \texttt{PASS}/\texttt{FAIL}). \textbf{Khoanh
+đậm:} \texttt{VERIFICATION SUCCESSFUL} (CBMC) và \texttt{clean Memcheck run}
+(Valgrind). \textbf{Tệp gợi ý:} \texttt{anh-03-cbmc-valgrind.png}}{CBMC
 (bound 64) và Valgrind Memcheck đều 10/10.}
 
 \subsection{Bằng chứng mô hình, SMT và TLC}
-\screenshot{Chạy \cmd{python3 security-analysis/verify_payment_smt.py} và
-\cmd{python3 security-analysis/run_tlc.py --jar tmp/tools/tla2tools.jar}; chụp
-dòng \texttt{7/7 PASS} và dòng TLC \texttt{35 states generated}.}{SMT
-payment 7/7 và TLC 35 trạng thái, depth 9.}
+\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/verify_payment_smt.py} và
+\cmd{python3 security-analysis/run_tlc.py --jar tmp/tools/tla2tools.jar}.
+\textbf{Vùng chụp:} dòng \texttt{7/7 PASS} của SMT và dòng \texttt{35 states
+generated} của TLC. \textbf{Khoanh đậm:} \texttt{TEST6 ... sat} và \texttt{TEST7
+... unsat}. \textbf{Tệp gợi ý:} \texttt{anh-04-smt-tlc.png}}{SMT payment 7/7 và TLC
+35 trạng thái, depth 9.}
 
-\screenshot{Chạy \cmd{make -C security-analysis/c-memory sat-check}; chụp phần
-\texttt{10/10} và một dòng \texttt{DRAT proof verified}.}{Pipeline
+\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/verify_recovery_model.py}.
+\textbf{Vùng chụp:} dòng \texttt{P1 holds=false} và witness
+\texttt{CREATED -> CANCELLED -> PAID\_AFTER\_CANCELLED} của model v0.
+\textbf{Tệp gợi ý:} \texttt{anh-10-model-witness.png}}{Mô hình v0 để lộ chuyển
+tiếp bất hợp lệ (đối chiếu Hình~\ref{fig:order-state}); bản v1 chặn tại chỗ.}
+
+\screenshot{\textbf{Lệnh:} \cmd{make -C security-analysis/c-memory sat-check}.
+\textbf{Vùng chụp:} dòng tổng kết \texttt{10/10} và một dòng \texttt{s VERIFIED}
+của \texttt{drat-trim}. \textbf{Tệp gợi ý:} \texttt{anh-05-sat-drat.png}}{Pipeline
 CNF/DIMACS + CaDiCaL + DRAT + UNSAT core đạt 10/10.}
 
 \subsection{Bằng chứng fuzzing và coverage}
-\screenshot{Chạy \cmd{python3 security-analysis/run_fuzzing.py}; chụp dòng
-\texttt{Passed: 4}, \texttt{line 91.05\%}, \texttt{branch 97.50\%}.}{Bộ 4 test fuzz
-.NET 4/4 và coverage dòng/nhánh của 5 target.}
+\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/run_fuzzing.py}.
+\textbf{Vùng chụp:} dòng \texttt{Passed: 4}, \texttt{branch 97.50\%} và dòng
+\texttt{Fuzzing evidence:}. \textbf{Khoanh đậm:} \texttt{Passed: 4}. \textbf{Tệp
+gợi ý:} \texttt{anh-06-fuzz-coverage.png}}{Bộ 4 test fuzz .NET 4/4 và coverage
+dòng/nhánh của 5 target.}
 
-\screenshot{Chạy \cmd{python3 security-analysis/http_fuzz.py --iterations 500 --no-build};
-chụp JSON tổng kết \texttt{requests: 601}, \texttt{5xx: 0}, \texttt{failures: 0}.}
-{Fuzz HTTP black-box trên API + PostgreSQL thật.}
+\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/http_fuzz.py --iterations 500 --no-build}.
+\textbf{Vùng chụp:} JSON tổng kết. \textbf{Khoanh đậm:} \texttt{requests: 601},
+\texttt{5xx: 0}, \texttt{failures: 0}. \textbf{Tệp gợi ý:}
+\texttt{anh-07-http-fuzz.png}}{Fuzz HTTP black-box trên API + PostgreSQL thật.}
+
+\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/browser/network_fuzz.py}.
+\textbf{Vùng chụp:} dòng kết quả và bảng 8 scenario của Chrome thật.
+\textbf{Khoanh đậm:} 7 dòng fault hiện trạng thái error + nút retry (ví dụ ô
+\texttt{products-state-error}). \textbf{Tệp gợi ý:} \texttt{anh-09-browser-cdp.png}}
+{Chrome thật bị chặn response \texttt{/api/products}; 7/7 fault hiện error state + retry.}
 
 \subsection{Bằng chứng phục hồi}
-\screenshot{Chạy \cmd{python3 security-analysis/run_recovery_demo.py}; chụp hai
-dòng \texttt{charge: PASS} và \texttt{refund: PASS} cùng chuỗi
-\texttt{200 -> 503 -> 200}.}{Charge/refund phục hồi sau PostgreSQL
-stop/start, cùng process API, không gọi lại gateway.}
+\screenshot{\textbf{Lệnh:} \cmd{python3 security-analysis/run_recovery_demo.py}.
+\textbf{Vùng chụp:} hai dòng \texttt{charge: PASS} và \texttt{refund: PASS} cùng
+chuỗi \texttt{200 -> 503 -> 200}. \textbf{Tệp gợi ý:}
+\texttt{anh-08-recovery.png}}{Charge/refund phục hồi sau PostgreSQL stop/start,
+cùng process API, không gọi lại gateway.}
+
+\subsection{Hướng dẫn chụp ảnh chi tiết}
+Mỗi ảnh chỉ nên chứa một vùng nhỏ, đọc được ở cỡ in; caption phải nêu rõ ảnh chứng
+minh CWE nào hoặc bản vá nào. Quy tắc chung: (i) terminal cỡ chữ $\ge$ 12pt;
+(ii) cắt bỏ phần build/compile; (iii) khoanh đỏ dòng quyết định (diagnostic hoặc
+\texttt{PASS}/\texttt{FAIL}); (iv) không chụp dữ liệu nhạy cảm (connection string,
+token, khóa JWT); (v) lưu PNG tên \texttt{anh-NN-mo-ta.png} cùng thư mục với file
+\texttt{.tex}; (vi) thay khung \texttt{[CHÈN ẢNH...]} bằng
+\verb|\includegraphics[width=0.95\textwidth]{anh-NN-mo-ta.png}|.
+
+\begin{table}[H]
+\centering
+\footnotesize
+\renewcommand{\arraystretch}{1.2}
+\begin{tabularx}{\textwidth}{@{}L{0.9cm} L{3.5cm} L{4.0cm} L{4.3cm}@{}}
+\toprule
+\textbf{Ảnh} & \textbf{Vùng chụp} & \textbf{Khoanh đậm / cắt} & \textbf{Tệp gợi ý} \\
+\midrule
+anh-01 & 22 dòng \texttt{PASS} của sanitizer & cắt build; khoanh 5 cặp buggy/fixed & \texttt{anh-01-sanitizer.png} \\
+\addlinespace
+anh-02 & \texttt{order\_buggy} vs \texttt{order\_fixed} & khoanh \texttt{LeakSanitizer} và exit 0 & \texttt{anh-02-cwe401-truoc-sau.png} \\
+\addlinespace
+anh-03 & CBMC + Valgrind 10/10 & khoanh \texttt{VERIFICATION SUCCESSFUL} & \texttt{anh-03-cbmc-valgrind.png} \\
+\addlinespace
+anh-04 & SMT 7/7 + TLC 35 states & khoanh TEST6 \texttt{sat}/TEST7 \texttt{unsat} & \texttt{anh-04-smt-tlc.png} \\
+\addlinespace
+anh-05 & SAT/DRAT 10/10 & khoanh \texttt{s VERIFIED} & \texttt{anh-05-sat-drat.png} \\
+\addlinespace
+anh-06 & Fuzz .NET 4/4 + coverage & khoanh \texttt{Passed: 4} & \texttt{anh-06-fuzz-coverage.png} \\
+\addlinespace
+anh-07 & HTTP fuzz 601 request & khoanh \texttt{5xx: 0}, \texttt{failures: 0} & \texttt{anh-07-http-fuzz.png} \\
+\addlinespace
+anh-08 & Recovery 200$\to$503$\to$200 & khoanh \texttt{charge/refund: PASS} & \texttt{anh-08-recovery.png} \\
+\addlinespace
+anh-09 & Browser CDP 8 scenario & khoanh 7 fault hiện error + retry & \texttt{anh-09-browser-cdp.png} \\
+\addlinespace
+anh-10 & Witness của model v0 & khoanh \texttt{P1 holds=false} & \texttt{anh-10-model-witness.png} \\
+\bottomrule
+\end{tabularx}
+\caption{Checklist chụp ảnh: vùng chụp, phần cần khoanh/cắt và tên tệp gợi ý.}
+\label{tab:screenshot-guide}
+\end{table}
 
 \subsection{Bảng seed và số lần chạy}
 \begin{table}[H]
@@ -962,6 +1074,15 @@ C, trong khi ASan chỉ thấy lỗi khi chương trình thực sự chạy đú
 Yêu cầu: .NET 10 SDK, Python 3.10+, GCC/Make, Cppcheck, CBMC, Valgrind, Z3,
 Java + \texttt{tla2tools.jar}, Chrome cho test browser; PostgreSQL binaries cho
 integration/recovery; CaDiCaL + drat-trim cho pipeline SAT. Chạy từ gốc repository.
+
+Cài TLA+ một lần (nếu chưa có \texttt{tmp/tools/tla2tools.jar}):
+\begin{lstlisting}[language=bash,caption={Tải tla2tools.jar cho TLC}]
+mkdir -p tmp/tools
+curl --fail --location --retry 2 \
+  https://github.com/tlaplus/tlaplus/releases/download/v1.7.4/tla2tools.jar \
+  --output tmp/tools/tla2tools.jar
+\end{lstlisting}
+
 \begin{lstlisting}[language=bash,caption={Build và chạy kiểm chứng từ gốc repository}]
 dotnet restore OrderPaymentMicroservice.slnx
 dotnet build OrderPaymentMicroservice.slnx --no-restore --nologo
@@ -1089,9 +1210,11 @@ ghi rõ dòng nào thuộc biến thể nào; không sửa file gốc sau khi đ
 Ảnh 6 & Fuzz 4/4 + coverage & \cmd{run_fuzzing.py} \\
 Ảnh 7 & HTTP fuzz 601 request & \cmd{http_fuzz.py --iterations 500 --no-build} \\
 Ảnh 8 & Recovery 200$\rightarrow$503$\rightarrow$200 & \cmd{run_recovery_demo.py} \\
+Ảnh 9 & Browser CDP 8 scenario & \cmd{browser/network_fuzz.py} \\
+Ảnh 10 & Witness model v0 & \cmd{verify_recovery_model.py} \\
 \bottomrule
 \end{tabularx}
-\caption{Danh sách ảnh cần chụp. Thay mỗi khung \texttt{[CHÈN ẢNH...]} bằng lệnh
+\caption{Danh sách 10 ảnh cần chụp (chi tiết vùng chụp ở Bảng~\ref{tab:screenshot-guide}). Thay mỗi khung \texttt{[CHÈN ẢNH...]} bằng lệnh
 chèn ảnh của LaTeX với tệp \texttt{ten-anh.png} đặt cùng thư mục với file .tex.}
 \end{table}
 
