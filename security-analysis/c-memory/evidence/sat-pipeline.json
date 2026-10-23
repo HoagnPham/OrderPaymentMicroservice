@@ -71,7 +71,7 @@
         "",
         "s VERIFIED",
         "",
-        "c verification time: 0.042 seconds"
+        "c verification time: 0.044 seconds"
       ],
       "drat_command": "/tmp/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.core.cnf -w",
       "core": "results/sat/order_fixed.core.cnf",
@@ -165,7 +165,7 @@
         "",
         "s VERIFIED",
         "",
-        "c verification time: 0.042 seconds"
+        "c verification time: 0.040 seconds"
       ],
       "drat_command": "/tmp/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.core.cnf -w",
       "core": "results/sat/cart_fixed.core.cnf",
@@ -212,7 +212,7 @@
         "",
         "s VERIFIED",
         "",
-        "c verification time: 0.064 seconds"
+        "c verification time: 0.068 seconds"
       ],
       "drat_command": "/tmp/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.core.cnf -w",
       "core": "results/sat/product_fixed.core.cnf",
@@ -259,7 +259,7 @@
         "",
         "s VERIFIED",
         "",
-        "c verification time: 0.051 seconds"
+        "c verification time: 0.045 seconds"
       ],
       "drat_command": "/tmp/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.core.cnf -w",
       "core": "results/sat/user_fixed.core.cnf",

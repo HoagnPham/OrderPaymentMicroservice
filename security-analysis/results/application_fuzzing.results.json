@@ -31,7 +31,7 @@
     "PaymentStateMachine",
     "MoneyAmounts"
   ],
-  "run_at_utc": "2026-10-22T10:46:01.765602+00:00",
+  "run_at_utc": "2026-10-23T04:49:29.009030+00:00",
   "source_sha256": {
     "OrderPaymentMicroservice/Security/InputValidator.cs": "f7f36ac4cc45677b82b81e35ae4353fb5dd5201188d2d476f13097d5cb7e2d08",
     "OrderPaymentMicroservice/Security/PaymentValidator.cs": "5469e801a502c8a7bcfa623150edb4c34575a9f336750dbe405413f9e9baa387",
@@ -44,7 +44,7 @@
   "crash_policy": "ArgumentException is a controlled rejection; timeout, any other exception, invariant mismatch or test failure is a crash.",
   "timeout_seconds": 120,
   "timed_out": false,
-  "duration_seconds": 3.264,
+  "duration_seconds": 13.045,
   "tests": {
     "passed": 4,
     "failed": 0,

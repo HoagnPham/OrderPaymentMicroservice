@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "passed": true,
-  "run_at_utc": "2026-10-22T10:49:17.084852+00:00",
+  "run_at_utc": "2026-10-23T04:53:49.826568+00:00",
   "scope": {
     "layer": "Chrome CDP Fetch interception over a real local API/PostgreSQL",
     "not_claimed": "real proxy/WAN, TLS, mobile/browser matrix, code coverage, production deployment"
@@ -201,7 +201,7 @@
     "passed": true,
     "all_javascript_errors": []
   },
-  "duration_seconds": 9.723,
+  "duration_seconds": 10.261,
   "source_sha256": {
     "security-analysis/browser/network_fuzz.py": "97604164ac9ae2d94441f64f70b32465122926327849a3829153de8a6e88d42f",
     "OrderPaymentMicroservice/wwwroot/js/app.js": "4999dafab89e736a2ea1cf3f0db8cd778cb4fb05d181d8de39fbaf4e2f47bfc6",

@@ -1,8 +1,8 @@
 {
   "passed": true,
-  "run_at_utc": "2026-10-22T10:33:05.4201556Z",
+  "run_at_utc": "2026-10-23T04:56:17.9059499Z",
   "operation": "charge",
-  "api_pid": 571298,
+  "api_pid": 693909,
   "api_restarted": false,
   "postgres_data_preserved": true,
   "connection_pooling": true,
@@ -18,7 +18,7 @@
     "recovery_scan_failures": 1,
     "recovery_attempts": 1,
     "recovery_resolved": 1,
-    "last_completed_scan_unix_ms": 1792665185265,
+    "last_completed_scan_unix_ms": 1792731377723,
     "scope": "this_process_since_start"
   },
   "gateway_calls": {
@@ -31,7 +31,7 @@
   "attempt_count": 1,
   "idempotency_keys_preserved": true,
   "journal_hashes": {
-    "7878474F95476728F346E43595CFE99863BAC684B477EE7417407D0107115C7D.json": "9C4896E75342F34399F547405BC043948A590E4770C8B0F85CD6DF04C07BA6D4"
+    "7E4B099DE439A9FD10AD18E2233EB0B8FD09761890768FA0EE118A334548A43E.json": "A87E0440956B6D9262F25500C7CC40FBB3FDF581AFBD99838F6EA093C0ABE96E"
   },
   "inventory_reservation_count": 1,
   "inventory_release_count": 0,
@@ -44,43 +44,43 @@
   "timeline": [
     {
       "step": "READY_200_BEFORE",
-      "elapsed_ms": 2399.7609
+      "elapsed_ms": 3435.0334
     },
     {
       "step": "GATEWAY_JOURNAL_PUBLISHED_LOCAL_FINALIZE_BLOCKED",
-      "elapsed_ms": 2826.8195
+      "elapsed_ms": 4093.6226
     },
     {
       "step": "POSTGRES_STOPPED_DATA_DIRECTORY_RETAINED",
-      "elapsed_ms": 3249.7883
+      "elapsed_ms": 4577.8849
     },
     {
       "step": "READY_503_LIVE_200",
-      "elapsed_ms": 3292.5372
+      "elapsed_ms": 4615.3125
     },
     {
       "step": "ORIGINAL_FINALIZE_FAILED_WHILE_DB_OFF",
-      "elapsed_ms": 3334.3709
+      "elapsed_ms": 4679.8405
     },
     {
       "step": "RECOVERY_SCAN_DURING_OUTAGE",
-      "elapsed_ms": 9847.2755
+      "elapsed_ms": 11198.2041
     },
     {
       "step": "SAME_POSTGRES_CLUSTER_RESTARTED",
-      "elapsed_ms": 9963.7629
+      "elapsed_ms": 11313.7239
     },
     {
       "step": "READY_200_AFTER",
-      "elapsed_ms": 9977.5106
+      "elapsed_ms": 11330.0596
     },
     {
       "step": "WORKER_RECONCILED_WITHOUT_API_RESTART",
-      "elapsed_ms": 11739.4635
+      "elapsed_ms": 12263.77
     },
     {
       "step": "SAME_KEY_REPLAY_NO_ADDITIONAL_GATEWAY_MUTATION",
-      "elapsed_ms": 11857.2577
+      "elapsed_ms": 12377.6721
     }
   ],
   "source_sha256": {
