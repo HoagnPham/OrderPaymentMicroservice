@@ -9,13 +9,13 @@
     },
     "cadical": {
       "name": "cadical",
-      "path": "/tmp/opencode/cadical_deb/root/usr/bin/cadical",
+      "path": "/usr/bin/cadical",
       "version": "1.7.3",
       "sha256": "7b73df0a6d9cf3c751a1948300e5baff8e82c4d39bcd88f0c063b5f5cfb8b33e"
     },
     "drat_trim": {
       "name": "drat-trim",
-      "path": "/tmp/opencode/drat-trim/drat-trim",
+      "path": "/tmp/drat-trim/drat-trim",
       "version": "source build (no --version support)",
       "sha256": "92f0aa9575ed519d66a99b8b1b3dde6ece4618ae4c202a3a4b200265dda0aa7a"
     }
@@ -46,7 +46,7 @@
       "solver_verdict": "sat",
       "model_literals": 9179,
       "model_satisfies_cnf": true,
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_buggy.cnf",
+      "solver_command": "/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_buggy.cnf",
       "passed": true
     },
     {
@@ -60,7 +60,7 @@
       "expected": "unsat",
       "solver_exit": 20,
       "solver_verdict": "unsat",
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.drat",
+      "solver_command": "/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.drat",
       "proof": "results/sat/order_fixed.drat",
       "proof_sha256": "879b01e35a9763ffee65fc78c87e2ccc0e375fcc564de1a83f9f8dff87d35a2b",
       "proof_bytes": 16073,
@@ -71,9 +71,9 @@
         "",
         "s VERIFIED",
         "",
-        "c verification time: 0.057 seconds"
+        "c verification time: 0.042 seconds"
       ],
-      "drat_command": "/tmp/opencode/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.core.cnf -w",
+      "drat_command": "/tmp/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/order_fixed.core.cnf -w",
       "core": "results/sat/order_fixed.core.cnf",
       "core_sha256": "42a48ad41d4b88d49404aa08fa36739425ed3fca89220b28deb9d35785702299",
       "core_clauses": 255,
@@ -93,7 +93,7 @@
       "solver_verdict": "sat",
       "model_literals": 1772,
       "model_satisfies_cnf": true,
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_buggy.cnf",
+      "solver_command": "/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_buggy.cnf",
       "passed": true
     },
     {
@@ -107,7 +107,7 @@
       "expected": "unsat",
       "solver_exit": 20,
       "solver_verdict": "unsat",
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.drat",
+      "solver_command": "/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.drat",
       "proof": "results/sat/payment_fixed.drat",
       "proof_sha256": "e411431ba40ac12c27b0f99a948b3dd8601039d5d89ad1cdd764acf83cbc39e1",
       "proof_bytes": 4112,
@@ -118,9 +118,9 @@
         "",
         "s VERIFIED",
         "",
-        "c verification time: 0.066 seconds"
+        "c verification time: 0.042 seconds"
       ],
-      "drat_command": "/tmp/opencode/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.core.cnf -w",
+      "drat_command": "/tmp/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/payment_fixed.core.cnf -w",
       "core": "results/sat/payment_fixed.core.cnf",
       "core_sha256": "5a0ccc4ae642de786606d40506e7b60c6fbaf497e4840d663ea22b6555eec8a2",
       "core_clauses": 7,
@@ -140,7 +140,7 @@
       "solver_verdict": "sat",
       "model_literals": 1107,
       "model_satisfies_cnf": true,
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_buggy.cnf",
+      "solver_command": "/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_buggy.cnf",
       "passed": true
     },
     {
@@ -154,7 +154,7 @@
       "expected": "unsat",
       "solver_exit": 20,
       "solver_verdict": "unsat",
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.drat",
+      "solver_command": "/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.drat",
       "proof": "results/sat/cart_fixed.drat",
       "proof_sha256": "536da4233a75018885ac2563fb9c3845c632ba90e328fcd4bff25a9a93a9d258",
       "proof_bytes": 1501,
@@ -165,9 +165,9 @@
         "",
         "s VERIFIED",
         "",
-        "c verification time: 0.055 seconds"
+        "c verification time: 0.042 seconds"
       ],
-      "drat_command": "/tmp/opencode/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.core.cnf -w",
+      "drat_command": "/tmp/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/cart_fixed.core.cnf -w",
       "core": "results/sat/cart_fixed.core.cnf",
       "core_sha256": "c3114a158c139ae75ef380f589933380ce600d16134b5a306fd9b7dc52b31ce4",
       "core_clauses": 7,
@@ -187,7 +187,7 @@
       "solver_verdict": "sat",
       "model_literals": 9153,
       "model_satisfies_cnf": true,
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_buggy.cnf",
+      "solver_command": "/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_buggy.cnf",
       "passed": true
     },
     {
@@ -201,7 +201,7 @@
       "expected": "unsat",
       "solver_exit": 20,
       "solver_verdict": "unsat",
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.drat",
+      "solver_command": "/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.drat",
       "proof": "results/sat/product_fixed.drat",
       "proof_sha256": "8749c08383a70053b4b5ab523c58acaa366f9d3ed33c9fda9b997dfd9d773051",
       "proof_bytes": 64365,
@@ -212,9 +212,9 @@
         "",
         "s VERIFIED",
         "",
-        "c verification time: 0.058 seconds"
+        "c verification time: 0.064 seconds"
       ],
-      "drat_command": "/tmp/opencode/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.core.cnf -w",
+      "drat_command": "/tmp/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/product_fixed.core.cnf -w",
       "core": "results/sat/product_fixed.core.cnf",
       "core_sha256": "bd9f2052223f2d8f7a8a84c522b89def2661e454463ba5508cfd746d6356737c",
       "core_clauses": 3451,
@@ -234,7 +234,7 @@
       "solver_verdict": "sat",
       "model_literals": 2940,
       "model_satisfies_cnf": true,
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_buggy.cnf",
+      "solver_command": "/usr/bin/cadical /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_buggy.cnf",
       "passed": true
     },
     {
@@ -248,7 +248,7 @@
       "expected": "unsat",
       "solver_exit": 20,
       "solver_verdict": "unsat",
-      "solver_command": "/tmp/opencode/cadical_deb/root/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.drat",
+      "solver_command": "/usr/bin/cadical --no-binary --checkproof=true /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.drat",
       "proof": "results/sat/user_fixed.drat",
       "proof_sha256": "0dc37a4450d874997d3936e008d108bc39d70365e46557086a8418adf8381214",
       "proof_bytes": 26506,
@@ -259,9 +259,9 @@
         "",
         "s VERIFIED",
         "",
-        "c verification time: 0.048 seconds"
+        "c verification time: 0.051 seconds"
       ],
-      "drat_command": "/tmp/opencode/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.core.cnf -w",
+      "drat_command": "/tmp/drat-trim/drat-trim /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.cnf /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.drat -c /home/phamhoang/OrderPaymentMicroservice/security-analysis/c-memory/results/sat/user_fixed.core.cnf -w",
       "core": "results/sat/user_fixed.core.cnf",
       "core_sha256": "70823027a9beffaeb71a902bded0449277be3c76923e5789ca209f5cb9ff6d79",
       "core_clauses": 3214,

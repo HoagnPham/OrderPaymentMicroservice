@@ -1,16 +1,16 @@
 TLC2 Version 2.19 of 08 August 2024 (rev: 5a47802)
-Running breadth-first search Model-Checking with fp 18 and seed -3882506834015067198 with 1 worker on 4 cores with 1890MB heap and 64MB offheap memory [pid: 35739] (Linux 7.0.0-34-generic amd64, Ubuntu 17.0.20.1 x86_64, MSBDiskFPSet, DiskStateQueue).
+Running breadth-first search Model-Checking with fp 104 and seed -4860882442408770376 with 1 worker on 4 cores with 1890MB heap and 64MB offheap memory [pid: 577906] (Linux 7.0.0-34-generic amd64, Ubuntu 21.0.12.1 x86_64, MSBDiskFPSet, DiskStateQueue).
 Parsing file /home/phamhoang/OrderPaymentMicroservice/OrderPaymentMicroservice/Security/OrderPayment.tla
 Parsing file /tmp/Naturals.tla
 Semantic processing of module Naturals
 Semantic processing of module OrderPayment
-Starting... (2026-10-15 16:20:17)
+Starting... (2026-10-22 17:39:57)
 Implied-temporal checking--satisfiability problem has 1 branches.
 Computing initial states...
-Finished computing initial states: 1 distinct state generated at 2026-10-15 16:20:17.
-Progress(9) at 2026-10-15 16:20:17: 35 states generated, 20 distinct states found, 0 states left on queue.
-Checking temporal properties for the complete state space with 20 total distinct states at (2026-10-15 16:20:17)
-Finished checking temporal properties in 00s at 2026-10-15 16:20:17
+Finished computing initial states: 1 distinct state generated at 2026-10-22 17:39:58.
+Progress(9) at 2026-10-22 17:39:58: 35 states generated, 20 distinct states found, 0 states left on queue.
+Checking temporal properties for the complete state space with 20 total distinct states at (2026-10-22 17:39:58)
+Finished checking temporal properties in 00s at 2026-10-22 17:39:58
 Model checking completed. No error has been found.
   Estimates of the probability that TLC did not check all reachable states
   because two distinct states had the same fingerprint:
@@ -18,4 +18,4 @@ Model checking completed. No error has been found.
 35 states generated, 20 distinct states found, 0 states left on queue.
 The depth of the complete state graph search is 9.
 The average outdegree of the complete state graph is 1 (minimum is 0, the maximum 3 and the 95th percentile is 3).
-Finished in 00s at (2026-10-15 16:20:17)
+Finished in 00s at (2026-10-22 17:39:58)

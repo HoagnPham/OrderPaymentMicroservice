@@ -1,821 +1,821 @@
 {
   "passed": true,
-  "run_at_utc": "2026-10-22T02:54:41.1202865Z",
+  "run_at_utc": "2026-10-22T10:33:53.8971591Z",
   "api_processes": 2,
-  "first_pid": 455851,
-  "second_pid": 455935,
+  "first_pid": 573497,
+  "second_pid": 573567,
   "read": {
     "requests": 200,
     "concurrency": 8,
-    "duration_seconds": 0.994119,
-    "requests_per_second": 201.1831581530984,
-    "successful_requests_per_second": 201.1831581530984,
+    "duration_seconds": 0.5926691,
+    "requests_per_second": 337.45643226549186,
+    "successful_requests_per_second": 337.45643226549186,
     "samples": [
       {
         "status": 200,
-        "elapsed_ms": 235.9303
+        "elapsed_ms": 117.1848
       },
       {
         "status": 200,
-        "elapsed_ms": 289.5877
+        "elapsed_ms": 128.2344
       },
       {
         "status": 200,
-        "elapsed_ms": 235.471
+        "elapsed_ms": 115.816
       },
       {
         "status": 200,
-        "elapsed_ms": 283.9896
+        "elapsed_ms": 137.4229
       },
       {
         "status": 200,
-        "elapsed_ms": 235.658
+        "elapsed_ms": 115.5262
       },
       {
         "status": 200,
-        "elapsed_ms": 282.833
+        "elapsed_ms": 128.1433
       },
       {
         "status": 200,
-        "elapsed_ms": 235.6608
+        "elapsed_ms": 118.67
       },
       {
         "status": 200,
-        "elapsed_ms": 282.8076
+        "elapsed_ms": 128.1463
       },
       {
         "status": 200,
-        "elapsed_ms": 26.5661
+        "elapsed_ms": 27.5123
       },
       {
         "status": 200,
-        "elapsed_ms": 60.5185
+        "elapsed_ms": 41.786
       },
       {
         "status": 200,
-        "elapsed_ms": 15.4139
+        "elapsed_ms": 12.3486
       },
       {
         "status": 200,
-        "elapsed_ms": 58.0561
+        "elapsed_ms": 33.4306
       },
       {
         "status": 200,
-        "elapsed_ms": 17.5483
+        "elapsed_ms": 23.8221
       },
       {
         "status": 200,
-        "elapsed_ms": 34.2999
+        "elapsed_ms": 29.3874
       },
       {
         "status": 200,
-        "elapsed_ms": 31.3683
+        "elapsed_ms": 29.4317
       },
       {
         "status": 200,
-        "elapsed_ms": 27.9521
+        "elapsed_ms": 29.5022
       },
       {
         "status": 200,
-        "elapsed_ms": 24.1658
+        "elapsed_ms": 34.2134
       },
       {
         "status": 200,
-        "elapsed_ms": 24.1666
+        "elapsed_ms": 19.4545
       },
       {
         "status": 200,
-        "elapsed_ms": 24.2754
+        "elapsed_ms": 17.24
       },
       {
         "status": 200,
-        "elapsed_ms": 20.8077
+        "elapsed_ms": 24.6389
       },
       {
         "status": 200,
-        "elapsed_ms": 35.6476
+        "elapsed_ms": 23.5378
       },
       {
         "status": 200,
-        "elapsed_ms": 27.0418
+        "elapsed_ms": 8.0534
       },
       {
         "status": 200,
-        "elapsed_ms": 49.0934
+        "elapsed_ms": 23.5731
       },
       {
         "status": 200,
-        "elapsed_ms": 31.1791
+        "elapsed_ms": 19.1743
       },
       {
         "status": 200,
-        "elapsed_ms": 31.1814
+        "elapsed_ms": 18.2869
       },
       {
         "status": 200,
-        "elapsed_ms": 26.202
+        "elapsed_ms": 15.5169
       },
       {
         "status": 200,
-        "elapsed_ms": 22.3415
+        "elapsed_ms": 11.9557
       },
       {
         "status": 200,
-        "elapsed_ms": 22.3808
+        "elapsed_ms": 18.6493
       },
       {
         "status": 200,
-        "elapsed_ms": 28.3778
+        "elapsed_ms": 14.0574
       },
       {
         "status": 200,
-        "elapsed_ms": 17.4592
+        "elapsed_ms": 10.3771
       },
       {
         "status": 200,
-        "elapsed_ms": 27.3544
+        "elapsed_ms": 21.9923
       },
       {
         "status": 200,
-        "elapsed_ms": 27.3868
+        "elapsed_ms": 14.2959
       },
       {
         "status": 200,
-        "elapsed_ms": 15.8189
+        "elapsed_ms": 14.2833
       },
       {
         "status": 200,
-        "elapsed_ms": 26.5519
+        "elapsed_ms": 16.7733
       },
       {
         "status": 200,
-        "elapsed_ms": 48.9034
+        "elapsed_ms": 14.3885
       },
       {
         "status": 200,
-        "elapsed_ms": 31.6557
+        "elapsed_ms": 16.1777
       },
       {
         "status": 200,
-        "elapsed_ms": 27.99
+        "elapsed_ms": 16.75
       },
       {
         "status": 200,
-        "elapsed_ms": 38.1702
+        "elapsed_ms": 14.2289
       },
       {
         "status": 200,
-        "elapsed_ms": 28.0159
+        "elapsed_ms": 20.7338
       },
       {
         "status": 200,
-        "elapsed_ms": 22.493
+        "elapsed_ms": 19.5928
       },
       {
         "status": 200,
-        "elapsed_ms": 22.9162
+        "elapsed_ms": 27.3123
       },
       {
         "status": 200,
-        "elapsed_ms": 18.6124
+        "elapsed_ms": 17.1935
       },
       {
         "status": 200,
-        "elapsed_ms": 32.3294
+        "elapsed_ms": 13.0587
       },
       {
         "status": 200,
-        "elapsed_ms": 87.0358
+        "elapsed_ms": 17.5599
       },
       {
         "status": 200,
-        "elapsed_ms": 24.9676
+        "elapsed_ms": 13.2714
       },
       {
         "status": 200,
-        "elapsed_ms": 80.3937
+        "elapsed_ms": 11.5859
       },
       {
         "status": 200,
-        "elapsed_ms": 23.3582
+        "elapsed_ms": 16.6164
       },
       {
         "status": 200,
-        "elapsed_ms": 76.5656
+        "elapsed_ms": 14.3731
       },
       {
         "status": 200,
-        "elapsed_ms": 39.005
+        "elapsed_ms": 17.6668
       },
       {
         "status": 200,
-        "elapsed_ms": 76.967
+        "elapsed_ms": 35.7827
       },
       {
         "status": 200,
-        "elapsed_ms": 33.4703
+        "elapsed_ms": 15.5709
       },
       {
         "status": 200,
-        "elapsed_ms": 65.477
+        "elapsed_ms": 8.9455
       },
       {
         "status": 200,
-        "elapsed_ms": 44.5833
+        "elapsed_ms": 14.9444
       },
       {
         "status": 200,
-        "elapsed_ms": 51.4445
+        "elapsed_ms": 35.9076
       },
       {
         "status": 200,
-        "elapsed_ms": 37.2567
+        "elapsed_ms": 12.4823
       },
       {
         "status": 200,
-        "elapsed_ms": 26.082
+        "elapsed_ms": 29.182
       },
       {
         "status": 200,
-        "elapsed_ms": 31.3813
+        "elapsed_ms": 12.6805
       },
       {
         "status": 200,
-        "elapsed_ms": 27.224
+        "elapsed_ms": 24.6521
       },
       {
         "status": 200,
-        "elapsed_ms": 18.8091
+        "elapsed_ms": 11.833
       },
       {
         "status": 200,
-        "elapsed_ms": 18.8397
+        "elapsed_ms": 27.5991
       },
       {
         "status": 200,
-        "elapsed_ms": 39.0951
+        "elapsed_ms": 12.2355
       },
       {
         "status": 200,
-        "elapsed_ms": 25.0723
+        "elapsed_ms": 18.7848
       },
       {
         "status": 200,
-        "elapsed_ms": 34.1108
+        "elapsed_ms": 10.3572
       },
       {
         "status": 200,
-        "elapsed_ms": 25.0956
+        "elapsed_ms": 11.0783
       },
       {
         "status": 200,
-        "elapsed_ms": 26.3178
+        "elapsed_ms": 24.0947
       },
       {
         "status": 200,
-        "elapsed_ms": 39.1994
+        "elapsed_ms": 13.7551
       },
       {
         "status": 200,
-        "elapsed_ms": 20.4521
+        "elapsed_ms": 17.1242
       },
       {
         "status": 200,
-        "elapsed_ms": 34.2629
+        "elapsed_ms": 14.2397
       },
       {
         "status": 200,
-        "elapsed_ms": 32.6989
+        "elapsed_ms": 11.2521
       },
       {
         "status": 200,
-        "elapsed_ms": 19.4002
+        "elapsed_ms": 6.5721
       },
       {
         "status": 200,
-        "elapsed_ms": 35.6884
+        "elapsed_ms": 12.9146
       },
       {
         "status": 200,
-        "elapsed_ms": 30.3937
+        "elapsed_ms": 16.9981
       },
       {
         "status": 200,
-        "elapsed_ms": 33.0613
+        "elapsed_ms": 16.9193
       },
       {
         "status": 200,
-        "elapsed_ms": 36.4612
+        "elapsed_ms": 17.1152
       },
       {
         "status": 200,
-        "elapsed_ms": 26.0641
+        "elapsed_ms": 25.0367
       },
       {
         "status": 200,
-        "elapsed_ms": 31.3166
+        "elapsed_ms": 21.6674
       },
       {
         "status": 200,
-        "elapsed_ms": 10.0402
+        "elapsed_ms": 8.7499
       },
       {
         "status": 200,
-        "elapsed_ms": 32.5547
+        "elapsed_ms": 18.501
       },
       {
         "status": 200,
-        "elapsed_ms": 35.1458
+        "elapsed_ms": 9.0263
       },
       {
         "status": 200,
-        "elapsed_ms": 20.6523
+        "elapsed_ms": 14.7006
       },
       {
         "status": 200,
-        "elapsed_ms": 25.7598
+        "elapsed_ms": 16.2679
       },
       {
         "status": 200,
-        "elapsed_ms": 25.8404
+        "elapsed_ms": 16.3161
       },
       {
         "status": 200,
-        "elapsed_ms": 29.2691
+        "elapsed_ms": 8.0913
       },
       {
         "status": 200,
-        "elapsed_ms": 14.5853
+        "elapsed_ms": 14.5472
       },
       {
         "status": 200,
-        "elapsed_ms": 17.3713
+        "elapsed_ms": 13.6714
       },
       {
         "status": 200,
-        "elapsed_ms": 30.274
+        "elapsed_ms": 14.4439
       },
       {
         "status": 200,
-        "elapsed_ms": 23.6257
+        "elapsed_ms": 10.5181
       },
       {
         "status": 200,
-        "elapsed_ms": 25.3294
+        "elapsed_ms": 10.543
       },
       {
         "status": 200,
-        "elapsed_ms": 20.7903
+        "elapsed_ms": 17.4032
       },
       {
         "status": 200,
-        "elapsed_ms": 28.0208
+        "elapsed_ms": 16.2012
       },
       {
         "status": 200,
-        "elapsed_ms": 28.0263
+        "elapsed_ms": 16.1352
       },
       {
         "status": 200,
-        "elapsed_ms": 28.1361
+        "elapsed_ms": 16.1887
       },
       {
         "status": 200,
-        "elapsed_ms": 21.1979
+        "elapsed_ms": 12.264
       },
       {
         "status": 200,
-        "elapsed_ms": 25.8854
+        "elapsed_ms": 12.2303
       },
       {
         "status": 200,
-        "elapsed_ms": 22.087
+        "elapsed_ms": 16.6995
       },
       {
         "status": 200,
-        "elapsed_ms": 18.6996
+        "elapsed_ms": 15.9039
       },
       {
         "status": 200,
-        "elapsed_ms": 13.9717
+        "elapsed_ms": 14.9541
       },
       {
         "status": 200,
-        "elapsed_ms": 20.3587
+        "elapsed_ms": 20.8344
       },
       {
         "status": 200,
-        "elapsed_ms": 13.5587
+        "elapsed_ms": 20.8339
       },
       {
         "status": 200,
-        "elapsed_ms": 28.2449
+        "elapsed_ms": 11.8551
       },
       {
         "status": 200,
-        "elapsed_ms": 20.6314
+        "elapsed_ms": 18.1729
       },
       {
         "status": 200,
-        "elapsed_ms": 38.1816
+        "elapsed_ms": 14.603
       },
       {
         "status": 200,
-        "elapsed_ms": 20.5443
+        "elapsed_ms": 10.6138
       },
       {
         "status": 200,
-        "elapsed_ms": 41.7253
+        "elapsed_ms": 10.6537
       },
       {
         "status": 200,
-        "elapsed_ms": 29.9582
+        "elapsed_ms": 15.3942
       },
       {
         "status": 200,
-        "elapsed_ms": 26.6761
+        "elapsed_ms": 8.991
       },
       {
         "status": 200,
-        "elapsed_ms": 22.9441
+        "elapsed_ms": 15.5565
       },
       {
         "status": 200,
-        "elapsed_ms": 26.0396
+        "elapsed_ms": 13.494
       },
       {
         "status": 200,
-        "elapsed_ms": 29.5565
+        "elapsed_ms": 20.5372
       },
       {
         "status": 200,
-        "elapsed_ms": 26.7457
+        "elapsed_ms": 14.0741
       },
       {
         "status": 200,
-        "elapsed_ms": 18.5711
+        "elapsed_ms": 17.9722
       },
       {
         "status": 200,
-        "elapsed_ms": 20.274
+        "elapsed_ms": 9.112
       },
       {
         "status": 200,
-        "elapsed_ms": 33.0161
+        "elapsed_ms": 14.7463
       },
       {
         "status": 200,
-        "elapsed_ms": 19.0578
+        "elapsed_ms": 10.7825
       },
       {
         "status": 200,
-        "elapsed_ms": 30.0404
+        "elapsed_ms": 21.7485
       },
       {
         "status": 200,
-        "elapsed_ms": 15.1509
+        "elapsed_ms": 15.8402
       },
       {
         "status": 200,
-        "elapsed_ms": 40.9829
+        "elapsed_ms": 13.9867
       },
       {
         "status": 200,
-        "elapsed_ms": 22.021
+        "elapsed_ms": 13.6413
       },
       {
         "status": 200,
-        "elapsed_ms": 40.1705
+        "elapsed_ms": 13.0541
       },
       {
         "status": 200,
-        "elapsed_ms": 44.9407
+        "elapsed_ms": 13.2991
       },
       {
         "status": 200,
-        "elapsed_ms": 33.0412
+        "elapsed_ms": 12.9134
       },
       {
         "status": 200,
-        "elapsed_ms": 10.1019
+        "elapsed_ms": 15.5139
       },
       {
         "status": 200,
-        "elapsed_ms": 27.8308
+        "elapsed_ms": 20.4079
       },
       {
         "status": 200,
-        "elapsed_ms": 32.2424
+        "elapsed_ms": 26.4844
       },
       {
         "status": 200,
-        "elapsed_ms": 26.1443
+        "elapsed_ms": 17.8903
       },
       {
         "status": 200,
-        "elapsed_ms": 34.1033
+        "elapsed_ms": 20.3353
       },
       {
         "status": 200,
-        "elapsed_ms": 34.9392
+        "elapsed_ms": 12.5947
       },
       {
         "status": 200,
-        "elapsed_ms": 24.6386
+        "elapsed_ms": 17.5211
       },
       {
         "status": 200,
-        "elapsed_ms": 39.4588
+        "elapsed_ms": 8.1483
       },
       {
         "status": 200,
-        "elapsed_ms": 17.8995
+        "elapsed_ms": 14.8677
       },
       {
         "status": 200,
-        "elapsed_ms": 33.9316
+        "elapsed_ms": 13.7895
       },
       {
         "status": 200,
-        "elapsed_ms": 29.5004
+        "elapsed_ms": 47.2215
       },
       {
         "status": 200,
-        "elapsed_ms": 24.9785
+        "elapsed_ms": 15.2972
       },
       {
         "status": 200,
-        "elapsed_ms": 23.4863
+        "elapsed_ms": 9.7545
       },
       {
         "status": 200,
-        "elapsed_ms": 26.3361
+        "elapsed_ms": 17.6524
       },
       {
         "status": 200,
-        "elapsed_ms": 20.1887
+        "elapsed_ms": 39.3714
       },
       {
         "status": 200,
-        "elapsed_ms": 44.6569
+        "elapsed_ms": 21.9326
       },
       {
         "status": 200,
-        "elapsed_ms": 9.9487
+        "elapsed_ms": 32.9878
       },
       {
         "status": 200,
-        "elapsed_ms": 47.9403
+        "elapsed_ms": 8.077
       },
       {
         "status": 200,
-        "elapsed_ms": 33.305
+        "elapsed_ms": 32.588
       },
       {
         "status": 200,
-        "elapsed_ms": 36.0793
+        "elapsed_ms": 12.5558
       },
       {
         "status": 200,
-        "elapsed_ms": 12.4752
+        "elapsed_ms": 46.9989
       },
       {
         "status": 200,
-        "elapsed_ms": 25.8712
+        "elapsed_ms": 32.1485
       },
       {
         "status": 200,
-        "elapsed_ms": 28.0812
+        "elapsed_ms": 27.9664
       },
       {
         "status": 200,
-        "elapsed_ms": 25.708
+        "elapsed_ms": 23.167
       },
       {
         "status": 200,
-        "elapsed_ms": 20.9293
+        "elapsed_ms": 20.5957
       },
       {
         "status": 200,
-        "elapsed_ms": 37.3321
+        "elapsed_ms": 28.0234
       },
       {
         "status": 200,
-        "elapsed_ms": 34.7772
+        "elapsed_ms": 28.0201
       },
       {
         "status": 200,
-        "elapsed_ms": 34.9304
+        "elapsed_ms": 16.4092
       },
       {
         "status": 200,
-        "elapsed_ms": 14.6177
+        "elapsed_ms": 26.0064
       },
       {
         "status": 200,
-        "elapsed_ms": 19.9373
+        "elapsed_ms": 17.6103
       },
       {
         "status": 200,
-        "elapsed_ms": 20.0109
+        "elapsed_ms": 26.4362
       },
       {
         "status": 200,
-        "elapsed_ms": 29.8763
+        "elapsed_ms": 11.6722
       },
       {
         "status": 200,
-        "elapsed_ms": 33.415
+        "elapsed_ms": 19.6947
       },
       {
         "status": 200,
-        "elapsed_ms": 20.3566
+        "elapsed_ms": 16.8647
       },
       {
         "status": 200,
-        "elapsed_ms": 26.1068
+        "elapsed_ms": 25.9559
       },
       {
         "status": 200,
-        "elapsed_ms": 33.4473
+        "elapsed_ms": 21.4479
       },
       {
         "status": 200,
-        "elapsed_ms": 29.5471
+        "elapsed_ms": 14.6748
       },
       {
         "status": 200,
-        "elapsed_ms": 21.085
+        "elapsed_ms": 14.84
       },
       {
         "status": 200,
-        "elapsed_ms": 24.9282
+        "elapsed_ms": 10.7613
       },
       {
         "status": 200,
-        "elapsed_ms": 21.1871
+        "elapsed_ms": 18.553
       },
       {
         "status": 200,
-        "elapsed_ms": 28.077
+        "elapsed_ms": 17.0481
       },
       {
         "status": 200,
-        "elapsed_ms": 43.7742
+        "elapsed_ms": 39.0821
       },
       {
         "status": 200,
-        "elapsed_ms": 39.9855
+        "elapsed_ms": 29.233
       },
       {
         "status": 200,
-        "elapsed_ms": 32.6283
+        "elapsed_ms": 15.6276
       },
       {
         "status": 200,
-        "elapsed_ms": 21.8627
+        "elapsed_ms": 26.1948
       },
       {
         "status": 200,
-        "elapsed_ms": 27.6186
+        "elapsed_ms": 19.503
       },
       {
         "status": 200,
-        "elapsed_ms": 34.3201
+        "elapsed_ms": 21.8758
       },
       {
         "status": 200,
-        "elapsed_ms": 19.59
+        "elapsed_ms": 34.0898
       },
       {
         "status": 200,
-        "elapsed_ms": 19.169
+        "elapsed_ms": 20.4081
       },
       {
         "status": 200,
-        "elapsed_ms": 16.2194
+        "elapsed_ms": 17.5751
       },
       {
         "status": 200,
-        "elapsed_ms": 31.3788
+        "elapsed_ms": 27.8368
       },
       {
         "status": 200,
-        "elapsed_ms": 25.0185
+        "elapsed_ms": 19.0769
       },
       {
         "status": 200,
-        "elapsed_ms": 28.5356
+        "elapsed_ms": 24.893
       },
       {
         "status": 200,
-        "elapsed_ms": 19.8974
+        "elapsed_ms": 11.9536
       },
       {
         "status": 200,
-        "elapsed_ms": 32.8435
+        "elapsed_ms": 29.1105
       },
       {
         "status": 200,
-        "elapsed_ms": 29.6019
+        "elapsed_ms": 16.2768
       },
       {
         "status": 200,
-        "elapsed_ms": 41.807
+        "elapsed_ms": 29.2682
       },
       {
         "status": 200,
-        "elapsed_ms": 14.5178
+        "elapsed_ms": 17.9737
       },
       {
         "status": 200,
-        "elapsed_ms": 36.8892
+        "elapsed_ms": 34.2168
       },
       {
         "status": 200,
-        "elapsed_ms": 27.1856
+        "elapsed_ms": 18.1087
       },
       {
         "status": 200,
-        "elapsed_ms": 28.7521
+        "elapsed_ms": 25.7259
       },
       {
         "status": 200,
-        "elapsed_ms": 31.436
+        "elapsed_ms": 10.797
       },
       {
         "status": 200,
-        "elapsed_ms": 22.3237
+        "elapsed_ms": 28.0971
       },
       {
         "status": 200,
-        "elapsed_ms": 50.5453
+        "elapsed_ms": 21.8735
       },
       {
         "status": 200,
-        "elapsed_ms": 35.823
+        "elapsed_ms": 30.177
       },
       {
         "status": 200,
-        "elapsed_ms": 46.3282
+        "elapsed_ms": 29.1624
       },
       {
         "status": 200,
-        "elapsed_ms": 33.7527
+        "elapsed_ms": 31.4466
       },
       {
         "status": 200,
-        "elapsed_ms": 25.9804
+        "elapsed_ms": 14.4608
       },
       {
         "status": 200,
-        "elapsed_ms": 40.1001
+        "elapsed_ms": 27.6933
       },
       {
         "status": 200,
-        "elapsed_ms": 15.3471
+        "elapsed_ms": 24.8437
       },
       {
         "status": 200,
-        "elapsed_ms": 13.1571
+        "elapsed_ms": 23.4017
       },
       {
         "status": 200,
-        "elapsed_ms": 20.1387
+        "elapsed_ms": 17.1023
       },
       {
         "status": 200,
-        "elapsed_ms": 34.6768
+        "elapsed_ms": 19.9595
       },
       {
         "status": 200,
-        "elapsed_ms": 25.2665
+        "elapsed_ms": 21.9151
       },
       {
         "status": 200,
-        "elapsed_ms": 36.7842
+        "elapsed_ms": 22.0425
       },
       {
         "status": 200,
-        "elapsed_ms": 26.5699
+        "elapsed_ms": 19.7863
       },
       {
         "status": 200,
-        "elapsed_ms": 32.9536
+        "elapsed_ms": 16.1899
       },
       {
         "status": 200,
-        "elapsed_ms": 21.0454
+        "elapsed_ms": 11.6094
       },
       {
         "status": 200,
-        "elapsed_ms": 36.1969
+        "elapsed_ms": 17.3656
       }
     ],
-    "mean_ms": 38.78926899999998,
-    "p50_ms": 28.0159,
-    "p95_ms": 76.967,
-    "p99_ms": 282.833,
+    "mean_ms": 23.272899500000005,
+    "p50_ms": 17.3656,
+    "p95_ms": 41.786,
+    "p99_ms": 128.1463,
     "status_counts": {
       "200": 200
     },
@@ -824,505 +824,505 @@
   "write": {
     "requests": 96,
     "concurrency": 8,
-    "duration_seconds": 2.5637823,
-    "requests_per_second": 37.444676952485395,
-    "successful_requests_per_second": 8.19102308335618,
+    "duration_seconds": 2.65811,
+    "requests_per_second": 36.115886851936146,
+    "successful_requests_per_second": 9.028971712984037,
     "samples": [
       {
-        "status": 201,
-        "elapsed_ms": 713.828
+        "status": 409,
+        "elapsed_ms": 734.582
       },
       {
         "status": 409,
-        "elapsed_ms": 1161.3605
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 778.406
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 1161.2244
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 787.9704
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 1161.1827
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 777.8234
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 1161.1663
+        "elapsed_ms": 1003.5634
       },
       {
         "status": 201,
-        "elapsed_ms": 98.9259
+        "elapsed_ms": 670.7349
       },
       {
         "status": 409,
-        "elapsed_ms": 383.2976
-      },
-      {
-        "status": 201,
-        "elapsed_ms": 104.5024
+        "elapsed_ms": 1013.2453
       },
       {
         "status": 409,
-        "elapsed_ms": 370.5
+        "elapsed_ms": 745.9388
       },
       {
         "status": 409,
-        "elapsed_ms": 73.9173
+        "elapsed_ms": 1013.0545
       },
       {
         "status": 409,
-        "elapsed_ms": 285.0418
+        "elapsed_ms": 732.3272
       },
       {
-        "status": 201,
-        "elapsed_ms": 81.6203
+        "status": 409,
+        "elapsed_ms": 1006.5775
       },
       {
         "status": 201,
-        "elapsed_ms": 278.5185
+        "elapsed_ms": 150.7057
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 273.9698
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 124.1509
       },
       {
         "status": 201,
-        "elapsed_ms": 116.2113
+        "elapsed_ms": 267.1583
       },
       {
         "status": 409,
-        "elapsed_ms": 117.9387
+        "elapsed_ms": 137.6797
       },
       {
         "status": 409,
-        "elapsed_ms": 121.2523
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 128.473
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 117.9203
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 128.594
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 111.2475
+        "elapsed_ms": 156.2959
       },
       {
         "status": 201,
-        "elapsed_ms": 130.551
+        "elapsed_ms": 106.9199
       },
       {
         "status": 409,
-        "elapsed_ms": 149.035
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 102.5139
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 123.6605
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 102.6788
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 157.7823
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 119.3285
+        "elapsed_ms": 186.0957
       },
       {
         "status": 201,
-        "elapsed_ms": 168.5043
+        "elapsed_ms": 117.4327
       },
       {
         "status": 409,
-        "elapsed_ms": 139.0958
+        "elapsed_ms": 194.1801
       },
       {
         "status": 409,
-        "elapsed_ms": 111.6807
+        "elapsed_ms": 137.1679
       },
       {
         "status": 409,
-        "elapsed_ms": 149.6245
+        "elapsed_ms": 142.8231
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 222.1774
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 221.7834
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 135.5063
       },
       {
         "status": 201,
-        "elapsed_ms": 124.4204
+        "elapsed_ms": 167.836
       },
       {
         "status": 409,
-        "elapsed_ms": 138.0879
+        "elapsed_ms": 153.5761
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 168.3184
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 97.2279
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 120.1355
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 95.163
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 146.6206
       },
       {
         "status": 201,
-        "elapsed_ms": 168.0342
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 174.5292
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 159.6569
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 121.1983
+        "elapsed_ms": 124.4579
       },
       {
         "status": 201,
-        "elapsed_ms": 124.2371
+        "elapsed_ms": 147.9734
       },
       {
         "status": 409,
-        "elapsed_ms": 122.3501
+        "elapsed_ms": 103.9275
       },
       {
         "status": 409,
-        "elapsed_ms": 127.0291
+        "elapsed_ms": 142.284
       },
       {
         "status": 409,
-        "elapsed_ms": 125.6702
+        "elapsed_ms": 134.4513
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 112.8988
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 94.1835
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 134.7993
       },
       {
         "status": 201,
-        "elapsed_ms": 119.8615
+        "elapsed_ms": 113.2115
       },
       {
         "status": 409,
-        "elapsed_ms": 166.3392
+        "elapsed_ms": 95.7666
       },
       {
         "status": 409,
-        "elapsed_ms": 102.4352
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 111.0796
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 100.1765
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 92.3122
+        "elapsed_ms": 125.5331
       },
       {
         "status": 201,
-        "elapsed_ms": 107.5609
+        "elapsed_ms": 79.9876
       },
       {
         "status": 409,
-        "elapsed_ms": 104.4428
+        "elapsed_ms": 135.1963
       },
       {
         "status": 409,
-        "elapsed_ms": 162.8689
+        "elapsed_ms": 88.0629
       },
       {
         "status": 409,
-        "elapsed_ms": 157.4478
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 145.6299
+        "elapsed_ms": 135.4367
       },
       {
         "status": 201,
-        "elapsed_ms": 101.1292
+        "elapsed_ms": 88.3825
       },
       {
         "status": 409,
-        "elapsed_ms": 132.6882
+        "elapsed_ms": 123.9046
       },
       {
         "status": 409,
-        "elapsed_ms": 102.157
+        "elapsed_ms": 101.5827
       },
       {
         "status": 409,
-        "elapsed_ms": 73.9945
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 99.149
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 158.6077
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 166.5976
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 126.1826
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 143.0582
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 128.195
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 125.7855
+        "elapsed_ms": 154.559
       },
       {
         "status": 201,
-        "elapsed_ms": 116.3385
+        "elapsed_ms": 115.2423
       },
       {
         "status": 409,
-        "elapsed_ms": 137.5776
+        "elapsed_ms": 132.6028
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 139.895
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 121.4024
       },
       {
         "status": 201,
-        "elapsed_ms": 159.9618
+        "elapsed_ms": 107.2279
       },
       {
         "status": 409,
-        "elapsed_ms": 140.8019
+        "elapsed_ms": 141.3932
       },
       {
         "status": 409,
-        "elapsed_ms": 152.0773
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 135.2803
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 148.0086
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 232.9313
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 139.5707
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 133.1024
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 123.8453
+        "elapsed_ms": 91.944
       },
       {
         "status": 201,
-        "elapsed_ms": 205.1825
+        "elapsed_ms": 140.157
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 135.5581
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 121.5591
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 107.3192
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 109.1609
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 123.9535
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 160.2979
       },
       {
         "status": 201,
-        "elapsed_ms": 104.7605
+        "elapsed_ms": 144.7568
       },
       {
         "status": 409,
-        "elapsed_ms": 204.3028
+        "elapsed_ms": 86.5693
       },
       {
         "status": 409,
-        "elapsed_ms": 107.7208
+        "elapsed_ms": 122.8535
       },
       {
         "status": 409,
-        "elapsed_ms": 210.0814
+        "elapsed_ms": 151.5337
       },
       {
         "status": 409,
-        "elapsed_ms": 107.0747
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 114.0034
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 154.8085
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 132.8091
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 178.8162
+        "elapsed_ms": 190.7893
       },
       {
         "status": 201,
-        "elapsed_ms": 117.1941
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 153.5652
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 144.1155
+        "elapsed_ms": 101.4935
       },
       {
         "status": 201,
-        "elapsed_ms": 124.5024
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 142.9203
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 153.6324
-      },
-      {
-        "status": 409,
-        "elapsed_ms": 123.8118
+        "elapsed_ms": 145.8608
       },
       {
         "status": 201,
-        "elapsed_ms": 139.5157
+        "elapsed_ms": 225.2588
       },
       {
         "status": 409,
-        "elapsed_ms": 123.3524
+        "elapsed_ms": 124.0641
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 222.066
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 398.1709
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 215.5487
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 183.2456
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 153.957
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 373.2049
+      },
+      {
+        "status": 201,
+        "elapsed_ms": 210.7887
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 381.7591
+      },
+      {
+        "status": 201,
+        "elapsed_ms": 159.9921
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 383.4447
+      },
+      {
+        "status": 201,
+        "elapsed_ms": 228.4067
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 366.9202
+      },
+      {
+        "status": 201,
+        "elapsed_ms": 255.6882
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 183.0659
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 161.299
+      },
+      {
+        "status": 201,
+        "elapsed_ms": 184.4006
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 173.4071
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 178.8497
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 101.2479
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 190.4483
+      },
+      {
+        "status": 201,
+        "elapsed_ms": 163.272
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 141.136
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 131.5097
+      },
+      {
+        "status": 409,
+        "elapsed_ms": 99.3251
       }
     ],
-    "mean_ms": 209.895371875,
-    "p50_ms": 132.6882,
-    "p95_ms": 787.9704,
-    "p99_ms": 1161.3605,
+    "mean_ms": 218.34994062500002,
+    "p50_ms": 142.8231,
+    "p95_ms": 745.9388,
+    "p99_ms": 1013.2453,
     "status_counts": {
-      "201": 21,
-      "409": 75
+      "409": 72,
+      "201": 24
     },
     "latency_definition": "Request start after concurrency semaphore through complete response body; excludes queue wait; percentile uses nearest rank"
   },
   "rate_limit": {
     "requests": 20,
     "concurrency": 4,
-    "duration_seconds": 0.3508166,
-    "requests_per_second": 57.00984503013826,
-    "successful_requests_per_second": 14.252461257534565,
+    "duration_seconds": 0.2525247,
+    "requests_per_second": 79.20017328997916,
+    "successful_requests_per_second": 19.80004332249479,
     "samples": [
       {
         "status": 200,
-        "elapsed_ms": 319.5502
+        "elapsed_ms": 237.7585
       },
       {
         "status": 200,
-        "elapsed_ms": 337.1044
+        "elapsed_ms": 237.4521
       },
       {
         "status": 200,
-        "elapsed_ms": 337.4571
+        "elapsed_ms": 237.4666
       },
       {
         "status": 200,
-        "elapsed_ms": 318.4873
+        "elapsed_ms": 237.4582
       },
       {
         "status": 429,
-        "elapsed_ms": 16.6834
+        "elapsed_ms": 6.3691
+      },
+      {
+        "status": 429,
+        "elapsed_ms": 6.3724
       },
       {
         "status": 200,
-        "elapsed_ms": 31.2333
+        "elapsed_ms": 14.6435
       },
       {
         "status": 429,
-        "elapsed_ms": 2.1433
+        "elapsed_ms": 6.4883
       },
       {
         "status": 429,
-        "elapsed_ms": 4.0545
+        "elapsed_ms": 0.7781
       },
       {
         "status": 429,
-        "elapsed_ms": 3.6971
+        "elapsed_ms": 0.7903
       },
       {
         "status": 429,
-        "elapsed_ms": 3.2672
+        "elapsed_ms": 0.8632
       },
       {
         "status": 429,
-        "elapsed_ms": 0.8549
+        "elapsed_ms": 0.4518
       },
       {
         "status": 429,
-        "elapsed_ms": 0.8727
+        "elapsed_ms": 0.4633
       },
       {
         "status": 429,
-        "elapsed_ms": 0.9356
+        "elapsed_ms": 0.5379
       },
       {
         "status": 429,
-        "elapsed_ms": 4.4422
+        "elapsed_ms": 0.4389
       },
       {
         "status": 429,
-        "elapsed_ms": 4.4509
+        "elapsed_ms": 0.4517
       },
       {
         "status": 429,
-        "elapsed_ms": 4.5299
+        "elapsed_ms": 0.5186
       },
       {
         "status": 429,
-        "elapsed_ms": 2.0039
+        "elapsed_ms": 0.4426
       },
       {
         "status": 429,
-        "elapsed_ms": 1.9008
+        "elapsed_ms": 0.5872
       },
       {
         "status": 429,
-        "elapsed_ms": 2.2604
-      },
-      {
-        "status": 429,
-        "elapsed_ms": 1.6112
+        "elapsed_ms": 0.5249
       }
     ],
-    "mean_ms": 69.877015,
-    "p50_ms": 3.6971,
-    "p95_ms": 337.1044,
-    "p99_ms": 337.4571,
+    "mean_ms": 49.542860000000005,
+    "p50_ms": 0.7781,
+    "p95_ms": 237.4666,
+    "p99_ms": 237.7585,
     "status_counts": {
       "200": 5,
       "429": 15
     },
     "latency_definition": "Request start after concurrency semaphore through complete response body; excludes queue wait; percentile uses nearest rank"
   },
-  "created_orders": 21,
-  "final_stock": 979,
+  "created_orders": 24,
+  "final_stock": 976,
   "source_sha256": {
     "OrderPaymentMicroservice.IntegrationTests/OperationalDrillTests.cs": "F6581347C2F6EED8421D55A99A1D4B236C7D92DB1E94DDF9A754D7E39F4920E5",
     "OrderPaymentMicroservice.IntegrationTests/OperationalProbe.cs": "DAA0B44404650623B88849C6EE89AC817A43ED374453DAB396AFF89604280B7B",

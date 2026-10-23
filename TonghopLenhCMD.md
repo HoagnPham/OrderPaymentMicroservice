@@ -189,13 +189,13 @@ make -C security-analysis/c-memory test
 
 5 lỗi cố ý:
 
-| Module | Lỗi | Diagnostic mong đợi |
-| --- | --- | --- |
-| order | rò rỉ bộ nhớ | `LeakSanitizer: detected memory leaks` |
-| payment | double free | `AddressSanitizer: attempting double-free` |
-| cart | use-after-free | `AddressSanitizer: heap-use-after-free` |
-| product | tràn heap do `strcpy` | `AddressSanitizer: heap-buffer-overflow` |
-| user | tràn stack do `strcpy` | `AddressSanitizer: stack-buffer-overflow` |
+| Module  | Lỗi                      | Diagnostic mong đợi                        |
+| ------- | ------------------------- | -------------------------------------------- |
+| order   | rò rỉ bộ nhớ          | `LeakSanitizer: detected memory leaks`     |
+| payment | double free               | `AddressSanitizer: attempting double-free` |
+| cart    | use-after-free            | `AddressSanitizer: heap-use-after-free`    |
+| product | tràn heap do `strcpy`  | `AddressSanitizer: heap-buffer-overflow`   |
+| user    | tràn stack do `strcpy` | `AddressSanitizer: stack-buffer-overflow`  |
 
 Chạy riêng một cặp BUGGY/FIXED để xem report (BUGGY exit khác 0):
 
@@ -462,6 +462,72 @@ Giới hạn: harness C chỉ **đếm** crash trong tiến trình con, chưa l�
 input gây crash; app ASP.NET chưa có coverage-guided crash fuzzing. Crash của
 process thật (kill API) được kiểm ở mục 5.1–5.2.
 
+### 4.7. Kịch bản nói – chạy – show cho Chương 4
+
+Bản runbook đầy đủ kèm timeline, lời thoại từng phần và checklist trước giờ bảo vệ:
+[`KICH_BAN_THUYET_TRINH_CHUONG4.md`](KICH_BAN_THUYET_TRINH_CHUONG4.md).
+
+Mục tiêu 6–8 phút: cho thấy có fuzzing thật, oracle thật và coverage thật, nhưng
+đồng thời nói rõ đâu là giới hạn. Chỉ nói số liệu gắn với file evidence tương ứng.
+
+| Thứ tự                     | Nói gì (ngắn)                                                                                                                                                                                                                 | Chạy                                                                                               | Show                                                                                                                                                                                                                                               |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1. Fuzz .NET có cấu trúc  | “Em fuzz 5 target, seed `20261009`, oracle phân biệt input bị từ chối đúng bằng `ArgumentException` với crash thật; 25.000 vòng mỗi random campaign và 2.000 chuỗi stateful.”                                | `python3 security-analysis/run_fuzzing.py` (hoặc 4 lệnh filter ở mục 4.1 nếu ít thời gian) | `SecurityFuzzingTests.cs`, `FuzzCorpus/order_requests.json`, `results/application_fuzzing.results.json` (`tests`, `seed`, `crash_policy`, `coverage`)                                                                                |
+| 2. Coverage line/branch      | “Coverlet chỉ đo line/branch cho 5 target; 91,05% line / 97,50% branch; InputValidator 97,22% branch là lượt unit riêng. Line/branch không phải path/edge.”                                                            | mục 4.2 (nếu còn thời gian)                                                                     | `results/coverage_summary.json`, `application-fuzzing-coverage.cobertura.xml`, `input-validator.cobertura.xml`                                                                                                                               |
+| 3. HTTP black-box fuzz       | “Executable + PostgreSQL thật; 601 request; oracle kiểm response và DB invariant; 0 HTTP 5xx; đây là semantic feedback, **không phải** code-coverage-guided.”                                                    | `python3 security-analysis/http_fuzz.py --iterations 500 --no-build`                              | `results/http_fuzz.results.json`: `requests_executed=601`, `coverage.unique_features=108`, `coverage.unique_semantic_edges=500`, `database.invariant_checks=272`, `database.violations=[]`, `http.5xx=0`                             |
+| 4. Browser CDP network fault | “Chrome thật chặn response `/api/products`; control tải 8 card, **7/7 fault** hiện error state + nút thử lại; harness fail nếu UI không hiện lỗi; đây là CDP interception, không phải proxy/WAN.”      | `python3 security-analysis/browser/network_fuzz.py`                                               | `results/browser_network_fuzz.results.json`: `passed=true`, `checks.outcomes[*].scenario_ok`, `product_state_text`, `all_javascript_errors=[]`; muốn show UI trực tiếp thì mở app rồi DevTools block `*/api/products` và reload |
+| 5. Coverage-guided C fixture | “GCC `trace-pc`, shared edge map, fork/input, queue theo coverage mới; 20.000 mutation, 81 → 148 map entry, queue 46, 0 crash. Đây là engine trên **C fixture tổng hợp**, không phải coverage của ASP.NET.” | `python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000`                             | `results/c_coverage_fuzz.results.json`: `guided.initial_edges=81`, `guided.final_edges=148`, `guided.queue_size=46`, `guided.crashes=0`, phần `random` để so baseline                                                               |
+| 6. Crash và tái lập       | “Crash xảy ra khi input chạm bug, không phải vì nhiều dữ liệu. .NET in `seed/iteration/input` khi fail; demo C cố ý SIGSEGV chỉ để thấy harness đếm crash, không tự minimize.”                             | mục 4.6                                                                                            | `/tmp/fuzz-crash`: `crashes>0` nhưng process exit 0; `crash_policy` trong `application_fuzzing.results.json`                                                                                                                              |
+
+Lời chuyển ý gợi ý:
+
+> “Bốn lớp fuzz của em có mức bằng chứng khác nhau. Lớp .NET là structured,
+> in-process, có oracle và coverage sau khi chạy. Lớp HTTP đập vào executable +
+> PostgreSQL thật nhưng vẫn local/bounded. Lớp browser là CDP interception.
+> Lớp coverage-guided mới chỉ chạy trên C fixture tổng hợp; app ASP.NET vẫn chưa
+> có code-coverage-guided/path-edge hoặc symbolic fuzzing.”
+
+### 4.8. Trình tự 8 phút và checklist trước khi bảo vệ
+
+Chạy trước khi vào tiết để evidence mới, tránh vừa nói vừa chờ:
+
+```bash
+dotnet build OrderPaymentMicroservice/OrderPaymentMicroservice.csproj --no-restore --nologo
+python3 security-analysis/run_fuzzing.py
+python3 security-analysis/http_fuzz.py --iterations 500 --no-build
+python3 security-analysis/browser/network_fuzz.py
+python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000
+```
+
+Thứ tự nói gợi ý:
+
+1. Mở khung 20 giây: structured .NET → HTTP black-box → browser CDP → coverage-guided C fixture.
+2. Chiếu `application_fuzzing.results.json`: `seed`, `tests`, `crash_policy`, `coverage`.
+3. Chiếu `http_fuzz.results.json`: 601 request, 108 feature, 500 semantic edge, 0 HTTP 5xx, 0 DB violation.
+4. Chiếu `browser_network_fuzz.results.json`: control 8 card, 7/7 fault có `products-state-error`, 0 uncaught JS.
+5. Chiếu `c_coverage_fuzz.results.json`: 81 → 148 edge, queue 46, 0 crash.
+6. Chốt bằng bảng giới hạn: 25.000/601/148/97,50% đều có phạm vi riêng, không phải proof toàn API/DB/UI.
+
+Câu trả lời nhanh nếu thầy hỏi:
+
+| Câu hỏi                                             | Trả lời ngắn                                                                                                                                                                                            |
+| ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Sao chạy 25.000 vòng không thấy crash?            | Fuzzing không phải “càng nhiều dữ liệu càng chắc crash”; chưa crash chỉ nói chưa chạm bug trong budget/oracle. Input sai bị `ArgumentException` là reject hợp lệ, không tính crash. |
+| 601 request đã phủ toàn API chưa?                | Chưa. Đó là black-box local trên một executable + PostgreSQL tạm, 500 mutation, có oracle response/DB; chưa TLS/proxy/WAN/network partition.                                                      |
+| 97,50% branch là coverage toàn app?                 | Không. Chỉ 5 target được include; app ASP.NET chưa có path/edge coverage.                                                                                                                           |
+| 148 map entry là coverage C#?                        | Không. Đó là map entry của C fixture qua `trace-pc`; không phải source-level edge của ASP.NET.                                                                                                   |
+| Browser đã test mọi network fault?                 | Chưa. Mới fault `api/products`; 8 scenario gồm control + 7 fault, và harness fail nếu UI không hiện error state.                                                                                  |
+| Có taint analysis tự động hoặc symbolic fuzzing? | Chưa. Luồng source→sink mới là review thủ công; Z3 kiểm số học riêng, chưa nối vào generator fuzz.                                                                                           |
+| Long-email có phải fuzzer tự tìm ra?              | Không. Đó là demo deterministic cho CWE-121: input 128 ký tự làm `user_buggy` báo `stack-buffer-overflow`; `user_fixed` reject trước `strcpy`.                                           |
+
+Không được nói khi bảo vệ:
+
+- “25.000 HTTP request” — đó là iteration ở mức hàm/state machine.
+- “601 request chứng minh toàn API an toàn” — chỉ là budget/corpus đã chạy.
+- “97,50% branch toàn hệ thống” — chỉ 5 target được đo.
+- “148 map entry là coverage ASP.NET” — chỉ là C fixture.
+- “Browser là proxy/WAN thật” — chỉ là CDP interception cho products fetch.
+
 ---
 
 ## 5. Các phần chưa có trong danh sách slide
@@ -540,34 +606,34 @@ python3 security-analysis/run_all_checks.py \
 
 Đường dẫn evidence trong bảng tính từ `security-analysis/`.
 
-| Chương | Nội dung slide | Lệnh | Evidence |
-| --- | --- | --- | --- |
-| 1 | Recovery model, state space, 15 property | `python3 security-analysis/verify_recovery_model.py` | `results/order_payment_recovery_model.results.json` |
-| 1 | 6 mutation | như trên | 6 dòng `[BUG-*] DETECTED` |
-| 1 | Mutex, CTL, sinh mã, số học, 50 testcase | `python3 security-analysis/verify_teacher_spec.py` | `results/teacher_spec_verification.json` |
-| 1 | TLA+ `OrderPayment.tla` | `python3 security-analysis/run_tlc.py --jar ...` | `results/tlc/OrderPayment.tlc.results.json` |
-| 1 | Liveness | `python3 security-analysis/audit_liveness.py` | `results/liveness_audit.results.json` |
-| 1 | Threat model | `python3 security-analysis/verify_threat_model.py` | `results/threat_model_results.json` |
-| 1 | Validation động (149 + 35) | 2 lệnh `dotnet test` mục 1.6 | `results/application_tests.results.json` |
-| 2 | 5 module, 22 case ASan/UBSan | `make -C security-analysis/c-memory test` | `c-memory/evidence/dynamic-analysis.json` |
-| 2 | Cppcheck + GCC `-Wall -Wextra` | `make -C security-analysis/c-memory static-check` | `c-memory/evidence/static-analysis.json` |
-| 2 | CBMC + bound | `make -C security-analysis/c-memory bmc-check` | `c-memory/evidence/bmc-analysis.json` |
-| 2 | Valgrind Memcheck | `make -C security-analysis/c-memory valgrind-check` | `c-memory/evidence/valgrind-analysis.json` |
-| 3 | PaymentVerification.z3 | `python3 security-analysis/verify_payment_smt.py` | `results/payment_verification.results.json` |
-| 3 | InventoryVerification.z3 | `python3 security-analysis/verify_inventory_smt.py` | `results/inventory_verification.results.json` |
-| 3 | TLA+ | `python3 security-analysis/run_tlc.py --jar ...` | `results/tlc/` |
-| 3 | SAT/DIMACS/UNSAT core | `make -C security-analysis/c-memory sat-check` | `c-memory/evidence/sat-pipeline.json` |
-| 4 | `SecurityFuzzingTests.cs`, fixed seed | 4 lệnh filter mục 4.1 | 4 test PASS |
-| 4 | Coverage line/branch | `python3 security-analysis/run_fuzzing.py` + mục 4.2 | `application-fuzzing-coverage.cobertura.xml`, `coverage_summary.json` |
-| 4 | Black-box fuzz | `python3 security-analysis/http_fuzz.py --iterations 500 --no-build` | `results/http_fuzz.results.json` |
-| 4 | Browser/CDP | `verify_checkout.py`, `browser/network_fuzz.py` | `checkout_retry`, `browser_network_fuzz` |
-| 4 | Coverage-guided C | `python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000` | `results/c_coverage_fuzz.results.json` |
-| 4 | Giả định crash | mục 4.6 | `crash_policy` + demo `/tmp/fuzz-crash` |
-| 5 | Reconnect PG | `python3 security-analysis/run_recovery_demo.py` | `postgres_reconnect_*.results.json` |
-| 5 | Kill process | filter `ProcessRestartTests` + `RefundRestartTests` | `process_restart`, `refund_restart` |
-| 5 | Audit/admission/idempotency | filter 3 class mục 5.3 | `application_tests.results.json` |
-| 5 | Backup/load/status | filter mục 5.4 | `backup_restore`, `load_probe` |
-| 5 | Full suite + report | mục 5.5–5.6 | TRX, `evidence_manifest.json`, `BAO_CAO.md` |
+| Chương | Nội dung slide                             | Lệnh                                                                   | Evidence                                                                  |
+| -------- | ------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| 1        | Recovery model, state space, 15 property    | `python3 security-analysis/verify_recovery_model.py`                  | `results/order_payment_recovery_model.results.json`                     |
+| 1        | 6 mutation                                  | như trên                                                              | 6 dòng `[BUG-*] DETECTED`                                              |
+| 1        | Mutex, CTL, sinh mã, số học, 50 testcase | `python3 security-analysis/verify_teacher_spec.py`                    | `results/teacher_spec_verification.json`                                |
+| 1        | TLA+ `OrderPayment.tla`                   | `python3 security-analysis/run_tlc.py --jar ...`                      | `results/tlc/OrderPayment.tlc.results.json`                             |
+| 1        | Liveness                                    | `python3 security-analysis/audit_liveness.py`                         | `results/liveness_audit.results.json`                                   |
+| 1        | Threat model                                | `python3 security-analysis/verify_threat_model.py`                    | `results/threat_model_results.json`                                     |
+| 1        | Validation động (149 + 35)                | 2 lệnh `dotnet test` mục 1.6                                        | `results/application_tests.results.json`                                |
+| 2        | 5 module, 22 case ASan/UBSan                | `make -C security-analysis/c-memory test`                             | `c-memory/evidence/dynamic-analysis.json`                               |
+| 2        | Cppcheck + GCC `-Wall -Wextra`            | `make -C security-analysis/c-memory static-check`                     | `c-memory/evidence/static-analysis.json`                                |
+| 2        | CBMC + bound                                | `make -C security-analysis/c-memory bmc-check`                        | `c-memory/evidence/bmc-analysis.json`                                   |
+| 2        | Valgrind Memcheck                           | `make -C security-analysis/c-memory valgrind-check`                   | `c-memory/evidence/valgrind-analysis.json`                              |
+| 3        | PaymentVerification.z3                      | `python3 security-analysis/verify_payment_smt.py`                     | `results/payment_verification.results.json`                             |
+| 3        | InventoryVerification.z3                    | `python3 security-analysis/verify_inventory_smt.py`                   | `results/inventory_verification.results.json`                           |
+| 3        | TLA+                                        | `python3 security-analysis/run_tlc.py --jar ...`                      | `results/tlc/`                                                          |
+| 3        | SAT/DIMACS/UNSAT core                       | `make -C security-analysis/c-memory sat-check`                        | `c-memory/evidence/sat-pipeline.json`                                   |
+| 4        | `SecurityFuzzingTests.cs`, fixed seed     | 4 lệnh filter mục 4.1                                                 | 4 test PASS                                                               |
+| 4        | Coverage line/branch                        | `python3 security-analysis/run_fuzzing.py` + mục 4.2                 | `application-fuzzing-coverage.cobertura.xml`, `coverage_summary.json` |
+| 4        | Black-box fuzz                              | `python3 security-analysis/http_fuzz.py --iterations 500 --no-build`  | `results/http_fuzz.results.json`                                        |
+| 4        | Browser/CDP                                 | `verify_checkout.py`, `browser/network_fuzz.py`                     | `checkout_retry`, `browser_network_fuzz`                              |
+| 4        | Coverage-guided C                           | `python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000` | `results/c_coverage_fuzz.results.json`                                  |
+| 4        | Giả định crash                           | mục 4.6                                                                | `crash_policy` + demo `/tmp/fuzz-crash`                               |
+| 5        | Reconnect PG                                | `python3 security-analysis/run_recovery_demo.py`                      | `postgres_reconnect_*.results.json`                                     |
+| 5        | Kill process                                | filter `ProcessRestartTests` + `RefundRestartTests`                 | `process_restart`, `refund_restart`                                   |
+| 5        | Audit/admission/idempotency                 | filter 3 class mục 5.3                                                 | `application_tests.results.json`                                        |
+| 5        | Backup/load/status                          | filter mục 5.4                                                         | `backup_restore`, `load_probe`                                        |
+| 5        | Full suite + report                         | mục 5.5–5.6                                                           | TRX, `evidence_manifest.json`, `BAO_CAO.md`                           |
 
 ---
 

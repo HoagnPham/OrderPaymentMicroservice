@@ -475,6 +475,8 @@ Lớp thứ tư là `security-analysis/run_c_coverage_fuzz.py`: GCC `-fsanitize-
 
 Nếu bị hỏi sâu, nói đúng các khoảng trống còn lại: campaign .NET **không phải end-to-end** vì stateful chỉ chạy aggregate trong process; HTTP fuzz đã đập vào DB+HTTP thật nhưng chỉ local/bounded; coverage-guided hiện chỉ cho **C fixture**, **chưa code-coverage-guided cho app**; app **chưa path/edge code coverage**; browser fuzz mới fault products fetch, chưa proxy/WAN/mobile. Đây là các giới hạn, không được chuyển thành PASS nhờ test khác.
 
+Chi tiết thứ tự nói – chạy – show và checklist evidence trước khi bảo vệ nằm ở [`TonghopLenhCMD.md` mục 4.7–4.8](../TonghopLenhCMD.md).
+
 Muốn đo lại coverage unit của validator, chạy riêng sau fuzz:
 
 ```bash

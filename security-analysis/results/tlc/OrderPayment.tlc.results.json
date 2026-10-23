@@ -8,7 +8,7 @@
   "config_sha256": "bcc4efcfa56df799153ca14c393d6690e0d4cdb7c257bbded1543b1013bfa3a9",
   "workers": 1,
   "timeout_seconds": 120,
-  "duration_seconds": 1.46,
+  "duration_seconds": 1.535,
   "states_generated": 35,
   "distinct_states": 20,
   "graph_depth": 9,

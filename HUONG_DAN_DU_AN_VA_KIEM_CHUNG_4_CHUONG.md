@@ -837,6 +837,28 @@ DFSan là framework dynamic data-flow gắn/lan truyền nhãn và để client 
 - Frontend vẫn có Chrome smoke một flow thật và checkout helper với mocked fetch; chưa phủ login/cart/payment network faults hay nhiều browser.
 - PASS của .NET campaign/HTTP campaign/C fixture chỉ là không có failure theo oracle trong budget đã chạy; không là chứng minh mọi input, path hay toàn API an toàn.
 
+### E.10. Kịch bản bảo vệ Chương 4 — nói, chạy, show
+
+Khi bảo vệ không đọc lại toàn bộ E.1–E.9. Dùng bảng dưới đây để nói đúng trọng
+tâm, chạy đúng lệnh và mở đúng evidence. Lệnh chi tiết và thứ tự 8 phút nằm ở
+[`TonghopLenhCMD.md`](TonghopLenhCMD.md), mục 4.7–4.8; bản runbook đầy đủ (timeline,
+lời thoại, Q&A, checklist) ở
+[`KICH_BAN_THUYET_TRINH_CHUONG4.md`](KICH_BAN_THUYET_TRINH_CHUONG4.md).
+
+| Phần | Nói gì | Chạy | Show |
+| --- | --- | --- | --- |
+| Structured .NET fuzz | 5 target, seed `20261009`, oracle, 25.000 vòng/campaign + 2.000 stateful; `ArgumentException` là reject hợp lệ, không phải crash. | `python3 security-analysis/run_fuzzing.py` | `results/application_fuzzing.results.json`: `tests`, `seed`, `crash_policy`, `coverage`; `SecurityFuzzingTests.cs`, `FuzzCorpus/order_requests.json`. |
+| Coverage line/branch | Coverlet chỉ cho 5 target; 91,05% line / 97,50% branch; InputValidator 97,22% là lượt unit; line/branch không phải path/edge. | mục F.6 | `results/coverage_summary.json`, hai file Cobertura; đọc rate theo class. |
+| HTTP black-box fuzz | Executable + PostgreSQL thật, 601 request, semantic feedback + DB oracle, 0 HTTP 5xx; không phải coverage-guided. | `python3 security-analysis/http_fuzz.py --iterations 500 --no-build` | `results/http_fuzz.results.json`: `requests_executed`, `coverage.unique_features/edges`, `database.invariant_checks`, `http.5xx`. |
+| Browser CDP | Chrome thật, chặn `/api/products`; control 8 card, 7/7 fault hiện error state + retry; harness fail nếu UI không hiện lỗi; không phải proxy/WAN. | `python3 security-analysis/browser/network_fuzz.py` | `results/browser_network_fuzz.results.json`: `scenario_ok`, `product_state_text`, `all_javascript_errors`. |
+| Coverage-guided C fixture | GCC `trace-pc`, edge map, queue; 20.000 mutation, 81 → 148 map entry; không phải coverage ASP.NET. | `python3 security-analysis/run_c_coverage_fuzz.py --iterations 20000` | `results/c_coverage_fuzz.results.json`: `guided.initial_edges/final_edges/queue_size/crashes`. |
+| Crash và giới hạn | Crash là input chạm bug, không phải do nhiều dữ liệu; chưa auto minimize; app chưa code-coverage-guided/path-edge/symbolic/taint tự động. | mục 4.6 Tonghop | `crash_policy`; phần `limitations` của từng evidence. |
+
+Câu chốt nên dùng: **“Bốn lớp fuzz là structured .NET, HTTP black-box, browser CDP
+interception và coverage-guided C fixture. Mỗi lớp có phạm vi riêng; 25.000
+iteration, 601 HTTP request, 148 map entry C fixture và 97,50% branch của 5 target
+không được dùng để kết luận toàn API, database, frontend hay mọi path.”**
+
 <a id="lenh-chay"></a>
 
 ## F. Các lệnh chạy đầy đủ

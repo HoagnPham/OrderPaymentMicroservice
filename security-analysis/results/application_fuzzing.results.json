@@ -31,20 +31,20 @@
     "PaymentStateMachine",
     "MoneyAmounts"
   ],
-  "run_at_utc": "2026-10-21T02:28:25.861652+00:00",
+  "run_at_utc": "2026-10-22T10:46:01.765602+00:00",
   "source_sha256": {
-    "OrderPaymentMicroservice/Security/InputValidator.cs": "373a995295dfd0e76d26545b9f6f19c3381d21df7d3df3750edae300f288796c",
-    "OrderPaymentMicroservice/Security/PaymentValidator.cs": "63bfa1321a2ad0f8ae47bb60913448cac3e498ea4d8b752481c5b976ae758abb",
+    "OrderPaymentMicroservice/Security/InputValidator.cs": "f7f36ac4cc45677b82b81e35ae4353fb5dd5201188d2d476f13097d5cb7e2d08",
+    "OrderPaymentMicroservice/Security/PaymentValidator.cs": "5469e801a502c8a7bcfa623150edb4c34575a9f336750dbe405413f9e9baa387",
     "OrderPaymentMicroservice/Security/OrderStateMachine.cs": "c55900e5f450f1024bba9ca00594da21c8c96cbabb7937c1fe598977f50cd145",
     "OrderPaymentMicroservice/Security/PaymentStateMachine.cs": "003427a568632c3d89141f83d7ef9f0f6573185f000469184fd4adc5425f9ea2",
-    "OrderPaymentMicroservice/Models/Payment.cs": "03134aa5486ab4436e6a33289fe0f6a2414da6602b16557e087a4caaaaa2203d",
+    "OrderPaymentMicroservice/Models/Payment.cs": "cdbc2ef7f983ebbbbaca85fa38f3bd1c39d0221f04e33edd852585bfc046b02e",
     "OrderPaymentMicroservice/Security/MoneyAmountAttribute.cs": "9f9d3cb4dd396b2d0db750d596ce5bc5df308132a8cfea5f16eb3ffb64fa224d",
     "OrderPaymentMicroservice.Tests/SecurityFuzzingTests.cs": "7da15eff5e2816e2750df8514da82f1cfb37d053ae8a78c63709f8bb67cbc773"
   },
   "crash_policy": "ArgumentException is a controlled rejection; timeout, any other exception, invariant mismatch or test failure is a crash.",
   "timeout_seconds": 120,
   "timed_out": false,
-  "duration_seconds": 3.761,
+  "duration_seconds": 3.264,
   "tests": {
     "passed": 4,
     "failed": 0,

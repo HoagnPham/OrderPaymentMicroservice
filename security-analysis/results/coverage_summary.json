@@ -1,14 +1,14 @@
 {
   "class": "OrderPaymentMicroservice.Security.InputValidator",
-  "branch_coverage_percent": 97.22,
-  "line_coverage_percent": 85.71,
+  "branch_coverage_percent": 91.66,
+  "line_coverage_percent": 83.92,
   "uncovered_branches": [],
   "threshold_percent": 90,
   "passed": true,
   "methods": [
     {
       "name": "ValidateCreateOrderRequest",
-      "branch_coverage_percent": 100.0
+      "branch_coverage_percent": 95.0
     },
     {
       "name": "ValidateOrderItem",
@@ -16,15 +16,15 @@
     },
     {
       "name": ".ctor",
-      "branch_coverage_percent": 100.0
+      "branch_coverage_percent": 50.0
     },
     {
       "name": ".cctor",
       "branch_coverage_percent": 100.0
     }
   ],
-  "run_at_utc": "2026-10-14T16:43:12.446631+00:00",
-  "report_sha256": "7d49e0f07d41d7ccc79639e7dbaee93c3b938d96a98daf8e5806b4d06ffae795",
+  "run_at_utc": "2026-10-22T10:46:54.258514+00:00",
+  "report_sha256": "c1649316d3a55f944049d72d550bc395c3bd898ea568f6905e8df1fed8ef3c1c",
   "included_helper": {
     "class": "OrderPaymentMicroservice.Security.MoneyAmounts",
     "branch_coverage_percent": 100.0
