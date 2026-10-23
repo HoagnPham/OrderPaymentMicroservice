@@ -683,43 +683,22 @@ chuyển tiếp và chuyển tiếp bất hợp lệ.
 
 \begin{figure}[H]
 \centering
-\begin{tikzpicture}[
-  font=\scriptsize,
-  st/.style={draw, rounded corners=2pt, align=center, inner sep=3pt, minimum height=7mm},
-  term/.style={st, double},
-  ar/.style={-{Latex[length=1.8mm]}, thick},
-  bad/.style={-{Latex[length=1.8mm]}, thick, dashed, draw=red!80!black}
-]
-\node[st] (c)  at (0,0)       {CREATED};
-\node[st] (v)  at (2.4,0)     {VALIDATED};
-\node[st] (pp) at (5.2,0)     {PAYMENT\_PENDING};
-\node[st] (p)  at (8.0,0)     {PAID};
-\node[st] (cf) at (10.1,0)    {CONFIRMED};
-\node[term] (cp) at (12.6,0)  {COMPLETED};
-\node[term] (cx) at (0,-2.0)  {CANCELLED};
-\node[term] (fl) at (5.2,-2.0){FAILED};
-\node[st] (rp) at (8.0,-2.0)  {REFUND\_PENDING};
-\node[term] (rf) at (10.8,-2.0){REFUNDED};
-
-\draw[ar] (c) -- (v);
-\draw[ar] (v) -- (pp);
-\draw[ar] (pp) -- (p);
-\draw[ar] (p) -- (cf);
-\draw[ar] (cf) -- (cp);
-\draw[ar] (pp) -- (fl) node[midway,right,font=\tiny]{fail};
-\draw[ar] (p) -- (rp);
-\draw[ar] (cf) -- (rp);
-\draw[ar] (rp) -- (rf);
-\draw[ar] (c.south) -- (cx.north);
-\draw[ar] (pp.south west) to[bend right=30] (cx.east);
-\draw[bad] (cx.south) to[bend right=35]
-  node[below,font=\tiny,text=red!80!black,align=center]
-  {v0: thiếu guard\\ \texttt{CANCELLED -> PAID}} (p.south);
-\end{tikzpicture}
-\caption{Trừu tượng hóa máy trạng thái Order (rút từ \texttt{OrderStateMachine.cs}).
-Nét liền là chuyển tiếp hợp lệ; nét đứt đỏ là chuyển tiếp bất hợp lệ
-\texttt{CANCELLED -> PAID} mà mô hình v0 cho phép và bản v1 chặn bằng guard trạng
-thái nguồn. Ô nét đôi là trạng thái kết thúc.}
+\IfFileExists{kripke-order.pdf}{%
+  \includegraphics[width=0.95\textwidth]{kripke-order.pdf}%
+}{%
+  \IfFileExists{kripke-order.png}{%
+    \includegraphics[width=0.95\textwidth]{kripke-order.png}%
+  }{%
+    \fbox{\begin{minipage}[c][4.2cm][c]{0.9\textwidth}\centering
+    {\color{codegray}\small\textbf{[CHƯA CÓ ẢNH KRIPKE]}}\\[4pt]
+    {\small Đặt tệp \texttt{kripke-order.pdf} (hoặc \texttt{.png}) cùng thư mục với \texttt{.tex}}
+    \end{minipage}}%
+  }%
+}
+\caption{Trừu tượng hóa máy trạng thái Order (rút từ \texttt{OrderStateMachine.cs})
+dưới dạng cấu trúc Kripke: nút là trạng thái, nhãn nút là tập mệnh đề nguyên tử,
+cạnh là chuyển tiếp. Mô hình v0 cho phép chuyển tiếp bất hợp lệ
+\texttt{CANCELLED -> PAID}; bản v1 chặn bằng guard trạng thái nguồn.}
 \label{fig:order-state}
 \end{figure}
 
