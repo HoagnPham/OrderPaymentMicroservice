@@ -274,6 +274,9 @@ Mô hình threat, 27 yêu cầu, 18 trạng thái, 10 property CTL, 50 testcase 
 Không chứng minh mọi interleaving, failover, network partition hoặc power loss \\
 Kiểm chứng 5 lỗi bộ nhớ C (22 ca động, CBMC 10 ca, Valgrind 10 ca, SAT/DRAT 10 ca) &
 Các lỗi C chỉ là mô phỏng didactic, không phải lỗi trong runtime C\# \\
+\addlinespace
+6 CWE thiết kế/nghiệp vụ đã vá: 190, 841, 306, 602, 20, 639 (unit/integration/HTTP) &
+Chưa kiểm mọi route mới sinh về sau; gateway thật ngoài phạm vi \\
 SMT cho số học thanh toán (7 ca) và tồn kho (3 ca) &
 Không mô hình hóa toàn bộ API, EF Core hay gateway thật \\
 TLC cho \texttt{OrderPayment.tla} (35 trạng thái, depth 9) &
@@ -379,20 +382,26 @@ PostgreSQL/API rồi khởi động lại, đối chiếu journal và số lần
 Repo dùng hai biến thể BUGGY và FIXED trên cùng một file C, chọn
 bằng \cmd{-UFIXED} và \cmd{-DFIXED}, thay vì hai file \texttt{*\_v0.c}/\texttt{*\_v1.c}.
 Trong báo cáo, \texttt{v0} tương ứng BUGGY và \texttt{v1} tương ứng FIXED; mọi
-trích đoạn đều ghi rõ dòng gốc. Với hai lỗi ở tầng thiết kế (CWE-190, CWE-841),
-v0 là model ``buggy'' còn v1 là mã hiện tại đã có guard/validator tương ứng.
+trích đoạn đều ghi rõ dòng gốc. Với các lỗi tầng thiết kế/nghiệp vụ
+(CWE-190, CWE-841, CWE-306, CWE-602, CWE-20, CWE-639), v0 là model ``buggy'' hoặc
+tình trạng trước remediation ghi trong \path{security-analysis/vulnerabilities.json},
+còn v1 là mã hiện tại đã có guard/validator/authorization tương ứng. Riêng
+CWE-306/602/20/639, đoạn v0 trong báo cáo là minh họa ngắn tái dựng theo finding
+(không có file v0 trong repo).
 
 % =====================================================================
 %  PHẦN 4 -- PHÂN TÍCH LỖ HỔNG & BẢN VÁ
 % =====================================================================
 \section{Phân tích lỗ hổng \& Bản vá}
 
-Phần này trình bày 7 lỗ hổng theo đúng 5 mục con: vị trí, nguyên nhân gốc rễ,
-bằng chứng lỗi tồn tại, cách vá (trước/sau) và bằng chứng đã vá. Năm lỗi đầu là
-các module C mô phỏng trực tiếp những thao tác nguy hiểm của miền nghiệp vụ; hai
-lỗi sau là lỗi thiết kế ở tầng đơn hàng/thanh toán, được kiểm chứng bằng model và
-SMT thay vì bằng lỗi bộ nhớ. Các listing C lược bớt chỉ thị \texttt{\#ifdef}/\texttt{\#endif}
-để dễ đối chiếu trước/sau; số dòng vẫn giữ theo file gốc và ghi rõ biến thể.
+Phần này trình bày 11 lỗ hổng theo đúng 5 mục con: vị trí, nguyên nhân gốc rễ,
+bằng chứng lỗi tồn tại, cách vá (trước/sau) và bằng chứng đã vá. Bảy mục đầu gồm
+năm module C mô phỏng trực tiếp thao tác nguy hiểm của miền nghiệp vụ và hai lỗi
+thiết kế ở tầng đơn hàng/thanh toán (CWE-190, CWE-841) kiểm chứng bằng model/SMT.
+Bốn mục cuối (CWE-306, CWE-602, CWE-20, CWE-639) là finding bảo mật tầng
+API/nghiệp vụ, kiểm chứng bằng unit, integration và HTTP. Các listing C lược bớt
+chỉ thị \texttt{\#ifdef}/\texttt{\#endif} để dễ đối chiếu trước/sau; số dòng vẫn giữ
+theo file gốc và ghi rõ biến thể.
 
 % ---------------------------------------------------------------------
 \subsection{\cwe{401} -- Rò rỉ bộ nhớ khi hủy đơn}
@@ -753,6 +762,191 @@ Model đúng đạt 15/15 property, 6/6 mutation âm bị phát hiện; TLC ki�
 termination trên 35 trạng thái; 35 integration test (gồm idempotency, audit nguyên
 tử, kill API) đều PASS. Phần 5 trình bày thêm kịch bản recovery.
 
+% ---------------------------------------------------------------------
+\subsection{\cwe{306} -- Truy cập Order khi chưa xác thực}
+\paragraph{Vị trí và mô tả.}
+\path{OrderPaymentMicroservice/Controllers/OrdersController.cs} (thuộc tính cấp lớp)
+và \path{OrderPaymentMicroservice/Program.cs} dòng 73--88 (cấu hình JWT). Finding
+\cmd{VULN-001}.
+
+\paragraph{Nguyên nhân gốc rễ.}
+Giai đoạn v0 thiếu middleware xác thực và \cmd{[Authorize]}, cũng không kiểm quyền
+sở hữu theo claim. Client đọc, liệt kê và hủy đơn của bất kỳ ai mà không cần chứng
+minh danh tính; đây là \cwe{306} (Missing Authentication for Critical Function),
+kèm khía cạnh \cwe{862}.
+
+\paragraph{Bằng chứng lỗi tồn tại.}
+Finding \cmd{VULN-001} với \cmd{detected_by = Static code review}: endpoint Order
+không gắn policy quyền. Đoạn v0 dưới đây \emph{minh họa} tình trạng trước
+remediation (không phải file trong repo):
+
+\begin{lstlisting}[language=CSharp,numbers=none,breaklines=true,caption={v0 -- minh họa OrdersController thiếu xác thực (theo VULN-001)}]
+[ApiController]
+[Route("api/[controller]")]
+public class OrdersController : ControllerBase   // v0: khong co [Authorize]
+{
+    [HttpGet("{id}")]
+    public async Task<IActionResult> GetOrder(int id)   // v0: khong kiem ownership
+        => Ok(await _orderService.GetOrderByIdAsync(id));
+}
+\end{lstlisting}
+
+\paragraph{Cách vá.}
+Thêm JWT authentication + \cmd{[Authorize]} ở cấp lớp, policy \cmd{Roles = "Admin"}
+cho liệt kê toàn bộ, và kiểm ownership theo claim \cmd{sub} qua
+\cmd{User.CanAccessUser}; \cmd{GET /api/orders/mine} luôn lấy subject thay vì nhận
+ID từ client.
+
+\begin{lstlisting}[language=CSharp,numbers=none,breaklines=true,caption={v1 -- \texttt{OrdersController.cs}, xác thực và ownership}]
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]                       // v1: bat buoc xac thuc
+public class OrdersController : ControllerBase
+...
+if (!User.CanAccessUser(order.CustomerId))   // v1: kiem so huu
+    return Forbid();
+\end{lstlisting}
+
+\paragraph{Bằng chứng đã vá.}
+Integration test
+\cmd{OrderPaymentApiTests.Authentication_and_resource_ownership_are_enforced}
+kiểm anonymous $\to$ 401 và cross-user $\to$ 403 cho cart, order, payment,
+operation; HTTP fuzz ghi 27 response 401 và 46 response 403. Giới hạn: chưa có
+security test tự động bắt buộc cho mọi route sinh về sau.
+
+% ---------------------------------------------------------------------
+\subsection{\cwe{602} -- Client kiểm soát giá và tổng tiền}
+\paragraph{Vị trí và mô tả.}
+\path{OrderPaymentMicroservice/Services/OrderService.cs}, hàm \cmd{CreateOrderAsync}
+(dòng 30--124). Finding \cmd{VULN-002}.
+
+\paragraph{Nguyên nhân gốc rễ.}
+v0 lưu thẳng \cmd{UnitPrice} và \cmd{TotalAmount} từ payload, tin dữ liệu có thẩm
+quyền về giá do client cung cấp. Client có thể khai giá 1 đồng cho sản phẩm giá 25
+đồng; đây là \cwe{602} (Client-Side Enforcement of Server-Side Security).
+
+\paragraph{Bằng chứng lỗi tồn tại.}
+Characterization bằng \cmd{OrderServiceTests.ClientCannotCreateOrderUsingTamperedPrice}:
+gửi \cmd{TotalAmount = 2}, \cmd{UnitPrice = 1} cho sản phẩm giá 25 bị từ chối
+(\cmd{ArgumentException}), không tạo order, tồn kho không đổi. Đoạn v0 minh họa:
+
+\begin{lstlisting}[language=CSharp,numbers=none,breaklines=true,caption={v0 -- minh họa OrderService tin giá client (theo VULN-002)}]
+var order = new Order {
+    TotalAmount = request.TotalAmount,          // v0: tin client
+    OrderItems = request.Items.Select(i => new OrderItem {
+        UnitPrice = i.UnitPrice                 // v0: tin client
+    }).ToList()
+};
+\end{lstlisting}
+
+\paragraph{Cách vá.}
+Đọc \cmd{Product.Price} từ server, tự tính \cmd{serverTotal} bằng \cmd{checked},
+đối chiếu \cmd{request.TotalAmount} trong sai số 1 cent, và bọc trong transaction
+\cmd{Serializable} để chặn race tồn kho.
+
+\begin{lstlisting}[language=CSharp,numbers=none,breaklines=true,caption={v1 -- \texttt{OrderService.cs}, giá lấy từ server (dòng 73--87)}]
+decimal serverTotal = 0;
+foreach (var item in request.Items) {
+    var product = products[item.ProductId];
+    MoneyAmounts.RequireCents(product.Price, nameof(product.Price));
+    if (!product.IsActive)
+        throw new OrderCreationConflictException("PRODUCT_UNAVAILABLE", $"Product {product.Id} is not active");
+    if (product.Stock < requestedQuantities[item.ProductId])
+        throw new OrderCreationConflictException("OUT_OF_STOCK", $"Not enough stock for product {product.Id}");
+    serverTotal = checked(serverTotal + item.Quantity * product.Price);
+}
+if (Math.Abs(request.TotalAmount - serverTotal) > 0.01m)
+    throw new ArgumentException("TotalAmount does not match current product prices", nameof(request.TotalAmount));
+\end{lstlisting}
+
+\paragraph{Bằng chứng đã vá.}
+\cmd{OrderServiceTests.ClientCannotCreateOrderUsingTamperedPrice} PASS; integration
+flow đặt hàng hợp lệ PASS; SMT tồn kho và HTTP regression đều sạch. Cần lưu ý đây
+là kiểm chứng theo mẫu hành vi (tampered price), không phải chứng minh hình thức
+cho mọi định dạng payload.
+
+% ---------------------------------------------------------------------
+\subsection{\cwe{20} -- Bỏ qua lệch tổng tiền}
+\paragraph{Vị trí và mô tả.}
+\path{OrderPaymentMicroservice/Security/InputValidator.cs}, nhánh kiểm dung sai
+trong \cmd{ValidateCreateOrderRequest} (dòng 66--72). Finding \cmd{VULN-004}.
+
+\paragraph{Nguyên nhân gốc rễ.}
+v0: điều kiện lệch quá 0,01 rơi vào một khối rỗng, nên tổng sai vẫn được chấp nhận;
+đồng thời thiếu kiểm giá dưới ngưỡng tối thiểu. Đây là \cwe{20} (Improper Input
+Validation).
+
+\paragraph{Bằng chứng lỗi tồn tại.}
+Unit test mô tả (characterization) chứng minh tổng 0,01 so với item 999999.99 từng
+được nhận. Đoạn v0 minh họa:
+
+\begin{lstlisting}[language=CSharp,numbers=none,breaklines=true,caption={v0 -- minh họa tolerance rỗng (theo VULN-004)}]
+if (Math.Abs(request.TotalAmount - calculatedTotal) > 0.01m)
+{
+    // v0: khong lam gi -> mismatch bi bo qua
+}
+\end{lstlisting}
+
+\paragraph{Cách vá.}
+Từ chối khi lệch quá 0,01 (\cmd{throw ArgumentException}) và từ chối \cmd{UnitPrice}
+dưới \cmd{MIN_PRICE} (0.01) hoặc không phải bội số cent.
+
+\begin{lstlisting}[language=CSharp,numbers=none,breaklines=true,caption={v1 -- \texttt{InputValidator.cs} (dòng 66--101)}]
+const decimal tolerance = 0.01m;
+if (Math.Abs(request.TotalAmount - calculatedTotal) > tolerance)
+    throw new ArgumentException("TotalAmount must match the sum of order items", nameof(request.TotalAmount));
+...
+if (item.UnitPrice < MIN_PRICE)
+    throw new ArgumentException($"UnitPrice must be at least {MIN_PRICE}", nameof(item.UnitPrice));
+MoneyAmounts.RequireCents(item.UnitPrice, nameof(item.UnitPrice));
+\end{lstlisting}
+
+\paragraph{Bằng chứng đã vá.}
+\cmd{InputValidatorTests.MismatchOrBelowMinimumPriceIsRejected} (5 ca) PASS; boundary
++ fuzz oracle; branch coverage của \cmd{InputValidator} đạt 97,22\%.
+
+% ---------------------------------------------------------------------
+\subsection{\cwe{639} -- Đọc/sửa giỏ hàng của người khác}
+\paragraph{Vị trí và mô tả.}
+\path{OrderPaymentMicroservice/Controllers/CartController.cs}, các route
+\texttt{user/\{userId\}/add} và \texttt{\{cartId\}/item/\{itemId\}}. Finding
+\cmd{VULN-005}.
+
+\paragraph{Nguyên nhân gốc rễ.}
+v0: caller tự cấp \cmd{userId}/\cmd{cartId}/\cmd{itemId} mà không có danh tính xác
+thực và không kiểm ownership, cho phép đọc/sửa/xóa giỏ của người khác (IDOR). Đây
+là \cwe{639} (Authorization Bypass Through User-Controlled Key).
+
+\paragraph{Bằng chứng lỗi tồn tại.}
+Finding \cmd{VULN-005} với \cmd{integrity_impact = HIGH}. Đoạn v0 minh họa không
+kiểm ownership:
+
+\begin{lstlisting}[language=CSharp,numbers=none,breaklines=true,caption={v0 -- minh họa CartController thiếu ownership (theo VULN-005)}]
+[HttpPost("user/{userId}/add")]
+public async Task<IActionResult> AddToCart(int userId, [FromBody] AddToCartRequest request)
+    => Ok(await _cartService.AddItemToCartAsync(userId, request.ProductId, request.Quantity)); // v0: khong kiem owner
+\end{lstlisting}
+
+\paragraph{Cách vá.}
+JWT identity (claim \cmd{sub}) + \cmd{User.CanAccessUser(...)} trên mọi thao tác cart,
+và \cmd{[Authorize]} ở cấp lớp.
+
+\begin{lstlisting}[language=CSharp,numbers=none,breaklines=true,caption={v1 -- \texttt{CartController.cs}, ownership mọi thao tác}]
+[ApiController]
+[Route("api/[controller]")]
+[Authorize]                       // v1: bat buoc xac thuc
+public class CartController : ControllerBase
+...
+if (!User.CanAccessUser(userId)) return Forbid();          // v1: kiem so huu
+...
+if (!User.CanAccessUser(cart.UserId)) return Forbid();     // v1: kiem so huu
+\end{lstlisting}
+
+\paragraph{Bằng chứng đã vá.}
+Integration test \cmd{Authentication_and_resource_ownership_are_enforced} kiểm
+anonymous $\to$ 401, cross-user $\to$ 403 cho \texttt{api/cart/user/\{id\}}; HTTP
+fuzz có 46 response 403. Giới hạn: chưa có test bắt buộc cho route cart mới.
+
 % =====================================================================
 %  PHẦN 5 -- BẢNG TỔNG HỢP BEFORE/AFTER
 % =====================================================================
@@ -812,6 +1006,26 @@ CWE-841 & \texttt{model BUGGY (JSON)} &
 P1 false: PAID\_AFTER\_CANCELLED &
 15/15 property; guard + transition + idempotency &
 Model; TLC; 35 integration \\
+\addlinespace
+CWE-306 & \path{OrdersController.cs} &
+Không có \cmd{[Authorize]}; đọc/hủy đơn bất kỳ ai &
+JWT + \cmd{[Authorize]} + ownership &
+Integration; HTTP (401/403) \\
+\addlinespace
+CWE-602 & \path{OrderService.cs} &
+Lưu \cmd{UnitPrice}/\cmd{TotalAmount} từ client &
+Giá lấy từ server + tự tính tổng + transaction &
+Unit; SMT; HTTP \\
+\addlinespace
+CWE-20 & \path{InputValidator.cs} &
+Lệch tổng $> 0{,}01$ rơi vào khối rỗng &
+Từ chối mismatch và giá dưới ngưỡng &
+Unit; boundary; fuzz \\
+\addlinespace
+CWE-639 & \path{CartController.cs} &
+\cmd{userId}/\cmd{cartId} do client cấp &
+JWT identity + ownership mọi thao tác &
+Integration; HTTP (403) \\
 \end{longtable}
 
 % =====================================================================
