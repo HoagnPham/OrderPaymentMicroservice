@@ -13,18 +13,6 @@ Gateway là DurableFake local, chưa phải provider thu tiền thật hoặc pr
 Memcheck (10/10 case) và pipeline CNF/DIMACS + DRAT proof/UNSAT core (10/10 case)
 trên 5 module C, cùng một runner end-to-end tái lập chuỗi kiểm chứng nhanh.
 
-## Tài liệu nên đọc
-
-| Tài liệu | Mục đích |
-| --- | --- |
-| [Kịch bản thuyết trình và demo](security-analysis/KICH_BAN_THUYET_TRINH_VA_DEMO.md) | Lời nói theo bốn chương học phần, thao tác demo, oracle và hỏi đáp |
-| [Báo cáo kỹ thuật](security-analysis/report/BAO_CAO.md) | Phương pháp, phân tích, kết quả và giới hạn |
-| [Phụ lục A–G](security-analysis/report/PHU_LUC_A_G.md) | State/contract, counterexample, diagnostics và từng testcase |
-| [Phạm vi nghiệm thu](security-analysis/PHAM_VI_KIEM_CHUNG.md) | Việc bắt buộc, tùy thời gian và future work |
-| [Index kiểm chứng](security-analysis/README.md) | Vị trí source/model/evidence và lệnh độc lập |
-| [Hợp đồng hiện thực](security-analysis/IMPLEMENTATION_CONTRACTS.md) | Gateway, timeout, audit, order idempotency và retry |
-| [Hướng dẫn vận hành](security-analysis/OPERATIONS.md) | Backup/restore, health/status và chạy project |
-
 ## Cấu trúc
 
 ```text
