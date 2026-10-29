@@ -1,7 +1,0 @@
-id,name,labels
-S0,Locked_Idle,locked
-S1,Authenticating,locked
-S2,Authenticated_Unlock,unlocked|authenticated
-S3,Locked_Alarm,locked|alarm
-S4,TamperDetected_Alarm,locked|alarm|tamper
-S5,BUG_Unlock_NoAuth,unlocked

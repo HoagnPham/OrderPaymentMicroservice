@@ -1,7 +1,0 @@
-networkx>=3.0
-matplotlib>=3.7
-z3-solver>=4.12
-pytest>=7.4
-
-# He thong can cai them (khong qua pip):
-#   apt-get install cppcheck cbmc
